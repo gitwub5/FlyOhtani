@@ -209,6 +209,13 @@ class FlyBatterEnv(gym.Env):
             mujoco.mj_step(self.model, self.data)
             substeps_run += 1
 
+            # I-07a-1 item A (ported back to ENV-001): with RK4, d.xpos/
+            # d.contact right after mj_step() can momentarily lag the just-
+            # integrated d.qpos/d.time during a contact transient. Refresh
+            # them so every check below reads state at the same instant as
+            # d.time. See envs/baseball_env.py for the empirical verification.
+            mujoco.mj_forward(self.model, self.data)
+
             ground_now = self._detect_ground_contact()
             limb_hit, limb_speed = self._detect_limb_contact()
 

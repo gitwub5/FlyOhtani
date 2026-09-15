@@ -23,12 +23,19 @@ END_REASON_TIMEOUT = "timeout"
 
 @dataclass(frozen=True)
 class RewardWeights:
-    """Placeholder weights, structurally identical to ENV-001's, NOT reviewed
-    for this scale (ENV-002: "ENV-001의 속도 보너스를 새 스케일에 검토 없이
-    복사하지 않는다" -- flagged here rather than silently reused)."""
+    """b0-contact-v1 (I-07a-1 item B): a minimal, explicit definition of the
+    B0 contact-smoke task, NOT a reward reviewed or tuned for learning
+    optimality. hit_success/miss/control_cost are ENV-001's reviewed values,
+    kept. contact_velocity is 0 -- ENV-001's 0.25 speed bonus was never
+    reviewed for this scale (ENV-002: "ENV-001의 속도 보너스를 새 스케일에
+    검토 없이 복사하지 않는다") and is zeroed rather than silently copied.
+    Ball/batted-ball quality and plate discipline get their own reward
+    version in a later stage. Compare success (hit rate, docs/records/
+    VALIDATION_LOG.md) against reward totals separately -- they are not the
+    same evidence."""
 
     hit_success: float = 10.0
-    contact_velocity: float = 0.25
+    contact_velocity: float = 0.0
     control_cost: float = 0.2
     miss: float = 3.0
 
@@ -66,7 +73,7 @@ class BaseballB0Env(gym.Env):
         self,
         xml_path: str | Path = ASSET_PATH,
         render_mode: str | None = None,
-        frame_skip: int = 10,
+        frame_skip: int = 20,  # control_dt=0.005s at the XML's physics_dt=0.00025s (see baseball_park.xml)
         episode_seconds: float = 1.2,
         reward_weights: RewardWeights | None = None,
         seed: int | None = None,
@@ -217,7 +224,17 @@ class BaseballB0Env(gym.Env):
             if self._held_angle is not None:
                 self.data.qpos[self.bat_qpos_adr] = self._held_angle
                 self.data.qvel[self.bat_qvel_adr] = 0.0
-                mujoco.mj_forward(self.model, self.data)
+
+            # I-07a-1 item A: with the RK4 integrator, d.xpos/d.contact
+            # immediately after mj_step() can momentarily disagree with the
+            # just-integrated d.qpos/d.time during a contact transient (the
+            # step where a new contact first appears) -- verified empirically
+            # against a minimal model. mj_forward() here recomputes xpos and
+            # collision detection from the current qpos, so every reader
+            # below (contact detection, _ball_has_passed) sees state at the
+            # SAME instant as d.time, not a stale RK4 sub-stage. This also
+            # refreshes state after the held-pose override above.
+            mujoco.mj_forward(self.model, self.data)
 
             ground_now = self._detect_ground_contact()
             bat_hit, bat_speed = self._detect_bat_contact()

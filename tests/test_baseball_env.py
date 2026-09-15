@@ -21,6 +21,38 @@ def make_env(**kwargs) -> BaseballB0Env:
     return BaseballB0Env(**kwargs)
 
 
+def test_b0_contact_v1_reward_definition():
+    """I-07a-1 item B: hit=+10 once, contact_velocity bonus=0 (unreviewed,
+    zeroed rather than copied from ENV-001), miss=-3, control_cost stays
+    time-integrated. The raw contact speed is still measured and reported in
+    info, just not scored."""
+    from controllers.baseball_scripted import BaseballScriptedSwing
+
+    env = make_env()
+    try:
+        assert env.reward_weights.hit_success == 10.0
+        assert env.reward_weights.contact_velocity == 0.0
+        assert env.reward_weights.miss == 3.0
+        assert env.reward_weights.control_cost == 0.2
+
+        controller = BaseballScriptedSwing(prep_angle=env.prep_angle)
+        obs, _ = env.reset(seed=0)
+        controller.reset()
+        info: dict = {}
+        while True:
+            obs, _, terminated, truncated, info = env.step(controller.act(obs))
+            if info["reward_terms"]["hit_success"] > 0:
+                assert info["reward_terms"]["contact_velocity"] == 0.0
+                assert info["contact_velocity_post_contact"] > 0.0  # still measured
+            if terminated or truncated:
+                break
+        assert info["hit"] is True
+        assert info["reward_terms"]["hit_success"] == 10.0
+        assert info["reward_terms"]["miss"] == 0.0
+    finally:
+        env.close()
+
+
 # ---------------------------------------------------------------------------
 # Layout, footing, release/spawn match, initial penetration
 # ---------------------------------------------------------------------------
@@ -46,21 +78,35 @@ def test_batter_footing_is_inside_the_batters_box():
         env.close()
 
 
-def test_field_dimensions_match_env002_spec_values():
+def test_field_dimensions_match_official_rules_pdf():
+    """I-07a-1 item C: values cross-checked against the official 2025 rules
+    PDF (Rule 2.02, Rule 2.04, Appendix 2 Diagram 2) -- see
+    docs/design/ENV-002-field-comparison.md for the full comparison table
+    and the two real discrepancies it found and fixed (pitcher's rubber
+    size, batter's box x-center)."""
     env = make_env()
     try:
         env.reset(seed=0)
-        rubber_pos = env.model.geom_pos[
-            mujoco.mj_name2id(env.model, mujoco.mjtObj.mjOBJ_GEOM, "pitcher_rubber")
-        ]
-        assert rubber_pos[0] == pytest.approx(18.4404)
+        rubber_geom = mujoco.mj_name2id(env.model, mujoco.mjtObj.mjOBJ_GEOM, "pitcher_rubber")
+        rubber_pos = env.model.geom_pos[rubber_geom]
+        rubber_size = env.model.geom_size[rubber_geom]
+        assert rubber_pos[0] == pytest.approx(18.4404)  # Rule 2.04: 60'6"
+        # Rule 2.04: "a rectangular slab ... 24 inches by 6 inches"
+        assert sorted([rubber_size[0] * 2, rubber_size[1] * 2]) == pytest.approx(
+            sorted([0.1524, 0.6096]), abs=1e-4
+        )
+
         plate_size = env.model.geom_size[
             mujoco.mj_name2id(env.model, mujoco.mjtObj.mjOBJ_GEOM, "home_plate")
         ]
-        assert plate_size[0] * 2 == pytest.approx(0.4318, abs=1e-4)
+        assert plate_size[0] * 2 == pytest.approx(0.4318, abs=1e-4)  # Rule 2.02: 17in edge
+
+        box_pos = env.model.geom_pos[env.batter_box_geom_id]
         box_size = env.model.geom_size[env.batter_box_geom_id]
-        assert box_size[0] * 2 == pytest.approx(1.8288, abs=1e-4)
-        assert box_size[1] * 2 == pytest.approx(1.2192, abs=1e-4)
+        assert box_size[0] * 2 == pytest.approx(1.8288, abs=1e-4)  # Appendix 2: 3'0"+3'0"
+        assert box_size[1] * 2 == pytest.approx(1.2192, abs=1e-4)  # Appendix 2: 4'0"
+        assert box_pos[0] == pytest.approx(0.2159, abs=1e-4)  # centered on the plate's own center
+        assert box_pos[1] == pytest.approx(0.3683 + 0.6096, abs=1e-4)  # 6in inside edge + half-width
     finally:
         env.close()
 
@@ -267,6 +313,36 @@ def test_ground_contact_priority_and_first_terminal_event_stop():
         assert info["end_reason"] == "ground_contact"
         assert terminated is True
         assert elapsed == pytest.approx(env.model.opt.timestep, abs=1e-9)
+    finally:
+        env.close()
+
+
+def test_state_is_self_consistent_after_every_step_not_an_rk4_substage():
+    """I-07a-1 item A: with RK4, d.xpos/d.contact right after mj_step() can
+    momentarily reflect an intermediate RK4 sub-stage rather than the just-
+    integrated d.qpos (verified empirically against a minimal model; see
+    docs/records/VALIDATION_LOG.md). step() now calls mj_forward() to fix
+    this. Regression: redoing that same mj_forward() after step() returns
+    must be a no-op (proves xpos/contact already matched qpos/time, not
+    stale) across a full episode, including through the contact transient."""
+    env = make_env(frame_skip=1)
+    try:
+        env.reset(seed=0)
+        for _ in range(2000):
+            xpos_before = env.data.xpos.copy()
+            ncon_before = env.data.ncon
+            contact_dists_before = sorted(float(c.dist) for c in env.data.contact[: env.data.ncon])
+
+            mujoco.mj_forward(env.model, env.data)
+
+            assert np.array_equal(env.data.xpos, xpos_before), "xpos changed on a redundant mj_forward"
+            assert env.data.ncon == ncon_before, "ncon changed on a redundant mj_forward"
+            contact_dists_after = sorted(float(c.dist) for c in env.data.contact[: env.data.ncon])
+            assert contact_dists_after == pytest.approx(contact_dists_before, abs=1e-12)
+
+            _, _, terminated, truncated, _ = env.step(np.array([-1.0], dtype=np.float32))
+            if terminated or truncated:
+                break
     finally:
         env.close()
 

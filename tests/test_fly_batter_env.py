@@ -525,3 +525,30 @@ def test_reset_starts_at_the_configured_prep_angle():
         assert env.data.qpos[env.swing_qpos_adr] == pytest.approx(env.prep_angle)
     finally:
         env.close()
+
+
+def test_state_is_self_consistent_after_every_step_not_an_rk4_substage():
+    """I-07a-1 item A, ported back to ENV-001: redoing mj_forward() after
+    step() returns must be a no-op across a full episode (proves xpos/
+    contact already matched qpos/time, not a stale RK4 sub-stage). See
+    envs/baseball_env.py's identical fix and docs/records/VALIDATION_LOG.md."""
+    env = make_env(frame_skip=1)
+    try:
+        env.reset(seed=0)
+        for _ in range(2000):
+            xpos_before = env.data.xpos.copy()
+            ncon_before = env.data.ncon
+            dists_before = sorted(float(c.dist) for c in env.data.contact[: env.data.ncon])
+
+            mujoco.mj_forward(env.model, env.data)
+
+            assert np.array_equal(env.data.xpos, xpos_before)
+            assert env.data.ncon == ncon_before
+            dists_after = sorted(float(c.dist) for c in env.data.contact[: env.data.ncon])
+            assert dists_after == pytest.approx(dists_before, abs=1e-12)
+
+            _, _, terminated, truncated, _ = env.step(np.array([-1.0], dtype=np.float32))
+            if terminated or truncated:
+                break
+    finally:
+        env.close()
