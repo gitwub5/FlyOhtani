@@ -13,11 +13,28 @@ import mujoco
 import numpy as np
 import pytest
 
-from envs.fly_batter_env import ZONE_X, FlyBatterEnv
+from envs.fly_batter_env import SWING_REST_ANGLE, ZONE_X, FlyBatterEnv
 
 
 def make_env(**kwargs) -> FlyBatterEnv:
     return FlyBatterEnv(**kwargs)
+
+
+def test_reset_starts_the_limb_at_the_cocked_back_rest_angle():
+    """Regression only -- does NOT claim this makes the task discriminate control.
+
+    See docs/records/VALIDATION_LOG.md's I-03 follow-up: an exhaustive sweep of
+    every reachable rest angle still gets a motionless limb hit ~100% of the
+    time, because the ball's gravity-compensated launch arc is much larger than
+    the limb's reach given how close the fixed target point is to the hinge.
+    That is a task-geometry issue, unresolved here.
+    """
+    env = make_env()
+    try:
+        env.reset(seed=0)
+        assert env.data.qpos[env.swing_qpos_adr] == pytest.approx(SWING_REST_ANGLE)
+    finally:
+        env.close()
 
 
 def test_gravity_compensated_launch_reaches_target_without_limb_interference():

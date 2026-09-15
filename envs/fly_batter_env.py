@@ -14,6 +14,13 @@ ASSET_PATH = Path(__file__).resolve().parent / "assets" / "fly_batter.xml"
 # x-coordinate of the swing zone the ball is launched toward (see reset()'s `target`).
 ZONE_X = 0.08
 
+# Swing-hinge "cocked back" start angle (radians; range is [-1.4, 1.4]). Chosen
+# empirically (see docs/records/VALIDATION_LOG.md I-03 follow-up) so the limb's
+# rest position is far from the fixed target point -- a motionless limb must not
+# intercept the ball. Interception requires actively swinging toward roughly
+# [-1.3, -0.7] rad (closest to target near -1.1 rad).
+SWING_REST_ANGLE = 1.1
+
 # Episode end reasons. Exactly one of these (or None, mid-episode) is reported in
 # info["end_reason"]. "hit" and "ground_contact" set terminated=True;
 # "passed_no_contact" and "timeout" set truncated=True.
@@ -138,7 +145,7 @@ class FlyBatterEnv(gym.Env):
         self.data.qpos[self.ball_qpos_adr + 3 : self.ball_qpos_adr + 7] = [1.0, 0.0, 0.0, 0.0]
         self.data.qvel[self.ball_qvel_adr : self.ball_qvel_adr + 3] = ball_vel
         self.data.qvel[self.ball_qvel_adr + 3 : self.ball_qvel_adr + 6] = [0.0, 0.0, 0.0]
-        self.data.qpos[self.swing_qpos_adr] = -0.75
+        self.data.qpos[self.swing_qpos_adr] = SWING_REST_ANGLE
         self.data.qvel[self.swing_qvel_adr] = 0.0
 
         mujoco.mj_forward(self.model, self.data)
