@@ -32,4 +32,6 @@
 - 물리환경 없이 조건화 실험을 실행할 수 있어야 한다.
 - 실제 의존성 버전과 데이터 파일은 별도 lock/manifest로 고정하고 설정에서 참조한다.
 
-관련: [설계 결정](../docs/DECISIONS.md), [구조 계약](../docs/ARCHITECTURE.md).
+EXP-001의 경우 위 표의 Q-01~05는 [`../docs/PLAN.md`](../docs/PLAN.md)에서 D01~D09로 대부분 해결되었다(자극 스케줄 구체값·통과 기준 숫자는 예외). 설정 로더 구현 시 그 값을 기본값으로 채운다.
+
+관련: [설계 결정](../docs/DECISIONS.md), [연구 계획과 결정](../docs/PLAN.md), [구조 계약](../docs/design/ARCHITECTURE.md), [데이터와 수치 모델](../docs/design/DATA_MODEL.md).

@@ -17,7 +17,7 @@
 
 ### I-02. 설정·공통 기록·상태 계약
 
-- [구조 계약](ARCHITECTURE.md), [설정 명세](../configs/README.md)에 맞춰 최소 실행기·검증·저장 경로 구현.
+- [구조 계약](../design/ARCHITECTURE.md), [설정 명세](../../configs/README.md)에 맞춰 최소 실행기·검증·저장 경로 구현.
 - 기존 YAML을 실제 실행에 연결할지 legacy 전용으로 둘지 명시. 적용되지 않는 설정을 성공으로 표시하지 않음.
 - 시드·단위·실행 상태·설정 형식 버전·checkpoint 분리 구현.
 - 신경·물리 시계, probe 분기, fast/slow/trace reset 계약을 작은 합성 모델로 확인.
@@ -26,7 +26,7 @@
 
 ### I-03. 기존 타격 환경의 결함 수정
 
-근거: [정적 진단](PROJECT_AUDIT_2026-09-16.md). 아래 항목은 아직 수정되지 않았다.
+근거: [정적 진단](../records/PROJECT_AUDIT_2026-09-16.md). 아래 항목은 아직 수정되지 않았다.
 
 | 수정 항목 | 완료 기준 |
 | --- | --- |
@@ -45,18 +45,18 @@
 
 ### I-04. 실제 회로·가소성 구성
 
-- Q-01~04 확정 후 dataset loader·회로 ID·경계·부호·조절 신호를 구현한다.
+- 2026-09-16 기준 Q-01~04는 [`../PLAN.md`](../PLAN.md)(D01~D09)와 [`../design/DATA_MODEL.md`](../design/DATA_MODEL.md)에서 해결되었다: MaleCNS v1.0, mcns-kc-mbon11-v1(KC→MBON11), MBON LIF + `dopamine_gated_depression` 규칙. 이 값을 기본으로 dataset loader·회로 ID·경계·부호·조절 신호를 구현한다.
 - 원 논문 프로토콜을 재현하고 선택한 dt에서 수치 안정성·입력 세기별 반응을 검증한다.
 - 학습 연결만 갱신하며 비대상 연결과 고정 readout의 불변성을 검증한다.
 - 실제 전달물질 정보와 모델에서 가정한 효과를 분리해 기록한다.
 
-**선행 조건:** [설계 결정](DECISIONS.md)의 논문·데이터·회로·방정식. 결정 전에도 loader 계약, 합성 데이터와 상태 저장 검사는 가능하다.
+**선행 조건:** [설계 결정](../DECISIONS.md)의 논문·데이터·회로·방정식(일반 원칙). 결정 전에도 loader 계약, 합성 데이터와 상태 저장 검사는 가능하다.
 
 **완료 증거:** 출처 manifest, 실제 ID 연결, 원 프로토콜 재현 결과, 모델링 가정, fast/slow/trace 분류표. 기존 toy SNN에 이름만 붙여 실제 회로라고 보고하지 않는다.
 
 ### I-05. EXP-001 실행과 독립 평가
 
-- 확정된 [EXP-001](experiments/EXP-001-associative-learning.md)을 구현한다.
+- 확정된 [EXP-001](../experiments/EXP-001-associative-learning.md)을 구현한다.
 - paired 대조군·보상 반전·학습 중단·유지·가중치 복원/이식을 독립 분기에서 실행한다.
 - 설정·원 반응·변환 점수·학습 상태·실패 로그를 보존한다.
 - 미리 고정한 기준으로 결과를 보고하고 가설이 지지되지 않아도 완료 처리한다.
@@ -65,4 +65,4 @@
 
 ## 결과를 계획 작업으로 돌려줄 때
 
-작업 ID, 변경 파일과 이유, 사용한 환경·데이터, 실제 실행 명령·결과, 미검증 항목, 설계 변경 제안을 간결하게 기록한다. `STATUS.md`에는 현재 상태, `TEST_LOG.md`에는 검증 증거를 남긴다. 연구 선택이 바뀌면 `DECISIONS.md`와 EXP-001 버전도 맞춘다.
+작업 ID, 변경 파일과 이유, 사용한 환경·데이터, 실제 실행 명령·결과, 미검증 항목, 설계 변경 제안을 간결하게 기록한다. `docs/records/STATUS.md`에는 현재 상태, `docs/records/VALIDATION_LOG.md`에는 검증 증거를 남긴다. 연구 선택이 바뀌면 `docs/DECISIONS.md`·`docs/PLAN.md`와 EXP-001 버전도 맞춘다.

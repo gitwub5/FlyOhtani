@@ -4,7 +4,7 @@ This file tracks external scientific data, citations, and license constraints fo
 
 ## 2026-09-16 update
 
-See the [dated review](RESEARCH_REVIEW_2026-09-16.md) for primary sources and evidence limits covering Shiu, FlyVis, NeuroMechFly, Eon, FlyGM, MaleCNS, Stonkfly, DOOMFLY, NeuroCraft Fly, Fly Arena, FLM, and mushroom-body learning papers. No external code or data was imported.
+See the [dated review](research/REVIEW.md) for primary sources and evidence limits covering Shiu, FlyVis, NeuroMechFly, Eon, FlyGM, MaleCNS, Stonkfly, DOOMFLY, NeuroCraft Fly, Fly Arena, FLM, and mushroom-body learning papers. No external code or data was imported. (An earlier copy of this review, `archive/RESEARCH_REVIEW_2026-09-16.md`, is preserved for history; `research/REVIEW.md` is the current version.)
 
 - [FlyWire guidelines](https://join.flywire.ai/guidelines): v783 and CC BY-NC 4.0; record annotation snapshots separately.
 - [MaleCNS downloads](https://male-cns.janelia.org/download/): candidate for actual brain–VNC and mushroom-body circuitry. Record the selected artifact's version, checksum, and license before import; do not automatically inherit hemibrain notes.

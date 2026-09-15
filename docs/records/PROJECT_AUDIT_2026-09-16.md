@@ -60,4 +60,4 @@ MLP는 11개 관측값, BallStateEncoder는 6개, RetinaEncoder는 x·z 위치�
 - Python 소스 19개를 import 없이 AST로 파싱: 모두 통과. runtime·물리·학습 검증은 아님.
 - 패키지 설치, 외부 데이터 다운로드, 학습·시뮬레이션 실행은 하지 않았다.
 
-후속 계획: [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
+후속 계획: [PLAN.md](../PLAN.md) (이 문서 작성 당시의 후속 계획이었던 `RESEARCH_PLAN.md`는 이후 [`../archive/RESEARCH_PLAN.md`](../archive/RESEARCH_PLAN.md)로 대체·보관되었다).

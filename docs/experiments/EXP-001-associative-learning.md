@@ -1,6 +1,6 @@
 # EXP-001 — 연합학습과 기억
 
-규약 버전: 0.1-draft · 2026-09-16 · **실행 전 연구 선택이 필요한 초안**
+규약 버전: 0.2 · 2026-09-16 · **핵심 결정(Q-01~04/06)은 [`../PLAN.md`](../PLAN.md)·[`../design/DATA_MODEL.md`](../design/DATA_MODEL.md)에서 확정. 자극 스케줄 구체값과 통과 기준 숫자(Q-05 일부)는 여전히 미정**
 
 ## 질문
 
@@ -48,13 +48,13 @@
 
 | 항목 | 상태 |
 | --- | --- |
-| 재현 논문·그림·원 프로토콜 | 미정: Q-01 |
-| 데이터 snapshot·회로 ID·구획·경계 | 미정: Q-02/03 |
-| 동역학·가소성 식·학습 연결·단위 | 미정: Q-04 |
-| A/B 입력·도파민 자극·시점·강도 | 미정: Q-05 |
-| readout 대상·부호·정규화·평가 시간창 | 미정: Q-05 |
-| 기억 지연·washout·reset 분류·허용 오차 | 미정: Q-04/05 |
-| 최소 효과·반복 수·개발/시험 분할 | 미정: Q-05/06 |
-| 실행 한도·backend·기록 범위 | 미정: Q-06 |
+| 재현 논문·그림·원 프로토콜 | 해결: 문헌 재현이 아닌 독자 규칙(`dopamine_gated_depression`) 채택. PLAN.md D01/D02 |
+| 데이터 snapshot·회로 ID·구획·경계 | 해결: MaleCNS v1.0, `mcns-kc-mbon11-v1`(KC→MBON11). PLAN.md D03, design/DATA_MODEL.md §1-2 |
+| 동역학·가소성 식·학습 연결·단위 | 해결: MBON LIF + 외부 KC/도파민 입력, tick별 수식과 상수. design/DATA_MODEL.md §3-4 |
+| A/B 입력·도파민 자극·시점·강도 | 미정: 신호 형식(KC 스파이크, d∈{0,1})만 결정(design/DATA_MODEL.md §3). 어떤 KC가 A/B인지, 자극·보상 시점·반복 스케줄의 구체 수치는 없음 |
+| readout 대상·부호·정규화·평가 시간창 | 부분 해결: 고정 readout·평가 중 가소성 끔(PLAN.md D06). 대상 뉴런·부호·정규화·시간창 수치는 미정 |
+| 기억 지연·washout·reset 분류·허용 오차 | 부분 해결: fast/slow/trace 상태 분류 확정(design/DATA_MODEL.md §5). 지연·washout 수치와 허용 오차는 미정 |
+| 최소 효과·반복 수·개발/시험 분할 | 부분 해결: 본 평가 시드 기본값 30(PLAN.md D07). 개발/시험 시드 분할과 최소 효과 크기는 미정 |
+| 실행 한도·backend·기록 범위 | 해결(기본값): Python 3.11, NumPy CPU. PLAN.md D07 |
 
-모든 값에 문헌 출처 또는 모델링 가정을 표시한다. 규약을 실행 가능 상태로 바꿀 때 버전을 올린다. [설계 결정](../DECISIONS.md), [구조 계약](../ARCHITECTURE.md).
+모든 값에 문헌 출처 또는 모델링 가정을 표시한다. 규약을 실행 가능 상태로 바꿀 때 버전을 올린다. [설계 결정](../DECISIONS.md), [연구 계획과 결정](../PLAN.md), [구조 계약](../design/ARCHITECTURE.md), [수치 모델](../design/DATA_MODEL.md).
