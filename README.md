@@ -73,13 +73,13 @@ configs/
 
 ## 기존 코드 실행 예시 — 실행 검증 전
 
-아래는 초기 뼈대의 실행 경로다. 환경 구성과 실행 검증은 [구현 인계](docs/implementation/WORK_PACKAGES.md)의 I-01에서 진행한다. 현재 환경에는 필요한 의존성이 설치되어 있지 않다.
+아래는 초기 뼈대의 실행 경로다. I-01(`docs/implementation/WORK_PACKAGES.md`)에서 `.venv/`(Python 3.11)에 core+dev 의존성을 설치하고 첫 런타임 검증을 완료했다 — 결과는 `docs/records/VALIDATION_LOG.md`. 셸의 기본 `python3`가 이 프로젝트용이 아닐 수 있으므로 버전을 명시해 venv를 만든다.
 
 ```bash
-python -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-python -m demos.record_episode --episodes 3 --render none
+python demos/record_episode.py --episodes 3 --render none
 ```
 
 수치 검증을 먼저 수행하고 운영체제별 렌더링 설정은 별도로 검증한다. `human` 창 표시와 영상 녹화는 현재 구현되지 않았다. [설정 안내](configs/README.md)의 기본값은 기존 toy 환경용이며 연구 프로토콜로 확정된 값이 아니다.

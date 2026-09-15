@@ -1,6 +1,17 @@
 # Status
 
-## 2026-09-16 — 문서 정리: 폴더 재구성과 결정 동기화 (latest)
+## 2026-09-16 — I-01 완료: 실행환경 확정과 첫 런타임 검증 (latest)
+
+- 프로젝트 전용 venv(`.venv/`, Python 3.11.5, PLAN.md D07 기준)를 만들고 core+dev 의존성을 설치했다. 기존 셸의 `python3`가 무관한 다른 프로젝트의 3.9.6 가상환경을 가리키고 있어 `pyproject.toml`의 `>=3.10` 요구조차 만족하지 못했던 상태를 대체했다.
+- **이 프로젝트에서 처음으로** MuJoCo 런타임이 `envs/assets/fly_batter.xml`을 실제로 로드하고 물리 step을 실행했다(이전에는 XML 문법 검사만 통과한 상태였음). `FlyBatterEnv`의 Gymnasium reset/step 루프, scripted 컨트롤러, `demos/record_episode.py`도 처음으로 끝까지 실행됐다.
+- 측정 결과(목표치 아님): scripted 컨트롤러 5 episode 중 hit 0건. `demos/record_episode.py`는 episode당 약 -2×10⁷ 규모의 보상을 냈는데, 이는 20-step 무작위 행동 테스트(-20~-25 수준)보다 훨씬 크며 `timing_error` 항의 0-나눗셈에 가까운 불안정성과 기존 P0(중력 미보정) 결함과 일치하는 크기다. 원인은 진단만 하고 수정하지 않았다(I-03 범위).
+- 패키지 배포 포함 검증: wheel 빌드로 `envs/assets/fly_batter.xml`을 포함한 6개 선언 패키지가 모두 포함됨을 확인했다.
+- `pytest`(0 tests, `tests/` 미존재)와 `ruff`(기존 코드에서 lint 이슈 5건, 미수정)가 정상 동작함을 확인했다.
+- 정확한 설치 조합을 `requirements-lock.txt`에 고정했다. 상세 실행 증거는 `docs/records/VALIDATION_LOG.md` 참고.
+- `.gitignore`를 추가해 `.venv/`, `__pycache__/`, `*.egg-info/`, 향후 `runs/`·`data/raw|derived/` 등을 git 추적에서 제외했다.
+- 이 작업은 런타임이 "돌아간다"는 것만 확인한다. 물리적 정확성, 학습 성능, 보상 설계의 타당성은 검증하지 않았다 — 그 부분은 I-03/I-04/I-05의 몫이다.
+
+## 2026-09-16 — 문서 정리: 폴더 재구성과 결정 동기화
 
 - 사용자 요청으로 `docs/`를 정리했다. 정리 전 조사에서 `docs/PLAN.md`와 `docs/design/DATA_MODEL.md`(당일 00:30, 가장 최근 배치)가 그때까지 `docs/DECISIONS.md`·`docs/experiments/EXP-001-associative-learning.md`(0.1-draft)가 "미정"으로 표시하던 Q-01~06 중 다수를 이미 구체값(D01~D09: MaleCNS v1.0, KC→MBON11 회로 `mcns-kc-mbon11-v1`, `dopamine_gated_depression` 가소성 규칙, Python 3.11/NumPy CPU/본 평가 30 시드)으로 확정해 둔 상태였음을 발견했다. 이 확정이 CLAUDE.md·DECISIONS.md·STATUS.md·EXP-001 문서에 반영되지 않아 두 세대의 문서가 불일치 상태로 공존했다.
 - 사용자에게 확인한 뒤 PLAN.md/DATA_MODEL.md를 유효한 최신 연구 결정으로 채택하고, `docs/README.md`가 이미 전제하고 있던 하위 폴더 구조(records/, design/, implementation/, research/)로 마이그레이션을 완료했다: `STATUS.md`→`records/STATUS.md`, `TEST_LOG.md`→`records/VALIDATION_LOG.md`, `ARCHITECTURE.md`→`design/ARCHITECTURE.md`, `IMPLEMENTATION_HANDOFF.md`→`implementation/WORK_PACKAGES.md`, `PROJECT_AUDIT_2026-09-16.md`→`records/PROJECT_AUDIT_2026-09-16.md`.
