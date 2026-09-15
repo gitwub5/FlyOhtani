@@ -1,6 +1,16 @@
 # Status
 
-## 2026-09-16 — I-01 완료: 실행환경 확정과 첫 런타임 검증 (latest)
+## 2026-09-16 — I-03 완료: 기존 타격 환경 물리 결함 8개 항목 수정 (latest)
+
+- `PROJECT_AUDIT_2026-09-16.md`가 지적한 8개 항목(중력 보정, substep별 접촉 수집, 접촉점 상대속도 단위, 타이밍/보상 분리, 제어비용 명명, 보상·종료 사유 구분, 관측·baseline 비교, 렌더링 설명)을 모두 수정했다. `envs/fly_batter_env.py`를 재작성하고, `envs/assets/fly_batter.xml`(공의 `ball_free` 관절에 실려 있던 의도치 않은 damping 제거), `demos/record_episode.py`(baseline 비교용 `--controller` 플래그 추가, `None` 처리 버그 수정)도 함께 고쳤다.
+- **새 테스트 스위트** `tests/test_fly_batter_env.py`(7개, 모두 통과)를 추가해 각 수정 사항을 결정적 시나리오로 재현·검증했다.
+- 발사식 중력 보정만으로는 목표에 도달하지 못해 원인을 추적한 결과, XML의 `<default>` joint damping(0.02)이 공의 자유 관절에도 적용되고 있었음을 발견해 함께 수정했다(감사 목록에 없던 추가 결함).
+- **새로 발견한 미해결 문제**: 수정 후 `scripted`·`none`(무동작)·`random` baseline을 동일 조건에서 50 episode씩 비교한 결과 **셋 다 hit_rate 1.000**으로 나왔다. 정지된 팔이 이미 공의 경로를 구조적으로 막고 있어, 현재 팔 배치/목표점 설계로는 제어 능력을 전혀 변별하지 못한다. 이는 물리/지표 버그가 아니라 **과제 난이도 설계 문제**이며, 임의로 고치지 않고 사용자/Codex의 결정을 기다리는 채로 `docs/implementation/WORK_PACKAGES.md`에 남겨뒀다.
+- `ruff check envs/ demos/ tests/`가 클린하다(사전 존재하던 lint 이슈 5건 포함 모두 해소; 손대지 않은 `controllers/brian2_stdp_controller.py`의 3건은 범위 밖으로 남김).
+- 상세 실행 증거는 `docs/records/VALIDATION_LOG.md`.
+- 이 작업은 환경의 물리/보상/종료 로직을 수정했을 뿐, 과제 자체가 의미 있게 어려운지는 여전히 미해결이다. 학습 성능이나 생물학적 타당성은 여전히 다루지 않았다.
+
+## 2026-09-16 — I-01 완료: 실행환경 확정과 첫 런타임 검증
 
 - 프로젝트 전용 venv(`.venv/`, Python 3.11.5, PLAN.md D07 기준)를 만들고 core+dev 의존성을 설치했다. 기존 셸의 `python3`가 무관한 다른 프로젝트의 3.9.6 가상환경을 가리키고 있어 `pyproject.toml`의 `>=3.10` 요구조차 만족하지 못했던 상태를 대체했다.
 - **이 프로젝트에서 처음으로** MuJoCo 런타임이 `envs/assets/fly_batter.xml`을 실제로 로드하고 물리 step을 실행했다(이전에는 XML 문법 검사만 통과한 상태였음). `FlyBatterEnv`의 Gymnasium reset/step 루프, scripted 컨트롤러, `demos/record_episode.py`도 처음으로 끝까지 실행됐다.

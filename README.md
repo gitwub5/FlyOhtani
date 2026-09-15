@@ -90,14 +90,14 @@ python demos/record_episode.py --episodes 3 --render none
 
 - Observation: ball position, ball velocity, swing angle, swing velocity, time-to-impact estimate, and previous contact signal.
 - Action: one scalar torque command for the swing hinge.
-- Reward terms:
-  - hit success bonus
-  - timing error penalty
-  - contact velocity bonus
-  - energy cost penalty
-  - miss penalty near the plate
+- Reward terms (dense per control step, each granted at most once per episode except control cost):
+  - hit success bonus (first limb contact)
+  - contact velocity bonus (relative speed at the contact point, via MuJoCo point-velocity Jacobians — not a linear+angular unit mix)
+  - control cost penalty (squared action; not physical energy)
+  - miss penalty (on `ground_contact` / `passed_no_contact` / `timeout`, whichever ends the episode)
+- `info["timing_error"]` is a post-hoc evaluation metric (`|hit time − zone-crossing time|`), not part of the reward; `info["timing_error_missing_reason"]` explains why it's `None` when not applicable. `info["end_reason"]` distinguishes `hit` / `ground_contact` / `passed_no_contact` / `timeout`.
 
-현재 자산은 1관절 추상 타격 장치다. 실제 초파리의 신체 치수·질량을 재현하지 않는다. 위 보상 항목은 기존 코드의 이름이며, 물리적 의미와 접촉 검사는 [수정 항목](docs/implementation/WORK_PACKAGES.md)의 I-03에서 정비한다.
+I-03(`docs/implementation/WORK_PACKAGES.md`)에서 물리 결함을 수정했다 — 중력 보정, substep별 접촉 수집, 접촉점 상대속도(Jacobian 기반), 타이밍/보상 분리, 제어비용 명명, 지면접촉 구분. 결과는 `docs/records/VALIDATION_LOG.md` 참고. 현재 자산은 여전히 1관절 추상 타격 장치이며 실제 초파리의 신체 치수·질량을 재현하지 않는다. **참고:** 수정 후 측정 결과 정지된 팔(rest position)만으로도 공 궤적을 가로막아 scripted/무동작/무작위 baseline 모두 hit rate 100%가 나왔다 — 현재 팔 배치/과제 난이도 자체가 제어 능력을 변별하지 못한다는 뜻이며, 별도 설계 결정이 필요하다(아직 수정 안 함).
 
 ## Baselines
 
