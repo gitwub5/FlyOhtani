@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fly-ohtani-snn"
+version = "0.1.0"
+description = "Connectome-inspired spiking neural agent for 3D ball interception."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "FlyOhtani contributors" }
+]
+dependencies = [
+  "gymnasium>=0.29",
+  "mujoco>=3.1",
+  "numpy>=1.24",
+  "PyYAML>=6.0",
+  "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "ruff>=0.6",
+]
+rl = [
+  "stable-baselines3>=2.3",
+  "torch>=2.1",
+]
+snn = [
+  "brian2>=2.6",
+]
+
+[tool.setuptools]
+packages = ["envs", "controllers", "encoders", "train", "analysis", "demos"]
+
+[tool.setuptools.package-data]
+envs = ["assets/*.xml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
