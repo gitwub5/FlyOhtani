@@ -14,6 +14,14 @@
     <material name="ball_mat" rgba="0.95 0.18 0.18 1"/>
   </asset>
 
+  <!-- ENV-001 item 2: agent_body (thorax) and swing_limb are physically adjacent
+       at the hinge and legitimately overlap there; this is the only pair
+       excluded from collision. All other pairs (ball-ground, ball-limb,
+       ball-thorax, limb-ground) remain active. -->
+  <contact>
+    <exclude body1="agent_body" body2="swing_limb"/>
+  </contact>
+
   <worldbody>
     <light name="key" pos="-2 -3 4" dir="1 1 -2" diffuse="0.9 0.9 0.9"/>
     <camera name="tracking" pos="1.3 -3.4 1.5" xyaxes="1 0 0 0 0.34 0.94"/>
@@ -22,7 +30,10 @@
     <body name="agent_body" pos="0 0 0.36">
       <geom name="thorax" type="ellipsoid" size="0.08 0.045 0.06" mass="0.0009" material="agent_mat"/>
       <body name="swing_limb" pos="0.02 0 0.03">
-        <joint name="swing_hinge" type="hinge" axis="0 1 0" range="-1.4 1.4" limited="true"/>
+        <!-- ENV-001: range narrowed from the old [-1.4, 1.4] to [-1.4, 0.65] --
+             the excluded upper region drops the limb's ground clearance below
+             the required margin (see docs/design/ENV-001-interception.md). -->
+        <joint name="swing_hinge" type="hinge" axis="0 1 0" range="-1.4 0.65" limited="true"/>
         <geom
           name="swing_limb_geom"
           type="capsule"
@@ -45,6 +56,9 @@
   </worldbody>
 
   <actuator>
-    <motor name="swing_motor" joint="swing_hinge" gear="0.01" ctrllimited="true" ctrlrange="-1 1"/>
+    <!-- gear=0.08: smallest of [0.01,0.04,0.08,0.12] that drives the limb from
+         prep_angle (0.50 rad) to the interception alignment angle (-0.264 rad)
+         within 0.35s without ball contact; see docs/design/ENV-001-calibration.json. -->
+    <motor name="swing_motor" joint="swing_hinge" gear="0.08" ctrllimited="true" ctrlrange="-1 1"/>
   </actuator>
 </mujoco>

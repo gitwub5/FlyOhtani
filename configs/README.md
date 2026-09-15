@@ -1,37 +1,25 @@
-# 설정 구성 명세
+# 설정 계약
 
-상태: 설계만 정리됨. 설정 로더·검증기·새 실험 설정은 아직 구현하지 않았다.
+현재 default.yaml은 기존 toy 타격 초안이며 실행기에 연결되지 않았다. 아래는 구현할 신규 설정의 계약이다. 실제 YAML·로더는 Claude가 I-02에서 작성한다.
 
-## 기존 default.yaml
+## exp001.yaml
 
-`default.yaml`은 초기 타격 toy 환경용 초안이다. 현재 실행 파일들은 이를 읽지 않는다. 값은 그대로 보존했으며 논문 모델, 신규 연합학습, 검증된 실험 기본값으로 사용하지 않는다.
+필수 최상위 키는 schema_version(1), experiment, dataset, circuit, plasticity, stimulus, evaluation, seeds, runtime, recording. 알려지지 않은 키와 단위 없는 시간 입력은 거부한다. manifest 경로는 프로젝트 root 기준으로 해석하고 resolved 설정에는 절대경로도 저장한다.
 
-## 구현할 설정 구획
+| 구획 | 넣을 내용 / 기본값의 단일 출처 |
+| --- | --- |
+| experiment | id=EXP-001, protocol_version=1.0, stage, conditions=[paired,frozen,unpaired,modulation_only] |
+| dataset | name=MaleCNS, version=1.0, raw_manifest, derived_manifest, circuit_id=mcns-kc-mbon11-v1 |
+| circuit | dtype=float64, backend=numpy_cpu, dt_s/tau_m_s/tau_s_s/refractory_s/delay_s/G/reset/threshold: [DATA_MODEL](../docs/design/DATA_MODEL.md) |
+| plasticity | rule=dopamine_gated_depression, tau_e_s/eta_per_s/a_min/a_max/a_initial: DATA_MODEL |
+| stimulus | active_fraction=0.1, rate_hz=20, trial_s=2, stimulus_window_s=[0,1], modulation_window_s=[0.5,1], train_pairs=20 |
+| evaluation | probe_trials_per_stimulus=10, rate_window_s=[0.1,1], retention_s=10, reversal_pairs=40, effect_min=0.20, bootstrap_count=10000, bootstrap_seed=20260916 |
+| seeds | pilot=[0,1,2], confirmatory=100..129, PCG64 stream표는 [EXP-001](../docs/experiments/EXP-001-associative-learning.md) |
+| runtime | workers=1, pilot_wall_seconds=1200, confirmatory_wall_seconds=7200, rss_limit_bytes=2147483648, pilot_output_limit_bytes=1073741824, confirmatory_output_limit_bytes=5368709120 |
+| recording | output_root=runs, checkpoints=각 phase/trial 경계, spike/trace 규약은 [VIZ-001](../docs/design/VISUALIZATION.md) |
 
-| 구획 | 필수 내용 | 확정 시점 |
-| --- | --- | --- |
-| experiment | ID, 규약 버전, condition, 개발/본 평가 구분 | 실행 전 |
-| dataset | 이름·버전·체크섬·manifest·뉴런 선택 | Q-02/03 결정 후 |
-| circuit | 모델·단위·시간상수·초기화·경계 처리 | Q-01/04 결정 후 |
-| plasticity | 규칙·대상 연결·매개변수·유효 구간 | Q-04 결정 후 |
-| stimulus | 종류·대상·크기·자극/보상 일정 | Q-05 결정 후 |
-| readout | 대상 뉴런·집계·부호·크기 변환·고정/학습 | Q-05 결정 후 |
-| clocks | 신경/감각/행동/물리 dt와 전달 지연 | 모델·과제 선택 후 |
-| evaluation | probe 종류·점수·시험 자극·반복·허용 오차 | 본 평가 전 고정 |
-| seeds | 데이터 분할·입력·모델·환경·학습기별 seed | 실행 전 |
-| runtime | backend·기록 대상·자원 한도·저장 위치 | 파일럿 전 |
-| environment | 물리 자산·궤적·종료·제어 비용 | 물리 과제에만 필요 |
+모든 기본값은 명시적으로 resolved 파일에 써서 누락값 추론 없이 재현 가능하게 한다. experiment/profile의 기본값 → 파일 → 명시적 CLI 순으로 적용한다. 시드·수치·규약 변경은 새 버전이 필요하다. 외부 readout 학습은 EXP-001에서 거부한다. 평가의 learning_enabled=false/d=0은 사용자 override할 수 없는 규약 조건이다.
 
-## 적용 정책
+물리 과제는 별도 `configs/env001.yaml`로 [ENV-001](../docs/design/ENV-001-interception.md)의 target/launch/rest/joint/actuator/clock/terminal/reward를 작성한다. exp001에 물리 옵션을 섞지 않는다. 종전 하드코딩·새 설정의 이중 기준을 남기지 않는다.
 
-- 첫 구현은 단일 설정 파일로 시작해도 된다. 외부 설정 프레임워크 도입을 필수로 두지 않는다.
-- 우선순위는 문서화한 기본값 → 선택한 실험 파일 → 명시적 실행 인자다. 최종 적용값 전체를 저장한다.
-- 알려지지 않은 필드, 잘못된 단위, 지원하지 않는 clock 조합, 내부 학습 조건에서 readout 학습 활성화 등을 검증한다.
-- 미선택 dataset·논문 매개변수를 legacy 값으로 채우지 않는다. 합성 fixture에는 `synthetic` 출처를 표시한다.
-- trial 종료·probe·재개별 reset 정책을 설정에 포함한다.
-- 물리환경 없이 조건화 실험을 실행할 수 있어야 한다.
-- 실제 의존성 버전과 데이터 파일은 별도 lock/manifest로 고정하고 설정에서 참조한다.
-
-EXP-001의 경우 위 표의 Q-01~05는 [`../docs/PLAN.md`](../docs/PLAN.md)에서 D01~D09로 대부분 해결되었다(자극 스케줄 구체값·통과 기준 숫자는 예외). 설정 로더 구현 시 그 값을 기본값으로 채운다.
-
-관련: [설계 결정](../docs/DECISIONS.md), [연구 계획과 결정](../docs/PLAN.md), [구조 계약](../docs/design/ARCHITECTURE.md), [데이터와 수치 모델](../docs/design/DATA_MODEL.md).
+야구장은 향후 별도 `configs/baseball_b0.yaml`에서 scene/body/pitch/aerodynamics/observation/reward/curriculum을 고정한다. ENV-002 좌표계를 사용하며 ENV-001 설정을 묵시적으로 상속하지 않는다.

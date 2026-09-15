@@ -2,6 +2,10 @@
 
 This file tracks external scientific data, citations, and license constraints for FlyOhtani.
 
+## 현재 선택
+
+EXP-001의 확정 데이터 파일·출처·CC BY 4.0·해시 획득 절차는 [DATA_MODEL](design/DATA_MODEL.md)에 있다. 첫 대상은 MaleCNS v1.0 KC→MBON11이다. 현재 실제 데이터는 아직 가져오지 않았다. 코드의 가소성은 설계한 모델이며 논문 원식을 재현했다고 표시하지 않는다. 아래 FlyWire/hemibrain은 후속 비교 후보다.
+
 ## 2026-09-16 update
 
 See the [dated review](research/REVIEW.md) for primary sources and evidence limits covering Shiu, FlyVis, NeuroMechFly, Eon, FlyGM, MaleCNS, Stonkfly, DOOMFLY, NeuroCraft Fly, Fly Arena, FLM, and mushroom-body learning papers. No external code or data was imported. (An earlier copy of this review, `archive/RESEARCH_REVIEW_2026-09-16.md`, is preserved for history; `research/REVIEW.md` is the current version.)

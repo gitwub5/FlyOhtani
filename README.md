@@ -30,6 +30,8 @@ docs/
   DECISIONS.md
   RESEARCH_SOURCES.md
   design/
+    ENV-001-interception.md
+    VISUALIZATION.md
     ARCHITECTURE.md
     DATA_MODEL.md
   implementation/
@@ -71,7 +73,7 @@ configs/
   default.yaml
 ```
 
-## 기존 코드 실행 예시 — 실행 검증 전
+## 기존 코드 실행 예시 — 환경 검증은 진행 중
 
 아래는 초기 뼈대의 실행 경로다. I-01(`docs/implementation/WORK_PACKAGES.md`)에서 `.venv/`(Python 3.11)에 core+dev 의존성을 설치하고 첫 런타임 검증을 완료했다 — 결과는 `docs/records/VALIDATION_LOG.md`. 셸의 기본 `python3`가 이 프로젝트용이 아닐 수 있으므로 버전을 명시해 venv를 만든다.
 
@@ -79,7 +81,7 @@ configs/
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-python demos/record_episode.py --episodes 3 --render none
+python -m demos.record_episode --episodes 3 --render none
 ```
 
 수치 검증을 먼저 수행하고 운영체제별 렌더링 설정은 별도로 검증한다. `human` 창 표시와 영상 녹화는 현재 구현되지 않았다. [설정 안내](configs/README.md)의 기본값은 기존 toy 환경용이며 연구 프로토콜로 확정된 값이 아니다.
@@ -97,7 +99,7 @@ python demos/record_episode.py --episodes 3 --render none
   - miss penalty (on `ground_contact` / `passed_no_contact` / `timeout`, whichever ends the episode)
 - `info["timing_error"]` is a post-hoc evaluation metric (`|hit time − zone-crossing time|`), not part of the reward; `info["timing_error_missing_reason"]` explains why it's `None` when not applicable. `info["end_reason"]` distinguishes `hit` / `ground_contact` / `passed_no_contact` / `timeout`.
 
-I-03(`docs/implementation/WORK_PACKAGES.md`)에서 물리 결함을 수정했다 — 중력 보정, substep별 접촉 수집, 접촉점 상대속도(Jacobian 기반), 타이밍/보상 분리, 제어비용 명명, 지면접촉 구분. 결과는 `docs/records/VALIDATION_LOG.md` 참고. 현재 자산은 여전히 1관절 추상 타격 장치이며 실제 초파리의 신체 치수·질량을 재현하지 않는다. **참고:** 수정 후 측정 결과 정지된 팔(rest position)만으로도 공 궤적을 가로막아 scripted/무동작/무작위 baseline 모두 hit rate 100%가 나왔다 — 현재 팔 배치/과제 난이도 자체가 제어 능력을 변별하지 못한다는 뜻이며, 별도 설계 결정이 필요하다(아직 수정 안 함).
+I-03(`docs/implementation/WORK_PACKAGES.md`)에서 물리 결함을 수정했다 — 중력 보정, substep별 접촉 수집, 접촉점 상대속도(Jacobian 기반), 타이밍/보상 분리, 제어비용 명명, 지면접촉 구분. 결과는 `docs/records/VALIDATION_LOG.md` 참고. 현재 자산은 여전히 1관절 추상 타격 장치이며 실제 초파리의 신체 치수·질량을 재현하지 않는다. **추가 검토:** 세 baseline의 hit rate 100%만으로 제어 능력을 판단할 수 없다. +1.1rad 초기 자세의 지면 관통·몸통 자기충돌 때문에 zero-torque 팔도 크게 움직인다. [검토 결과](docs/records/REVIEW_2026-09-16.md)와 [ENV-001 수정 명세](docs/design/ENV-001-interception.md)에 따라 I-03b가 필요하다.
 
 ## Baselines
 
@@ -137,7 +139,17 @@ See `docs/RESEARCH_SOURCES.md` before importing external neural connectivity, mo
 
 ## Roadmap
 
-1. 재현할 학습 논문·회로·평가 규약을 선택한다.
+1. EXP-001 1.0의 실제 회로·입력·학습 규칙·평가 규약을 구현한다.
 2. 실제 연결 데이터와 신경 동역학을 단독 검증한다.
 3. 조건화와 기억 유지·제거를 비교 실험으로 확인한다.
 4. 시간 과제에서 공 가로채기로 확장한다.
+
+
+## 시각화 계획
+
+[VIZ-001](docs/design/VISUALIZATION.md): 실제 MaleCNS 뉴런 ID와 연결 수를 보여주는 부분회로도, 외부 KC 입력과 모델 MBON 출력의 spike raster, 막전압·조절 신호·학습 효능 비교를 만든다. 현재 구현 전이며 임의 배치를 실제 뇌의3D 구조처럼 표시하지 않는다.
+
+
+## 야구장 환경 계획
+
+[ENV-002](docs/design/ENV-002-baseball.md): 실제 구장 배치를 바탕으로 투수의 릴리스 위치에서 공을 던지고, 타자 박스의 확대된 파리 캐릭터가 배트로 타격한다. 고정 직구부터 코스·구속·변화구·선구안으로 확장하며 신경 활동과 리플레이를 동기화한다. 현재 구현 전이다.

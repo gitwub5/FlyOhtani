@@ -78,3 +78,38 @@ manifest는 설정 형식 버전, 소스 revision(없으면 파일 checksum), �
 ## 6. 설정과 오류 정책
 
 [설정 명세](../../configs/README.md)를 따른다. 미정인 값은 명시적인 미정 상태로 남기고 실행 요청 시 필요한 값만 검증한다. 형식 오류·지원하지 않는 조합은 조용한 기본값 대체 없이 설명한다. 작은 합성 회로는 인프라 테스트에 사용할 수 있지만 실제 연결망 실험과 명확히 분리한다.
+
+
+## 7. 첫 구현의 호출 계약과 실행 파일
+
+아래는 **새로 구현할 목표 인터페이스**다. 현재 존재하는 명령으로 오해하지 않는다.
+
+- `connectomes.build(source_manifest, selection) -> CircuitSpec`: sorted IDs, C/P, provenance.
+- `Circuit.step(input_spikes, modulation, learning_enabled) -> SpikeEvents`: 정확히1 neural tick, clock은 정수tick으로 보존. 바뀐 상태는 명시적 checkpoint API로 저장.
+- `Circuit.snapshot()/restore(state)`, `reset_fast()`, `reset_trace()`, `replace_efficacy(a)`: 각 독립 기능. snapshot 배열은 사본이다.
+- `Experiment.run(resolved_config)`는 일정과 branch를 조율한다. scorer와 viewer는 저장 결과만 읽는다.
+
+구현할 CLI 계약:
+
+```bash
+python -m connectomes.prepare --config configs/exp001.yaml
+python -m experiments.run --config configs/exp001.yaml --stage pilot
+python -m experiments.run --config configs/exp001.yaml --stage confirmatory
+python -m experiments.run --resume runs/RUN_ID
+python -m analysis.report --run runs/RUN_ID
+python -m analysis.visualize --run runs/RUN_ID
+```
+
+`configs/exp001.yaml`도 아직 없다. stage의 시드 집합은 규약에서 고정한다. confirmatory 명령은 pilot 검증 기록·소스/설정/데이터 고정 여부를 확인한다. 기존 실행 ID가 있으면 overwrite하지 않고 새 ID를 만든다. resume은 같은 ID의 마지막 완료 trial에서 시작하며 해당 trial 기록을 중복 추가하지 않는다. atomic checkpoint로 partial write를 탐지한다.
+
+## 8. 파일 필드와 분석 계약
+
+실험1회 run은 stage의 모든 seed/condition/branch를 포함한다. trial을 유일하게 식별하는 키는 `(seed,condition,branch,phase,trial_id)`다. branch별 경로는 `checkpoints/<seed>/<condition>/<branch>/`를 사용한다.
+
+- manifest: schema_version=1, protocol_id/version, run_id, stage, created/ended_utc, execution_status(running/completed/failed/interrupted), inference_status(supported/not_supported/inconclusive/null), source commit+dirty diff hash(없으면 source manifest), config hash, dependency lock hash, dataset/derived hashes, RNG 알고리즘·stream표, backend/OS/Python/CPU/RAM, duration/storage, 파일 index.
+- metrics.csv: 식별키, stimulus_id, cs_role, measurement_start/end_s, neuron_count, spike_count, rate_hz_per_neuron, score, validity, missing_reason. 빈값은 결측이며 숫자0과 구분한다. seed 요약은 별도 summary.csv.
+- events.jsonl: 식별키, event_id, tick, event_type, payload. stimulus_start/end, modulation_start/end, checkpoint, reset, error, terminal을 기록한다. schema_version은 manifest와 연결.
+- checkpoints: 배열은 NPZ(pickle 없이), metadata JSON에 시간/RNG state/배열명·shape·dtype/구조 해시. fast(v,x,refractory,delay), trace(e), slow(a)를 독립 배열로 저장. 모델/P/C는 공유 manifest 참조.
+- spikes/trace/그림: [VIZ-001](VISUALIZATION.md)의 식별키·origin·시간 규약을 따른다. 출력별 source hash로 출처 연결.
+
+예측 가능한 오류는 invalid 설정/schema·data_invalid·numerical_invalid·budget_exceeded로 명확히 구분한다. CLI의 성공 exit code는 실행/기록의 정상 완료를 뜻하며 연구 가설 성공을 뜻하지 않는다. negative 실험도 정상 완료일 수 있다.

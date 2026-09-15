@@ -10,7 +10,7 @@ class Brian2STDPController:
 
     def __init__(self) -> None:
         try:
-            import brian2 as brian2  # noqa: F401
+            import brian2  # noqa: F401
         except ImportError as exc:
             raise ImportError(
                 "Brian2STDPController requires the optional SNN dependency. "

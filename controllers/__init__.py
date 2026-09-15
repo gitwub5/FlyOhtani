@@ -1,5 +1,5 @@
 from controllers.mlp_policy import MLPPolicy
+from controllers.scripted import ConstantAngleController, ScriptedSwingController
 from controllers.snn_policy import SNNPolicy
-from controllers.scripted import ScriptedSwingController
 
-__all__ = ["MLPPolicy", "SNNPolicy", "ScriptedSwingController"]
+__all__ = ["ConstantAngleController", "MLPPolicy", "SNNPolicy", "ScriptedSwingController"]

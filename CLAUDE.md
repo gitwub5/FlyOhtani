@@ -7,14 +7,14 @@
 `docs/README.md`의 순서를 따른다:
 
 1. `docs/records/STATUS.md`의 최신 상태
-2. `docs/PLAN.md`의 연구 결정 (EXP-001 특정 결정 D01~D09)
+2. `docs/PLAN.md`의 연구 결정 (연구·환경·시각화 결정 D01~D12)
 3. `docs/design/DATA_MODEL.md`의 수치·데이터 계약
 4. `docs/design/ARCHITECTURE.md`의 모듈·데이터 계약
 5. 해당 실험 문서: `docs/experiments/EXP-001-associative-learning.md`
 6. `docs/implementation/WORK_PACKAGES.md`의 작업 단위와 완료 기준
-7. `docs/implementation/VALIDATION.md`의 검증 명세 (미작성 상태)
+7. `docs/implementation/VALIDATION.md`의 검증 명세
 
-일반 프로젝트 결정(architecture 수준)은 `docs/DECISIONS.md`에 남는다. `docs/archive/`의 `PROJECT_PLAN.md`·`RESEARCH_PLAN.md`·`RESEARCH_REVIEW_2026-09-16.md`는 과거 로드맵/초안이며 각각 `docs/PLAN.md`, `docs/PLAN.md`, `docs/research/REVIEW.md`로 대체되었다. `configs/default.yaml`은 읽기 경로가 없는 legacy toy 설정이며, 과학적으로 확정된 기본값으로 취급하지 않는다.
+결정의 단일 기준은 `docs/PLAN.md`이며 `docs/DECISIONS.md`는 위치 안내다. `docs/archive/`의 `PROJECT_PLAN.md`·`RESEARCH_PLAN.md`·`RESEARCH_REVIEW_2026-09-16.md`는 과거 로드맵/초안이며 각각 `docs/PLAN.md`, `docs/PLAN.md`, `docs/research/REVIEW.md`로 대체되었다. `configs/default.yaml`은 읽기 경로가 없는 legacy toy 설정이며, 과학적으로 확정된 기본값으로 취급하지 않는다.
 
 ## 역할과 작업 원칙
 
@@ -24,7 +24,17 @@
 - 기존 소스는 초기 뼈대다. 설치 성공, 물리 검증, 학습 성능을 가정하지 않는다.
 - 실험과 무관한 폴더 이동·전체 재작성보다 책임 분리와 필요한 변경을 우선한다.
 - 실행 결과는 `docs/records/VALIDATION_LOG.md`, 상태 변화는 `docs/records/STATUS.md`에 남긴다. 테스트 통과와 연구 가설의 검증을 구분한다.
-- 연구 설계 변경은 `docs/DECISIONS.md`(일반) 또는 `docs/PLAN.md`(EXP-001)와 해당 실험 버전에 반영한다. 실패·무효 결과도 보존한다.
+- 연구 설계 변경은 `docs/PLAN.md`와 해당 규약 버전에 반영한다. 실패·무효 결과도 보존한다.
 - 외부 코드·데이터를 사용할 때 출처·버전·체크섬·조건을 `docs/RESEARCH_SOURCES.md`와 데이터 manifest에 기록한다.
 
 이 파일은 인계 안내이며 현재 사용자 지시가 우선한다.
+
+
+## 다음 작업의 주의점
+
+현재 우선 수정은 `docs/design/ENV-001-interception.md`에 따른 I-03b다. `docs/records/REVIEW_2026-09-16.md`가 이전 ‘모든 각도에서 정지 팔 충돌’ 해석을 정정한다. 무토크와 고정 자세를 구분하고, 초기 지면/몸통 충돌을 제거한 뒤 구동력을 측정한다.
+
+신경 실험은 EXP-001 1.0에 스케줄·점수·판정·예산까지 정해져 있다. 기존 ‘Q-05 미정’ 기록은 과거 상태다. 실제 구조와 spike 시각화는 `docs/design/VISUALIZATION.md`에 따른다. 문서 속 신규 CLI는 구현 목표이지 현재 명령이 아니다.
+
+
+야구장 확장은 `docs/design/ENV-002-baseball.md`와 I-07a/b/c를 따른다. 기존 환경의 안전한 초기상태·구동/종료 기반 수정 후 B0부터 진행한다. 구장/파리의 스케일과 투구 방향이 기존 ENV-001과 다르므로 좌표·시간·actuator를 그대로 복사하지 않는다.
