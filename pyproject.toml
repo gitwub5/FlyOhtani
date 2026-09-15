@@ -32,6 +32,10 @@ rl = [
 snn = [
   "brian2>=2.6",
 ]
+video = [
+  "imageio>=2.34",
+  "imageio-ffmpeg>=0.5",
+]
 
 [tool.setuptools]
 packages = ["envs", "controllers", "encoders", "train", "analysis", "demos"]

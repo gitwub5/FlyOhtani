@@ -15,7 +15,7 @@
 | I-04 | 실제 데이터·LIF·가소성 | 미구현 |
 | I-05 | EXP-001 | 수치 규약1.0 완료, 실행 전 |
 | I-06a/b | 연결 구조/스파이크·기억 시각화 | 새 명세, 구현 전 |
-| I-07a/b/c | 야구장 B0 / 코스·속도 / 변화구·선구안 | ENV-002 계획, 구현 전 |
+| I-07a/b/c | 야구장 B0 / 코스·속도 / 변화구·선구안 | I-07a Claude 완료(2026-09-16): B0 구장·고정직구·구동재보정·baseline·영상. b/c 구현 전 |
 
 ## I-01 환경
 
@@ -60,6 +60,8 @@
 ## I-07 야구장과 다양한 투구
 
 [ENV-002](../design/ENV-002-baseball.md)를 따른다. I-03b의 초기충돌·구동·사건 순서 기반을 재사용한다. 기존 짧은 거리 수치 과제는 회귀용이며 새 야구장 스케일과 혼합하지 않는다. I-07a는 구장/릴리스/타자 박스/확대한 파리/고정 직구, I-07b는 조준 도달성 후 코스·속도, I-07c는 공기력 검증 후 변화구·선구안이다. 시각화·정답 로그가 정책에 미래 정보를 전달하지 않는지도 검증한다. 각 단계의 완료 조건은 ENV-002를 따른다.
+
+**I-07a 완료 (2026-09-16, Claude):** `envs/baseball_env.py`(`BaseballB0Env`) + `envs/assets/baseball_park.xml`. 구장 배치(ENV-002 §1 좌표계, 투수판/플레이트/우타자 박스/파울라인), 릴리스 마커-spawn 일치, 고정 직구, 배트 gear 재보정(12, ENV-001 값 재사용 안 함), held_rest substep 정확화, physics_dt 후보 수렴 검사, zero_torque/held_rest/random/scripted baseline(ENV-002 §8 smoke 기준 충족: held/zero 접촉0%, scripted 100%), 4카메라 영상(`runs/env002-b0-demo/video/`). 부수적으로 I-03b의 "양자화 잔차" 설명이 실은 공 자유관절의 누락된 armature 오버라이드 때문이었음을 발견해 ENV-001/ENV-002 양쪽 다 수정했다(`docs/records/VALIDATION_LOG.md` 참고). 테스트 35개(신규13+기존22) 통과. B1(코스·속도)/B2/B3(공기력·변화구)/RL 훈련은 범위 밖(사용자 지시). 상세: `docs/records/VALIDATION_LOG.md`.
 
 ## 인계 결과 형식
 

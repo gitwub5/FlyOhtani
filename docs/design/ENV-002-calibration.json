@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-16",
+  "spec": "docs/design/ENV-002-baseball.md",
+  "stage": "B0",
+  "note": "ENV-001's gear=0.08 was not reused: bat mass 0.9kg over 0.85m vs the ENV-001 limb's 0.003kg over 0.58m gives roughly a 600x larger moment of inertia about the hinge, so a much larger gear is required to swing within a comparable fraction of the (much shorter, 0.459s) flight time.",
+  "geometry": {
+    "batter_body_world_pos": [0.1, 0.9, 1.0],
+    "bat_hinge_world_pos": [0.25, 0.65, 1.0],
+    "bat_length_m": 0.85,
+    "bat_radius_m": 0.025,
+    "bat_mass_kg": 0.9,
+    "hinge_axis": "world +z (horizontal swing)",
+    "prep_angle_rad": 1.0,
+    "prep_angle_note": "0.675m from the target point -- far side of the swept range, cocked back",
+    "target": [0.4318, 0.0, 1.0],
+    "target_note": "front edge of home plate, centered, 1.0m height, matching the fixed B0 pitch",
+    "alignment_angle_rad": -1.30,
+    "alignment_angle_note": "closest approach of the bat segment to target is 1.3mm at angle=-1.30 rad (fine sweep, step=0.01 rad, range -2.0..2.0)"
+  },
+  "method": "Drive bat_hinge from prep_angle to alignment_angle with sustained ctrl=-1.0, ball moved far away (no ball contact possible), damping=0.05/armature=0.002 kept from <default>, physics_dt=0.0005s, deadline=0.30s (chosen: real bat swings take roughly 0.15-0.2s; 0.30s leaves ~0.16s of the 0.459s total flight time for a scripted controller's trigger latency). Smallest gear meeting the deadline with zero initial contacts and no joint-limit contact is selected.",
+  "deadline_s": 0.30,
+  "candidates": [
+    {"gear": 4, "initial_contacts": 0, "time_to_target_s": 0.5165, "hit_joint_limit": false, "pass": false},
+    {"gear": 8, "initial_contacts": 0, "time_to_target_s": 0.3635, "hit_joint_limit": false, "pass": false},
+    {"gear": 12, "initial_contacts": 0, "time_to_target_s": 0.296, "hit_joint_limit": false, "pass": true},
+    {"gear": 16, "initial_contacts": 0, "time_to_target_s": null, "hit_joint_limit": false, "pass": true, "note": "not separately timed at 16; 15 (0.2645s) and 20 (0.229s) both passed in the exploratory sweep, so 16 is expected to pass too"}
+  ],
+  "selected_gear": 12,
+  "selection_rule": "smallest candidate with pass=true",
+  "applied_to": "envs/assets/baseball_park.xml actuator[bat_motor] gear",
+  "field_dimensions_source": "ENV-002-baseball.md's own stated values (pitcher distance 18.4404m, plate width 0.4318m, batter box 1.2192x1.8288m) plus standard widely-documented MLB batter-box offset (6in / 0.1524m from the plate edge) and right-handed-batter-box-on-the-third-base-side convention. The official 2025 rules PDF referenced in ENV-002 was NOT fetched this session; these are standard values consistent with ENV-002's own numbers, not independently re-verified against the PDF appendix.",
+  "caveats": [
+    "Candidate engineering value for B0's fixed-location smoke task only; not a biological/human force estimate.",
+    "Does not by itself establish scripted-controller hit rate -- see docs/records/VALIDATION_LOG.md for the baseline comparison.",
+    "prep_angle/reward weights are placeholders (RewardWeights in envs/baseball_env.py is structurally copied from ENV-001, values not reviewed for this scale, per ENV-002's own caution)."
+  ]
+}

@@ -1,5 +1,93 @@
 # 검증 기록
 
+## 2026-09-16 — I-07a: ENV-002 B0(야구장 고정 직구) 구현과 검증
+
+범위: 사용자 지시 1~8, 기준 문서 `docs/design/ENV-002-baseball.md`·`docs/implementation/WORK_PACKAGES.md` I-07. 신규 파일: `envs/assets/baseball_park.xml`, `envs/baseball_env.py`(`BaseballB0Env`), `controllers/baseball_scripted.py`, `demos/record_baseball_episode.py`, `tests/test_baseball_env.py`(13개), `docs/design/ENV-002-calibration.json`. 변경: `envs/__init__.py`, `pyproject.toml`(`video` extra: imageio/imageio-ffmpeg), `requirements-lock.txt`. **강화학습 훈련·B1 이상 코스·변화구는 진행하지 않았다(지시 범위 밖).**
+
+### 0. 정정: I-03b "양자화 잔차"는 실제로는 armature 버그였다
+
+야구장의 자유낙하 오차를 실제 해석해(analytic) 비교하다가 발견: 공의 `ball_free` 관절에 `damping="0"`만 주고 `armature="0"`을 빼먹어, `<default>`의 armature(야구장 0.002, ENV-001 0.001)가 상속되고 있었다. armature는 병진 자유도에도 가상 관성을 더해 유효 중력가속도를 `mass/(mass+armature)`만큼 줄인다. 야구장에서는 이 효과가 약1.4%(≈14mm 오차)로 뚜렷하게 드러나 실제 해석값과 시뮬레이션을 직접 대조해서야 잡아낼 수 있었다. **ENV-001(`fly_batter.xml`)도 같은 결함이 있었다** — 수정 후 재측정하니 dt=2ms에서 30 seed 전부 0.01m 기준을 통과한다(수정 전 평균0.0077m/최대0.0113m/13% 초과 → 수정 후 평균0.0031m/최대0.0064m/0% 초과). **I-03b VALIDATION_LOG의 "정지시각 양자화 잔차" 설명은 부분적으로 틀렸다** — 실제로는 이 armature 버그가 주 원인이었다. 두 XML 모두 `armature="0"`을 추가했다. 과거 기록은 지우지 않고 이 항목으로 정정한다.
+
+### 1. 구장 배치와 ENV-002 좌표계 (지시 1)
+
+원점=홈플레이트 뒤쪽 꼭짓점, +x=투수 방향, +y=3루 방향, +z=위(ENV-002 §1). 배치: 투수판 x=18.4404m, 홈플레이트 폭0.4318m, 우타자 박스1.2192×1.8288m(3루측, +y). **주의:** MLB 공식 2025 규칙집 PDF 부록은 이번 세션에서 가져오지 않았다 — 타자 박스가 플레이트 가장자리에서6in(0.1524m) 떨어진다는 표준 관행값과 우타자=3루측 관행을 사용했으며, ENV-002가 직접 명시한 수치(투수거리·플레이트 폭·박스 크기)만 정확히 일치가 검증됐다. `docs/design/ENV-002-calibration.json`의 `field_dimensions_source`에 명시.
+
+**검증:** `test_field_dimensions_match_env002_spec_values`(투수판 거리·플레이트 폭·박스 크기가 ENV-002 수치와 일치), `test_batter_footing_is_inside_the_batters_box`.
+
+### 2. 확대된 파리 캐릭터·배트·스윙 (지시 2)
+
+타자는 지지점 고정(다리 동역학 없음), 배트는 길이0.85m/반경0.025m/질량0.9kg 강체, 힌지 축은 **수직(+z, 수평 스윙)** — ENV-001의 수직평면 스윙과 기구가 다르다(ENV-002 §3, "기존 수직 평면의0.58m 팔과 같은 기구로 취급하지 않는다"). `<contact><exclude body1="batter_body" body2="bat_body"/>` 로 힌지 연결부만 제외.
+
+### 3. 릴리스·손 마커·고정 직구 (지시 3)
+
+B0 프리셋 그대로: release=(16.5,0,1.8)m, 목표면 x=0.4318m/중심 y=0,z=1.0m, 수평속도35m/s. `T=(16.5-0.4318)/35=0.4591s`, `v0=(target-release-0.5gT²)/T`(중력만, 공 damping/armature=0). 측정: 총 초기속도35.0037m/s, 수평속도35.0000m/s(정확히 일치, `info["launch_speed_total_m_s"]`/`launch_speed_horizontal_m_s"]`로 기록). 릴리스 마커 geom과 공의 reset() spawn 위치가 `np.array_equal`로 정확히 일치.
+
+**검증:** `test_ball_spawn_exactly_matches_the_release_marker`, `test_gravity_only_launch_matches_analytic_ballistics_at_the_actual_stop_time`(적분오차와 정지시각 양자화를 분리 — 적분오차 하한1e-4m 이내, armature 수정 후 사실상 기계정밀도).
+
+### 4. 새 스케일 구동 재보정 (지시 4, ENV-001 gear 재사용 안 함)
+
+배트 관성(약0.217kg·m², ENV-001 팔의 약645배)이 훨씬 커서 gear를 처음부터 다시 스윕했다. **충돌 없는 구동 측정값** (공 없음, 초기접촉0, damping=0.05/armature=0.002 유지, physics_dt=0.0005s, 준비각1.0→정렬각-1.30rad, 기준0.30s):
+
+| gear | 도달 시각 | 판정 |
+| --- | --- | --- |
+| 4 | 0.5165s | 실패 |
+| 8 | 0.3635s | 실패 |
+| **12** | **0.296s** | **통과(최소값 선택)** |
+| 16 | (탐색값15→0.2645s, 20→0.229s 모두 통과 확인, 16 자체는 미측정) | 통과 예상 |
+
+선택: gear=12, `envs/assets/baseball_park.xml`에 반영. 정렬각은 -1.30rad(목표점까지 최소거리1.3mm, -2.0~2.0rad을 0.01rad 간격으로 스윕). 전체 기록: `docs/design/ENV-002-calibration.json`.
+
+**검증:** `test_scripted_hits_zero_torque_and_held_rest_do_not`(gear=12가 baked-in된 실제 XML로 재현).
+
+### 5. held_rest를 substep 단위로 정확하게, 목표시각 오차 분리 (지시 5)
+
+`BaseballB0Env.set_held_pose(angle)`를 추가해 `step()`의 substep 루프 안에서 **매 mj_step 직후** qpos/qvel을 강제 고정한다(이전 I-03b는 control step(10ms) 단위로만 재고정하는 근사였음). 목표시각 오차는 위 "정정" 항목대로 적분오차(armature 버그, 수정됨)와 정지시각 양자화(물리적으로 불가피, dt의 절반×속도로 상한)를 별도 assertion으로 분리했다.
+
+**검증:** `test_held_pose_is_exact_at_physics_substep_resolution`(모든 substep에서 qpos/qvel이 1e-12 이내로 고정), `test_gravity_only_launch_matches_analytic_ballistics_at_the_actual_stop_time`.
+
+### 6. 시간 간격 후보의 고속 접촉 수렴 검사 (지시 6)
+
+physics_dt 후보 0.0005s(기본, control_dt=0.005s) vs 0.00025s vs 0.000125s 비교, 동일 트리거 시각으로 스윙:
+
+| trigger(s) | dt=0.0005 | dt=0.00025 | dt=0.000125 |
+| --- | --- | --- | --- |
+| 0.159 | hit, t=0.45850 | hit, t=0.45825 | hit, t=0.45813 |
+| 0.180 | hit, t=0.44900 | hit, t=0.44875 | **miss(passed_no_contact)** |
+
+여유 있는 트리거(0.159)에서는 접촉시각이 세 해상도 모두 0.0003s 이내로 수렴하고 접촉을 놓치지 않는다. 그러나 **경계에 가까운 트리거(0.18)에서는 가장 미세한 해상도(dt=0.000125)가 나머지 둘과 다른 결과(hit→miss)를 낸다** — 얇은 배트·빠른 공(35m/s)의 접촉 판정이 타이밍 경계 근처에서 dt에 민감할 수 있다는 뜻이다. 이는 관통(tunneling) 버그라기보다 경계 근처의 실제 민감성으로 판단하며, 기본값(physics_dt=0.0005s/control_dt=0.005s, ENV-002 §7 후보값)을 그대로 유지하되 **경계 근처 타이밍 결과는 dt에 따라 달라질 수 있음을 기록**한다. B1+ 단계에서 더 세밀히 다룰 문제.
+
+### 7. baseline 비교와 사건 순서 (지시 7)
+
+`demos/record_baseball_episode.py --mode baselines`, 개발 시드0-19(**B0는 고정 투구이므로 20개 결과가 전부 동일함 — ENV-002 §8 스스로 명시한 대로 "결정적 한 궤적의100회는 독립100개 학습 증거가 아니다"**):
+
+| baseline | hit | hit_rate | Wilson95% | end_reason |
+| --- | --- | --- | --- | --- |
+| zero_torque | 0/20 | 0.000 | (0.000,0.161) | passed_no_contact ×20 |
+| held_rest | 0/20 | 0.000 | (0.000,0.161) | passed_no_contact ×20 |
+| random | 0/20 | 0.000 | (0.000,0.161) | passed_no_contact ×20 |
+| scripted | 20/20 | 1.000 | (0.839,1.000) | hit ×20 |
+
+ENV-002 §8의 I-07a 공학적 smoke 기준(held_rest/zero_torque 접촉0, scripted 접촉≥80%)을 충족. 흥미로운 부가 발견: 이 배트는 수평(z축) 스윙이라 **중력 토크가 0** — zero_torque가 ENV-001과 달리 전혀 드리프트하지 않는다(`test_zero_torque_does_not_drift_horizontal_swing_is_not_gravity_torqued`).
+
+초기 관통·사건 순서: `test_reset_never_starts_from_a_penetrating_state`(seed0-4, contact.dist≥-1e-6), `test_ground_contact_priority_and_first_terminal_event_stop`(동일 substep 지면-우선, 최초 terminal에서 즉시 종료 — elapsed==1 substep), `test_step_after_terminal_raises_and_no_double_reward`, `test_same_seed_reproduces_an_identical_trajectory`(재현성), `test_headless_and_render_mode_give_identical_physics`(렌더링 유무가 물리에 영향 없음), `test_observation_does_not_expose_hidden_target_or_rng`(관측이 현재 물리상태에서만 유도됨).
+
+### 8. 영상 저장 (지시 8)
+
+`demos/record_baseball_episode.py --mode video` → `runs/env002-b0-demo/video/{park_wide,behind_catcher,batter_side,fly_pov}.mp4`(30fps, h264, 153프레임/5.1초 — 실제 사건은 약0.46초+후속0.03초를 슬로모션으로 늘림) + `manifest.json`(seed/end_reason/contact_time/launch_speed/카메라경로/이벤트 타임라인). scripted 컨트롤러로 투구→스윙→접촉을 재현했다(contact_time=0.4585s, planned_arrival=0.4591s, signed_timing_error=-0.0006s). 접촉 프레임을 batter_side/behind_catcher에서 육안으로 확인(배트가 존 안에서 공과 겹침). `runs/`는 `.gitignore` 대상이라 커밋되지 않는다 — 로컬 경로로만 존재.
+
+### 종합
+
+`pytest tests/` → **35 passed**(baseball13 + fly22, armature 수정 후 재확인). `ruff check envs/ controllers/ demos/ tests/` → clean.
+
+### 남은 문제
+
+1. 타자 박스 등 구장 세부 배치는 ENV-002가 직접 명시한 수치만 검증했고, 표준 관행값(6in 오프셋, 우타자=3루측)은 공식 PDF 부록 대조 없이 사용했다.
+2. `RewardWeights`는 ENV-001 구조를 그대로 복사한 placeholder다(ENV-002 §6 "ENV-001의 속도 보너스를 새 스케일에 검토 없이 복사하지 않는다"의 경고 대상 — 검토 안 함, 명시적으로 표시만 함).
+3. 경계 근처 타이밍(트리거0.18)에서 dt=0.000125가 dt=0.0005/0.00025와 다른 hit/miss 판정을 낸다 — 수정 안 함, 기록만.
+4. B0는 완전히 결정적이라 baseline n=20은 실질적으로1회 반복이다. 통계적 다양성은 B1(코스 변화)부터 의미가 생긴다.
+5. 시각 품질은 기능적 수준(조명·재질 단순)이며 사실적 렌더링을 목표하지 않았다.
+6. B1 이상 코스, 공기역학/변화구, 선구안, 강화학습 훈련은 이번 범위에서 진행하지 않았다(사용자 지시).
+
 ## 2026-09-16 — I-03b: ENV-001 기반 오류 수정과 검증 (T10)
 
 범위: `docs/implementation/WORK_PACKAGES.md`의 I-03b 1~5, `docs/design/ENV-001-interception.md` 전체, `docs/implementation/VALIDATION.md`의 "물리 회귀의 필수 추가 항목" 8개. 변경 파일: `envs/fly_batter_env.py`(재작성), `envs/assets/fly_batter.xml`(관절 범위, contact exclude, gear), `controllers/scripted.py`(재작성 + `ConstantAngleController` 추가), `controllers/__init__.py`, `demos/record_episode.py`(재작성: held_pose 진단, dev/test seed 분리, Wilson CI), `tests/test_fly_batter_env.py`(22개 테스트로 전면 교체), 신규 `docs/design/ENV-001-calibration.json`.

@@ -1,6 +1,19 @@
 # 현재 상태
 
-## 2026-09-16 — I-03b 완료: ENV-001 기반 오류 수정 (T10) (최신)
+## 2026-09-16 — I-07a 완료: ENV-002 B0(야구장 고정 직구) 구현 (최신)
+
+- 신규 `envs/baseball_env.py`(`BaseballB0Env`) + `envs/assets/baseball_park.xml`: 홈플레이트/투수판/우타자 박스/파울라인 배치(ENV-002 §1 좌표계), 릴리스 마커와 정확히 일치하는 공 spawn, 고정 직구(release=(16.5,0,1.8), 목표=(0.4318,0,1.0), 수평속도35m/s), 확대된 파리 타자(지지점 고정) + 수평 스윙 배트(길이0.85m).
+- **중요한 정정**: 야구장 자유낙하를 해석값과 대조하다 공의 자유관절에 `armature="0"`을 빠뜨려 `<default>`의 armature가 상속되고 있었음을 발견(유효 중력 ~1.4% 감소, ~14mm 오차). **ENV-001(`fly_batter.xml`)도 같은 결함이 있었다** — 수정 후 재측정하니 I-03b가 "정지시각 양자화 잔차"로 잘못 설명했던 오차(dt=2ms에서13% seed가0.01m 기준 초과)가 완전히 해소됐다(0% 초과, 최대0.0064m). 두 XML 모두 수정, 과거 기록은 보존하고 이 항목으로 정정.
+- gear를 배트 스케일(관성 약645배)에 맞춰 재보정: [4,8,12,16] 중 **12**(0.296s, 기준0.30s) 선택, ENV-001 값(0.08) 재사용하지 않음. `docs/design/ENV-002-calibration.json`.
+- held_rest를 substep(0.5ms) 단위로 정확히 고정하도록 구현(I-03b의 control-step 근사를 개선).
+- physics_dt 후보(0.0005/0.00025/0.000125s) 비교: 여유 있는 타이밍에서는 접촉시각이 0.0003s 이내로 수렴하지만, **경계에 가까운 타이밍에서는 가장 미세한 해상도가 다른 hit/miss 판정을 낸다** — 기록만 하고 기본값 유지.
+- **baseline 결과(개발 시드0-19, B0는 완전 결정적이라 20개 결과 동일): zero_torque 0%, held_rest 0%, random 0%, scripted 100%(Wilson95% 0.839-1.000).** ENV-002 §8의 I-07a 공학적 smoke 기준 충족. 이 배트는 수평(z축) 스윙이라 중력 토크가0 — ENV-001과 달리 zero_torque가 전혀 드리프트하지 않는다(새 발견).
+- `demos/record_baseball_episode.py --mode video`로 4개 카메라(전체 구장/포수 뒤/타자 측면/파리 시점) 영상을 `runs/env002-b0-demo/video/*.mp4`(30fps, gitignore 대상, 로컬 전용)에 저장. 투구→스윙→접촉(contact_time=0.4585s, planned_arrival=0.4591s)을 재현하고 접촉 프레임을 육안 확인했다.
+- `pytest tests/` → **35 passed**(신규 baseball 13개 + 기존 fly 22개, armature 수정 후 재확인). `ruff` 클린.
+- **남은 문제**: 타자 박스 등 세부 배치는 공식 PDF 부록 대조 없이 표준 관행값 사용(ENV-002가 직접 명시한 수치만 검증됨); reward 가중치는 ENV-001 구조를 복사한 placeholder(검토 안 함, 명시 표시만); 경계 타이밍의 dt 민감성 미해결; B0는 결정적이라 통계적 baseline 비교는 B1부터 의미 생김; 시각 품질은 기능적 수준. B1 이상 코스, 공기역학/변화구, 강화학습 훈련은 진행하지 않음(사용자 지시).
+- 상세 실행 증거는 `docs/records/VALIDATION_LOG.md`.
+
+## 2026-09-16 — I-03b 완료: ENV-001 기반 오류 수정 (T10)
 
 - `docs/records/REVIEW_2026-09-16.md`·`docs/design/ENV-001-interception.md`·`docs/implementation/WORK_PACKAGES.md`·`docs/implementation/VALIDATION.md`를 읽고 I-03b 1~5 전체를 구현·검증했다.
 - 초기 관통(지면·자기충돌) 제거: `<contact><exclude>`로 thorax-limb 연결부만 명시적 제외, 힌지 범위 `[-1.4,0.65]`로 좁힘, 준비각 0.50rad, `reset()`에 관통 시 `RuntimeError`.
