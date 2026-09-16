@@ -1,4 +1,15 @@
-# KC-01a — 몸통·배트 협응 비교 결과
+# KC-01a — 몸통·배트 협응 비교 결과 (잠정 — 후속 정정 있음)
+
+> **2026-09-17 후속 정정, `docs/records/KC-01a-VALIDATION.md` 참고.** 이 문서의
+> "협응 시점이 실제로 결과를 바꾼다"·"staggered가 5.4배 낫다" 결론은 **dt 수렴
+> 검증 전 잠정 결과였다.** 실제로 physics_dt를 정밀화하면 `staggered`(이 문서의
+> 최고 성적 조건)는 유효→무효로 뒤집히고(수렴 실패), `simultaneous`/`arm_only`도
+> 점수가 수렴하지 않는다 — 이 문서가 원래 "결론"으로 제시한 조건 간 우위 비교는
+> **철회한다.** 점수/일 비율만으로 "에너지 효과와 협응 효과가 분리됐다"고 한
+> 진술도 철회한다(유지 축의 액추에이터 일이 0이 아님을 나중에 확인했고, 공통
+> 에너지 예산 비교는 A2 수렴 실패로 보류됐다). 이 문서는 원본 그대로 보존하고
+> 새로 발견한 사실은 `KC-01a-VALIDATION.md`에 정리했다 — 수치를 소급 수정하지
+> 않는다.
 
 2026-09-17 · mid_mid만 · 기준 문서: `docs/design/KC-01a-TORSO-BAT-COORDINATION.md`
 · 원자료: `docs/records/evidence/KC-01a-{comparison,noball-validation,grip-reach-check}.json`,

@@ -9,7 +9,13 @@
 
 ## 현재 배정 (2026-09-17)
 
-[KC-01a 검증 보완 + VISION-01 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)를 다음 작업으로 진행한다. 물리는 구현/실험, 시각은 설계만 수행한다.
+[KC-01a 검증 보완 + VISION-01 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
+A절(dt 수렴/정착/에너지/타이밍 검증)과 B절(VISION-01 설계)을 완료했다
+([검증 결과](../records/KC-01a-VALIDATION.md), [VISION-01](../design/VISION-01.md)).
+`staggered_swing_and_torso`의 이전 "최고 성적" 결론은 철회됐다. 다음 배정은
+사용자가 명시적으로 지정한다 — dt 미수렴 원인 추가 분해, A2 수렴 후 공통
+에너지 예산 비교, VISION-01 구현 여부 결정 중 무엇을 먼저 할지 자동으로
+정하지 않는다.
 
 ## 상태 표
 
@@ -33,7 +39,8 @@
 | I-08a-fix | 외형 좌표 버그 수정·자세 재정의 | 완료 |
 | I-08a-style + I-07c-score/swing | 옆선 자세·색상, 거리 점수, 스윙 개선 | 완료 — **mid_mid만** |
 | I-08b | 실제 전신 역학 통합 | **미착수** |
-| KC-01a | 몸통-배트 협응 최소 역학 모델 | 시제품 구현 완료, 수렴·협응 우위 검증 미완료 |
+| KC-01a | 몸통-배트 협응 최소 역학 모델 | 시제품 구현 완료. dt 수렴 검증 완료 — 4개 조건 중 1개만 통과(그마저 유효 타구 실패), 나머지 우위 비교는 무효로 철회 |
+| KC-01a-validation | dt 수렴·정착·에너지·타이밍 보완 + VISION-01 설계 | 완료 — [검증 결과](../records/KC-01a-VALIDATION.md), [VISION-01](../design/VISION-01.md) |
 | KC-01b | 뒷다리 지지·실제 전신 전달 | **미착수** |
 
 완료 항목의 근거·수치·시행착오는 [완료 작업 색인](../records/INDEX.md)에서

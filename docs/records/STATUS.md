@@ -47,13 +47,18 @@
   재접촉 0.
 - **KC-01a**(`docs/design/KC-01a-TORSO-BAT-COORDINATION.md`, B1과 별도 모델·XML·
   env, B1은 무변경): 고정 기반 위 실제 유한 관성 몸통 회전(`torso_yaw`)을 추가해
-  배트 swing/tilt를 그 위에 얹었다. mid_mid 4개 협응 조건(팔만/몸통만/동시/시차)을
-  같은 하드웨어에서 비교(`docs/records/KC-01a-COMPARISON.md`) — 시차 구동
-  (`staggered`, score 3.64m)이 동시 구동(`simultaneous`, 0.67m)과 팔만(`arm_only`,
-  2.63m)을 모두 앞섰고, 몸통 단독(`torso_only`)은 최선의 타이밍에서도 유효 타구를
-  만들지 못했다(몸통 관성이 배트보다 훨씬 커 각가속도 부족). ±5ms 타이밍 취약성은
-  네 조건 모두에서 재현됐고, 가장 성적이 좋았던 `staggered`는 물리 timestep을
-  절반으로 줄이면 무효로 뒤집힌다(dt 미수렴) — 그대로 보고했다.
+  배트 swing/tilt를 그 위에 얹었다. **조건 간 우위 비교는 아직 결론 낼 수
+  없다** (`docs/records/KC-01a-VALIDATION.md`) — dt 수렴 검증(A2)을 4개 조건 중
+  `torso_swing_with_arm_hold`(구 `torso_only`) 1개만 통과했고, 그 1개는
+  일관되게 유효 타구 실패다. 이전에 "최고 성적"으로 보고했던
+  `staggered_swing_and_torso`(구 `staggered`, score 3.64m)는 물리 timestep을
+  정밀화하면 **무효로 뒤집힌다** — 그 결론은 철회됐다(`docs/records/
+  KC-01a-COMPARISON.md` 상단에 정정 링크 추가, 원본은 보존). 정착은 착지 후
+  관찰을 1.2s 이상 연장하자 3개 조건에서 명확히 확인됐고(`torso_swing_with_arm_hold`의
+  torso만 실제로 미정착), 에너지 잔차는 관절한계 반력(`qfrc_constraint`)을
+  포함하자 대부분(잔차 0.5~4.2%, 단 `simultaneous`는 5.7~10.8%로 원인 미상)
+  설명됐다. 시각 정책 통합(`docs/design/VISION-01.md`, 설계만 완료)은 이
+  결과를 근거로 보류한다.
 
 ## 알려진 한계 (임의로 고치지 않고 그대로 보고)
 
@@ -68,9 +73,12 @@
 - **I-08b(전신 역학 통합) 미착수**: 현재 파리는 물리적으로는 단순 강체 배트
   기구이고 NeuroMechFly 메시는 순수 시각 오버레이다.
 - **KC-01a는 고정 기반**: 뒷다리 지면 반력·균형 제어·실제 전신 역학은 KC-01b(다음
-  단계, 미착수)다. 정착(0.5s+연속 0.2s) 판정 기준은 착지 전 episode 길이 안에서
-  네 조건 모두 확정적으로 충족하지 못했다(관찰 창 부족, `docs/records/
-  KC-01a-COMPARISON.md` §3).
+  단계, 미착수)다.
+- **KC-01a는 dt 미수렴**: 4개 협응 조건 중 1개(`torso_swing_with_arm_hold`,
+  일관되게 유효 타구 실패)만 timestep 수렴을 통과했다. 나머지 3개의 점수/유효
+  여부는 물리 이산화에 민감해 신뢰할 수 없다 — 특히 `staggered_swing_and_torso`는
+  정밀 dt에서 무효로 뒤집힌다. 원인은 접촉의 이산화 민감도로 추정되며 재료/gear를
+  바꾸지 않고 진단만 했다(`docs/records/KC-01a-VALIDATION.md`).
 
 ## 테스트·린트
 
@@ -80,7 +88,10 @@
 
 ## 다음 작업
 
-2026-09-17 사용자 승인: [KC-01a 검증 보완과 시각 입력 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md).
-KC-01a는 역학 시제품 구현까지 완료했으나 dt 수렴·에너지 예산 통제·정착 검증은 미완료다.
-현재 입력은 시뮬레이터 공 상태와 oracle 보정값이며 눈 영상 기반 제어는 없다.
-물리 검증을 먼저 수행하고 VISION-01은 설계만 한다. KC-01b/8코스/RL로 확대하지 않는다.
+[KC-01a 검증 보완과 시각 입력 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
+A절(물리 검증)과 B절(VISION-01 설계)은 완료했다. 남은 것: (1) dt 미수렴 3개
+조건의 원인을 더 분해하고 최소 수정안을 사용자 승인 후 진행, (2) A2 수렴 후
+공통 에너지 예산 비교 재개, (3) VISION-01의 실제 구현 여부는 물리가 수렴한
+뒤 결정. [구현 작업표](../implementation/WORK_PACKAGES.md)에서 다음 배정을
+받는다. KC-01b/8코스/RL/시각 제어 구현은 사용자가 명시적으로 지정하기 전에는
+시작하지 않는다.
