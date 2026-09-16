@@ -308,7 +308,18 @@ class BaseballKC01aEnv(gym.Env):
             abs(foot[0] - box_pos[0]) <= box_half[0] and abs(foot[1] - box_pos[1]) <= box_half[1]
         )
 
-    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
+    def step(
+        self, action: np.ndarray, *, substep_callback: Any = None
+    ) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
+        """`substep_callback(env, bat_hit, bat_vel_at_contact, ball_vel_at_contact)`,
+        if given, is called once per PHYSICS substep (not once per control
+        step) right after this substep's mj_forward/contact detection, with
+        zero effect on the physics itself -- a pure read-only diagnostic
+        hook (docs/tasks/KC-01a-VALIDATION-AND-VISION.md A2/A3's requirement
+        for per-substep contact duration/normal/penetration/impulse, which
+        step()'s own return value only reports once per 5ms control step).
+        Default None preserves step()'s exact prior behavior/signature for
+        every existing caller and test."""
         if self._done:
             raise RuntimeError(
                 "step() called after the episode already terminated/truncated; call reset()."
@@ -348,6 +359,9 @@ class BaseballKC01aEnv(gym.Env):
             ball_vel = self.data.qvel[self.ball_qvel_adr : self.ball_qvel_adr + 3].copy()
             ground_now = self._detect_ground_contact()
             bat_hit, bat_vel_at_contact, ball_vel_at_contact = self._detect_bat_contact()
+
+            if substep_callback is not None:
+                substep_callback(self, bat_hit, bat_vel_at_contact, ball_vel_at_contact)
 
             if bat_hit:
                 this_step_had_bat_contact = True
