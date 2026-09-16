@@ -1,19 +1,27 @@
 # KC-01a-validation — dt 수렴·정착·에너지·타이밍 보완 결과
 
 2026-09-17 · 기준 문서: `docs/tasks/KC-01a-VALIDATION-AND-VISION.md` (A절),
-후속 사용자 지시(발산 원인 분리 A6-A8, 방향 계약) · 후속 정정 대상:
+후속 사용자 지시(발산 원인 분리 A6-A8, 방향 계약, `same_direction_staggered`
+수용 검증 A9, 몸통 선행 메커니즘 검증 A10-A12) · 후속 정정 대상:
 `docs/records/KC-01a-COMPARISON.md`(원본 보존, 상단에 이 문서 링크 추가) ·
 원자료: `docs/records/evidence/KC-01a-{dt-convergence, settle-diagnostics,
 energy-validation, timing-window, noball-dt-isolation,
 contact-only-dt-isolation, constraint-decomposition, same-direction-search,
-same-direction-dt-convergence}.json` · 재현: `scripts/kc01a_dt_convergence.py`
+same-direction-dt-convergence, same-direction-acceptance,
+torso-lead-analysis, torso-lead-handoff-search,
+torso-lead-handoff-validation}.json` · 재현: `scripts/kc01a_dt_convergence.py`
 → `scripts/kc01a_settle_diagnostics.py` → `scripts/kc01a_energy_validation.py`
 → `scripts/kc01a_timing_window.py` → `scripts/kc01a_noball_dt_isolation.py`
 → `scripts/kc01a_contact_only_dt_isolation.py` →
 `scripts/kc01a_constraint_decomposition.py` →
 `scripts/kc01a_same_direction_search.py` →
-`scripts/kc01a_same_direction_dt_convergence.py` · 관련: `docs/design/
-KC-01a-DIRECTION-CONTRACT.md`(회전 방향 계약, 새 조건 설계 규칙)
+`scripts/kc01a_same_direction_dt_convergence.py` →
+`scripts/kc01a_same_direction_acceptance.py` →
+`scripts/kc01a_torso_lead_analysis.py` →
+`scripts/kc01a_torso_lead_handoff_search.py` →
+`scripts/kc01a_torso_lead_handoff_validation.py` · 관련: `docs/design/
+KC-01a-DIRECTION-CONTRACT.md`(회전 방향 계약, 새 조건 설계 규칙,
+motion-triggered handoff 모드)
 
 ## 현재 판정 (요약)
 
@@ -40,6 +48,27 @@ KC-01a-DIRECTION-CONTRACT.md`(회전 방향 계약, 새 조건 설계 규칙)
 정리했고, 부호를 맞춘 새 조건(`same_direction_staggered`)이 **처음으로 실제
 타구가 발생하면서 동시에 dt 수렴도 통과**했다(§A8) — 다만 협응 우위를
 결론내리기엔 아직 이르다(정착·에너지·타이밍 재검증 전).
+
+**추가 갱신(A9-A12, `same_direction_staggered` 수용 검증과 몸통 선행 메커니즘,
+이번 갱신)**: `same_direction_staggered`의 수용 검증 결과 **torso 축이 정착
+기준을 충족하지 못한다**(§A9) — dt/그립/타이밍 성공구간은 확인했지만 이
+자체만으로 시각 실험의 물리 기준선으로 채택하기엔 부족하다. 에너지 잔차를
+다시 계산하며, XML이 `integrator="RK4"`인데도 이전 보고가 "semi-implicit
+Euler 절단오차"라고 잘못 설명했던 부분을 정정했다(§A9) — 실제 원인은
+스크립트 자신의 사후 work 적분(quadrature)이며, RK4가 담당하는 상태(qpos/
+qvel) 적분 자체는 이미 거의 완전히 수렴해 있다. 사용자가 영상에서 관찰한
+"배트가 먼저 움직이는 것처럼 보인다"는 지적은 **데이터로 확인됐다** —
+`same_direction_staggered`의 "몸통 10ms 선행"은 실제 각속도 임계값 교차
+시각 기준으로 선행 0초다(§A10). 원인은 몸통-배트가 같은 힌지 사슬에 있어
+몸통의 각가속도가 배트(swing) 자유도에 즉시 반작용 각속도를 유도하기
+때문이며, 이 반작용이 raw qvel 기반 "시작 시각" 측정 자체를 오염시킨다(§A10).
+진짜 제어 수준의 선행(트리거 시점 차이)을 크게 늘리는 새 컨트롤러 모드
+(`torso_lead_handoff`, 물리 모션에 연동된 인계)를 추가해 탐색한 결과,
+torso_target=0.5/torso_ct=0.33/handoff_fraction=0.5 조건이 **dt 수렴·정착
+(양 축)·그립 도달성·접촉 침투 모두 통과**했고 production dt 점수(6.78m)도
+지금까지 KC-01a에서 나온 어떤 값보다 높다(§A11-A12) — 잠정적으로 유망하지만,
+공통 에너지 예산 비교를 하지 않았으므로 "협응이 낫다"는 결론은 아직 내리지
+않는다.
 
 ## A1. 조건명 재정의와 결론 철회
 
@@ -271,6 +300,222 @@ KC-01a-DIRECTION-CONTRACT.md` §3)에 대해 두 가지를 따로 확인했다:
   (torso/swing/world_bat 각도·각속도 비교)를 생성했다 — 원자료는
   `docs/records/evidence/KC-01a-timelines/{staggered,same_direction_staggered}.json`.
 
+## A9. `same_direction_staggered` 수용 검증 (설정 고정, gear·재료·보상 불변)
+
+`scripts/kc01a_same_direction_acceptance.py`, 결과 `docs/records/evidence/
+KC-01a-same-direction-acceptance.json`. torso_target=0.3/swing_target=-1.710/
+torso_ct=0.122/swing_ct=0.112(§A8)를 그대로 고정하고 A3/A4/A5와 같은
+방법론을 적용했다.
+
+**정착**: swing은 latch 후 0.373s에 정착(기준 통과). **torso는 1.5초를
+관찰해도 "0.5초 이내 진입 후 연속 0.2초 유지" 기준을 만족하지 못한다**
+(최종 `|qvel|`=0.0014rad/s로 사실상 정지 직전까지 가지만, 그 전에 여러 차례
+다시 임계값을 넘나든다 — 완전히 못 멈추는 `torso_swing_with_arm_hold`와는
+다르지만, 깨끗이 한 번에 정착하지도 않는다). **이것만으로 이 조건을
+시각 실험의 물리 기준선으로 채택할 수 없다**(§A9 결론, §다음 단계).
+
+**타이밍 성공구간**: ±20ms(1ms 간격, 41점) 스윕 — **10/41(24%) 유효**. 이전에
+수렴 확인한 `torso_swing_with_arm_hold`가 0/41였던 것과 달리 이 조건은 실제
+성공 구간을 가진다.
+
+**접촉 침투/힘/충격량 (geom 쌍 식별, dt별 비교 — 수치수렴과 물리적 적절성
+분리)**: 접촉은 항상 `ball_geom`↔`bat_geom`. 최대 침투 −0.0510~−0.0516m
+(dt 3개 사이 편차 1% 이내 — **수치적으로는 잘 수렴**), 최대 법선력
+1668~1678N, 충격량 5.33~5.43N·s, 접촉 지속 8.5~8.75ms — 모두 dt에 대해
+안정적이다. **물리적 적절성은 별개 문제로 남는다**: 이 침투 깊이(공 반경
+0.0366m + 배트 반경 0.025m = 0.0616m 대비 −0.05m, 즉 유효 반경합의 84%에
+달하는 겹침)는 KC-01a/B1이 원래부터 갖고 있던 특성이다 — 기존 4개 조건도
+동일 코스에서 −0.036~−0.058m를 보인다(`docs/records/evidence/
+KC-01a-dt-convergence.json`). `envs/assets/baseball_park_kc01a.xml`의
+`ball_geom` 주석이 이미 명시하듯, 이 접촉 재료는 "퇴화하지 않는 충돌
+응답을 얻도록만 튜닝했고, 실제 반발계수로 검증된 적은 없다." 즉
+`same_direction_staggered`의 −0.0515m은 **새로 나빠진 것이 아니라 기존에
+검증되지 않은 채로 남아 있던 것과 같은 수준**이다 — 수치 수렴과 물리적
+타당성 미검증이라는 두 사실을 섞지 않는다.
+
+**에너지(RK4로 정정, rect vs trapezoidal quadrature 비교)**: `envs/assets/
+baseball_park_kc01a.xml`은 `integrator="RK4"`다(`mujoco.mjtIntegrator.
+mjINT_RK4`로 직접 확인) — **A4/A7이 "semi-implicit Euler 절단오차"라고 쓴
+것은 틀렸다. 정정한다.** RK4는 매끄러운(구속력 제외) 동역학을 4차 정확도로
+적분하는 방법이며, `scripts/kc01a_noball_dt_isolation.py`가 이미 보였듯
+상태(qpos/qvel) 궤적 자체는 세 dt에서 사실상 동일하다(이 실행에서
+Δ(KE+PE)는 dt 3개 사이 소수점 8자리까지 일치: −0.095392045891{23,35,36}).
+**잔차의 dt-의존성은 전부 이 분석 스크립트들 "자신의" work 적분
+(quadrature) 오차에서 나온다** — 매 substep마다 `qfrc*qvel*dt`를 더하는
+것은 상태 적분기의 차수와 무관하게 그 자체로 별도의 이산화이며(오른쪽
+리만합), 상태(state) 적분 오차와 일의 수치 적분 오차는 서로 다른 것이다.
+사각형(rect)과 사다리꼴(trapezoidal) 두 적분법을 같은 실행에서 나란히
+계산했다: production dt에서 rect −0.0945J vs trap −0.0956J, 가장 미세한
+dt에서 −0.0236J vs −0.0239J — **거의 같고, 수렴 차수도 둘 다 ≈1.0으로
+동일하다.** 이는 "더 정교한 구적법을 쓰면 차수가 올라갈 것"이라는 애초
+가설을 **기각한다** — torso/swing 각속도 자체가 반작용 결합으로 매우 빠르게
+진동하기 때문에(§A10), 지금 시험한 dt 범위(0.00025~0.0000625s)에서는 아직
+사다리꼴의 통상적 2차 이점이 나타날 만큼 그 진동을 잘게 쪼개지 못했을
+가능성이 높다 — 이 설명은 아직 가설이며, 더 미세한 dt로 확인해야 한다.
+**production dt에서 잔차 비율은 32%로 작지 않다**(-0.0945/0.2948) — dt를
+줄이면 대략 절반씩 줄어 가장 미세한 dt에서 10.5%까지 내려가지만, 실제
+채점에 쓰는 production dt 기준으로는 무시할 수 없는 크기임을 그대로
+보고한다.
+
+**공동회전(co-rotation) 구간과 관절한계 정지 여부**: 두 축이 모두
+움직이는(|qvel|>0.05) 78개 제어주기 중 45개(58%)에서 같은 부호(공동회전)다
+— 나머지는 반작용 결합으로 부호가 갈린다(§A10). torso 최대 각도
+0.219rad로 자체 관절한계(±0.6rad)에 도달하지 않는다 — 정착 실패는 관절
+한계 정지가 원인이 아니다(§A7의 `torso_swing_with_arm_hold`/`staggered`와
+다른 양상).
+
+**A9 결론**: dt 수렴·그립·타이밍 성공구간은 통과했지만 torso 정착 미충족과
+production dt 32% 에너지 잔차 때문에, 이 설정 그대로는 시각 입력 실험의
+물리 기준선으로 **아직 채택하지 않는다**(§A9 최종 판정은 §A12에서 A11의
+새 후보와 함께 내린다).
+
+## A10. 몸통 선행 메커니즘 검증 — 명령 시점 vs 실제 운동
+
+`scripts/kc01a_torso_lead_analysis.py`, 결과 `docs/records/evidence/
+KC-01a-torso-lead-analysis.json`, 타임라인 `docs/records/evidence/
+KC-01a-torso-lead-timeline.json`. 사용자가 영상에서 본 "배트가 먼저
+움직이고 몸통이 따라간다"는 인상을 데이터로 확인했다.
+
+`same_direction_staggered`(torso_ct=0.122, swing_ct=0.112, **명령상 10ms
+선행**)에서:
+
+| 지표 | 값 |
+| --- | --- |
+| torso 명령 트리거(`_torso_triggered`) 시각 | 0.345s |
+| swing 명령 트리거(`_swing_triggered`) 시각 | 0.355s (명령 선행 10ms, 설계대로) |
+| torso 실제 운동 개시(|qvel|>0.05rad/s) 시각 | 0.345s |
+| swing 실제 운동 개시(|qvel|>0.05rad/s) 시각 | **0.345s — torso와 동일 제어주기** |
+| swing 개시 순간 torso 각도/각속도 | −1.9e-5rad / 0.0008rad/s (사실상 0) |
+
+**즉 명령은 10ms 먼저 나가지만, 실제 각속도 임계값 교차는 동시다** — torso가
+가속을 시작해도 그 각속도가 눈에 띄게 쌓이기 전에(불과 0.0008rad/s) 이미
+swing 쪽 각속도도 임계값을 넘는다. 원인은 `bat_hinge`가 `torso_yaw`의
+자손이라는 사슬 구조: torso가 갑자기 가속하면 그 관성 반작용이 배트(swing)
+자유도에 **즉시** 유도 각속도를 만든다(swing 액추에이터가 아직 켜지지
+않았는데도 swing_ctrl은 P-hold 대역 안에서 작게 움직이는데 swing_vel은
+±0.1~0.2rad/s까지 흔들린다 — 실측, `KC-01a-torso-lead-timeline.json`).
+**이 반작용은 실제 물리이지 버그가 아니다.** 그 결과 raw qvel 임계값으로
+"몸통이 먼저 움직였다"를 판정하는 것 자체가 이 반작용에 오염돼 신뢰할 수
+없다는 것이 이번 검증의 핵심 결론이다 — **§A11이 이 문제를 우회하는
+방법(제어 트리거/`_Axis.state` 기반 정의)을 쓴다.**
+
+**가속 구간 전체에서의 접촉점 속도 기여**(접촉 순간 한 시점이 아니라 전체
+가속/제동 구간 77개 제어주기): torso 기여 비율의 최소 0.4%, 최대 79.1%,
+평균 22.4% — §A8에서 보고한 "접촉 순간 43%"는 이 조건에서 우연히 torso
+기여가 큰 순간을 짚은 것이며, 전체 구간 평균은 그보다 훨씬 낮다(반작용에
+의한 진동 때문에 순간값이 크게 요동친다).
+
+**유지축 대비 능동 구동축의 일**: `arm_swing_with_torso_hold`(torso를
+0으로 유지)에서 torso 액추에이터의 순일은 −1.22J(peak power 46.3W)로,
+"유지"도 0이 아니다(§A1에서 이미 지적). 능동으로 흔드는
+`same_direction_staggered`의 torso가 이보다 유의미하게 더 많은 일을 하는지
+정밀 비교하려면 축별 일 분해가 더 필요하다 — 이번엔 전체(3축 합) 수치만
+확인했고 축별 정밀 비교는 하지 않았다(§다음 단계).
+
+**중요한 해석 제한(사용자 지시대로 명시)**: 위 접촉점 속도 기여 분해는
+`v_point = Σ jacp[:,i]*qvel[i]`라는 **순간 속도**의 선형 분해다. 이것은
+"각 축의 각속도가 그 순간 접촉점 속도에 얼마나 기여하는가"를 보여줄 뿐,
+**에너지나 운동량이 한 축에서 다른 축으로 전달됐다는 증거가 아니다** — 그런
+흐름 분석은 이번에 수행하지 않았고, 위 비율을 그런 의미로 읽지 않는다.
+
+## A11. Motion-triggered handoff 컨트롤러와 재탐색
+
+`controllers/baseball_kc01a.py`에 새 모드 `"torso_lead_handoff"`를
+추가했다(기존 4개 모드의 동작은 무변경, 테스트 99개 그대로 통과). swing은
+고정 시간이 아니라 **torso 자신의 각변위가 자기 목표의 `handoff_fraction`에
+도달할 때** 트리거된다 — "모든 축을 처음부터 최대 입력으로" 몰지 않고
+"선행 시간을 늘리면 항상 좋다"고 가정하지 않기 위해, swing은 인계 전까지
+순수 P-hold만 한다.
+
+`scripts/kc01a_torso_lead_handoff_search.py`(1차, 60개 조합: torso_target
+∈{0.2,0.3,0.4}×torso_ct∈{0.15..0.36}×handoff_fraction∈{0.15..0.7}) →
+유효 2/60, 둘 다 §A10과 같은 반작용 오염으로 raw-qvel "실제 선행"이
+0으로 나왔다. **원인 진단 후 지표를 교체**: raw qvel 대신 컨트롤러 자신의
+트리거 플래그(`_torso_triggered`/`_swing_triggered`, 즉 각 축이 실제로
+"accelerate" 상태로 전환되는 시각)로 "선행"을 재정의했다 — 이것은 반작용에
+오염되지 않는, 각 축의 **자기 액추에이터가 실제로 켜지는 시각**이다. 이
+정의로 재확인한 결과 §A11의 유효 조합들은 실제로 **205ms의 진짜 제어
+수준 선행**을 갖고 있었다(torso_target=0.4/torso_ct=0.25/
+handoff_fraction=0.5: torso 트리거 0.210s, swing 트리거 0.415s).
+
+확장 탐색(torso_target∈{0.3..0.5}×torso_ct(7개)×handoff_fraction∈{0.3..0.6},
+140개 조합) → **유효 10/140**, 그중 최고 성적:
+**torso_target=0.5, swing_target=−1.964, torso_ct=0.33,
+handoff_fraction=0.5 → production dt 점수 6.78m, 제어 수준 선행 225ms.**
+이 값이 §A12에서 전체 검증을 통과한 새 후보다.
+
+## A12. 새 후보(`torso_lead_handoff`, torso_target=0.5) 전체 검증
+
+`scripts/kc01a_torso_lead_handoff_validation.py`, 결과 `docs/records/
+evidence/KC-01a-torso-lead-handoff-validation.json`. §A9와 동일한 항목을
+전부 다시 통과해야 한다는 사용자 지시에 따라 재확인했다:
+
+| 검증 | 결과 |
+| --- | --- |
+| dt 수렴(A2 방법론, REPLAY+INDEPENDENT) | **통과** — 6.778→6.749→6.723m, 단조·작은 변화, 유효 여부 불변 |
+| 접촉 침투(geom쌍) | `ball_geom`↔`bat_geom`, −0.0494~−0.0500m(dt 안정, 기존 범위와 같은 수준) |
+| 최대 법선력/충격량 | 1997~2022N / 5.98~6.13N·s (dt 안정) |
+| 정착 — torso | latch 후 0.34s에 정착(**통과**, §A9와 달리 정착함) |
+| 정착 — swing | latch 후 0.095s에 정착(통과) |
+| 그립 도달성 | 오차 0(항상 도달, **통과**) |
+| 에너지 잔차(무공, 관절한계 포함) | production dt 잔차 −3.5%, 가장 미세한 dt −0.2% — §A9(32%)보다 훨씬 작다 |
+| 공동회전 구간 | 47/122(38.5%) 제어주기에서 공동회전 |
+| torso 관절한계 도달 여부 | **도달한다**(최대각 0.603rad, 범위 ±0.6rad — follow-through 목표(0.5+0.15=0.65)가 애초에 한계 밖이라 실제로는 한계에 눌려 멈춘다. torso 정착이 "성공"으로 판정된 것은 브레이크 제어가 아니라 **물리적 하드 스톱** 덕분일 가능성이 높다 — `torso_swing_with_arm_hold`/`staggered_swing_and_torso`와 같은 계열의 메커니즘) |
+
+**A12 판정**: dt 수렴·정착(양 축)·그립·접촉 침투(기존 범위 내)·에너지
+정합성 모두 이 조건에서 §A9보다 낫다. **다만 torso가 관절한계에 눌려서
+멈춘다는 점은 새로운 우려사항이다** — "정착"이 능동 제어의 결과가 아니라
+하드 스톱에 기댄 것이라면, 향후 관절한계나 gear를 바꾸는 순간 이 결과가
+깨질 수 있다(§최소 수정안 제안).
+
+## A13. 시각 기준선 판정 (A9-A12 종합, 사용자 요청)
+
+**`same_direction_staggered`(§A8-A9, 10ms 명령 선행)는 시각 입력 실험의
+물리 기준선으로 채택하지 않는다** — torso 정착 미충족, production dt
+에너지 잔차 32%.
+
+**`torso_lead_handoff`(torso_target=0.5, §A11-A12, 225ms 제어 선행)는
+dt/정착/그립/침투/에너지 5개 항목을 모두 통과해 기준선 후보로 더 낫다.**
+그러나 다음 이유로 **아직 "확정 채택"은 보류한다**:
+1. torso 정착이 관절한계 하드 스톱에 의존한다(위 표) — 능동 제어로 정착하는
+   것이 아니므로, 시각 정책이 이 조건 위에서 학습될 경우 하드 스톱이라는
+   비-일반적 동역학에 암묵적으로 의존하게 될 위험이 있다.
+2. §A9의 침투 깊이 논의(기존 모델과 같은 수준이지만 실제 반발계수로 검증된
+   적 없음)가 이 후보에도 그대로 적용된다.
+3. 공통 에너지 예산 비교, 구동-전용/접촉-전용 분리(§A6과 같은 방식)를 이
+   후보에 아직 적용하지 않았다.
+4. production dt 점수(6.78m)가 이전 모든 KC-01a 결과보다 높다는 사실 자체를
+   "협응이 더 낫다"는 근거로 쓰지 않는다 — `staggered`의 3.64m이 정밀 dt에서
+   무효로 뒤집힌 선례(§A2)가 바로 이런 종류의 성급한 결론을 경계하라는
+   증거다.
+
+**최소 수정안**: (1)~(3)을 마저 확인하는 것이 다음 단계이며, 이번 범위에서는
+gear/관절한계/재료를 바꾸지 않는다는 지시를 그대로 지켰다 — torso가
+관절한계에 기대는 문제의 "최소 수정"이 gear 재조정일 가능성이 높지만, 그
+자체가 새 실험이므로 사용자 승인 후 진행한다.
+
+## A14. 몸통 선행 + 유효 타격의 기구학적 제약 (요약)
+
+사용자의 마지막 질문 — "몸통 선행과 유효 타격을 함께 만족하지 못하면
+기구 배치·가동범위·제어의 어떤 제약 때문인지 보고하라" — 에 대한 답: **이번
+탐색 범위에서는 함께 만족하는 후보를 찾았다(§A11-A12).** 다만 그 경로에서
+드러난 제약들:
+
+- torso의 최대 각가속도(11.41rad/s²)가 swing의 것(134.4rad/s²)보다 약
+  12배 작다 — 아주 작은(10ms) 명령 선행은 실제 운동에서 무의미해진다
+  (§A10). 의미 있는 선행을 얻으려면 handoff처럼 "torso가 실제로 상당량
+  움직일 때까지 기다리는" 방식이 필요했다 — 단순 시간차로는 이 관성비를
+  극복하지 못한다.
+- `bat_hinge`가 `torso_yaw`의 자손이라는 기구학적 배치 때문에, torso의
+  가속은 swing 자유도에 즉시 반작용 각속도를 유도한다(§A10) — 두 축의
+  운동을 시각적으로/qvel 기준으로 완전히 분리해서 보여주는 것은 이
+  기구학적 사슬 위에서는 애초에 불가능하다(반작용 자체가 실제 물리이므로
+  "안 보이게" 만들 수 없다 — 없애려면 사슬 구조 자체를 바꿔야 한다).
+- torso 목표각을 크게(0.5rad) 키우자 자체 관절한계(±0.6rad)에 근접/도달하는
+  방식으로 "정착"이 이뤄졌다(§A12) — 가동범위 한계가 이 조건의 안정성에
+  실제로 관여하고 있다는 뜻이며, 향후 gear/관절범위를 조정하면 이 특정
+  결과가 재현되지 않을 수 있다.
+
 ## 산출물
 
 - 4조건×dt 표, 최초 발산 원인: 본 문서 §A2, 원자료
@@ -285,6 +530,18 @@ KC-01a-DIRECTION-CONTRACT.md` §3)에 대해 두 가지를 따로 확인했다:
 - 방향 계약·동방향 조건: §A8, `docs/design/KC-01a-DIRECTION-CONTRACT.md`,
   `docs/records/evidence/KC-01a-same-direction-{search,dt-convergence}.json`,
   `runs/kc01a-same-direction-video/`(gitignored, 영상·그래프)
+- `same_direction_staggered` 수용 검증(정착/에너지/타이밍/침투/RK4 정정):
+  §A9, `docs/records/evidence/KC-01a-same-direction-acceptance.json`
+- 몸통 선행 메커니즘(명령 vs 실제, 반작용 결합): §A10, `docs/records/
+  evidence/KC-01a-torso-lead-{analysis}.json`, `docs/records/evidence/
+  KC-01a-torso-lead-timeline.json`
+- Motion-triggered handoff 모드와 탐색: §A11, `controllers/
+  baseball_kc01a.py`(`torso_lead_handoff` 모드), `docs/records/evidence/
+  KC-01a-torso-lead-handoff-search.json`
+- 새 후보 전체 검증: §A12, `docs/records/evidence/
+  KC-01a-torso-lead-handoff-validation.json`
+- 전후 영상(위쪽+측면, 실시간+8배 슬로모션 라벨)·속도/기여 그래프: §A10-A12,
+  `runs/kc01a-torso-lead-before-after/`(gitignored)
 - 명령 일정/설정: 각 스크립트(`scripts/kc01a_dt_convergence.py` 등)의
   `CONDITIONS` 딕셔너리가 실제 실행 설정이다(코드가 곧 기록).
 - 기존 B1 회귀 87개 + KC-01a 12개 = 99개, 두 pytest 진입점 일치, 전체 lint
@@ -310,21 +567,29 @@ KC-01a-DIRECTION-CONTRACT.md` §3)에 대해 두 가지를 따로 확인했다:
    재확인됐지만 원인이 아직 없다 — 이 조건 자체를 더 고치기보다 §A8의 동방향
    조건으로 대체하는 것이 우선이므로, 이 조건의 solver 진단은 낮은 우선순위로
    내린다.
+4. **(이번 갱신 추가)** `torso_lead_handoff`(torso_target=0.5, §A11-A12)의
+   torso 정착이 관절한계 하드 스톱에 의존한다(§A12) — gear/관절범위를
+   건드리지 않는 대체 최소 수정안(예: follow-through offset을 관절한계 안쪽
+   값으로 낮춰 하드 스톱에 기대지 않고도 능동 제어로 정착하게 하는 것)을
+   다음 단계에서 검토한다. 이번에는 제안만 하고 적용하지 않았다.
 
 ## 다음 단계 (이번에 하지 않음)
 
-1. `same_direction_staggered`(§A8)에 A3(정착)·A4(에너지)·A5(타이밍 구간)를
-   그대로 적용한다 — 지금까지는 dt 수렴만 확인했다.
-2. `same_direction_staggered`에도 §A6과 같은 구동-전용/접촉-전용 분리를
-   적용해 "역회전 상쇄가 dt 민감도를 키운다"는 가설을 별도로 검증한다.
-3. `torso_swing_with_arm_hold`의 정착 실패·유효 타구 실패에 대한 gear
+1. `same_direction_staggered`(§A8-A9)는 시각 기준선으로 채택하지 않기로
+   했으므로(§A13) 더 이상의 수정 우선순위는 낮다.
+2. `torso_lead_handoff`(§A11-A12, torso_target=0.5)에 §A6과 같은 구동-전용/
+   접촉-전용 분리를 적용해 dt 수렴이 진짜 견고한지 재확인한다.
+3. `torso_lead_handoff`의 정착이 관절한계 하드 스톱에 의존하는 문제(§A12)의
+   최소 수정안(follow-through offset 조정 등)을 사용자 승인 후 진행한다.
+4. `torso_swing_with_arm_hold`의 정착 실패·유효 타구 실패에 대한 gear
    재보정은 그것 자체가 새로운 실험이므로 사용자 승인 후 진행한다.
-4. 공통 에너지 예산 비교(A4 후반)는 관심 조건들이 모두 dt 수렴을 통과한
-   뒤 재개한다.
-5. VISION-01(`docs/design/VISION-01.md`) 통합 여부는 이 문서의 결과(대부분
-   미수렴, `same_direction_staggered`만 예외)를 근거로 **보류**한다 — 물리가
-   충분히 수렴하지 않은 조건 위에 시각 정책을 올리면 어느 결과가 시각
-   때문이고 어느 것이 물리 이산화 때문인지 구분할 수 없다.
+5. 공통 에너지 예산 비교(A4 후반)는 관심 조건들이 모두 dt 수렴을 통과한
+   뒤 재개한다 — `torso_lead_handoff`의 6.78m을 포함해 어떤 점수도 "협응이
+   낫다"는 근거로 아직 쓰지 않는다(§A13).
+6. VISION-01(`docs/design/VISION-01.md`) 통합 여부는 위 1-3이 마무리된 뒤
+   재검토한다 — `torso_lead_handoff`가 §A9의 `same_direction_staggered`보다
+   더 나은 기준선 후보이지만(§A13), 하드 스톱 의존성 때문에 아직 "확정
+   기준선"으로 채택하지 않는다.
 
 KC-01b·8코스·변화구·RL·실제 신경회로·시각 제어 구현은 이번 작업에 포함하지
 않았다(사용자 지시).

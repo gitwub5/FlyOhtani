@@ -71,8 +71,24 @@
   (torso_target=+0.3, swing_target=-1.710)를 탐색해 그립 도달성을 만족하며
   접촉점 속도에 torso/swing이 **같은 부호로 가산**(43%/57%)함을 확인했고,
   A2와 동일한 사전 등록 기준으로 dt 수렴도 **통과**했다(기존 4개 조건 중
-  실제 타구가 나면서 수렴한 최초 사례). 정착·에너지·타이밍은 아직 이 새
-  조건에 적용하지 않아 협응 우위를 결론 내리지 않는다.
+  실제 타구가 나면서 수렴한 최초 사례).
+- **`same_direction_staggered` 수용 검증과 몸통 선행 메커니즘**(`docs/records/
+  KC-01a-VALIDATION.md` A9-A14): 수용 검증 결과 torso 축이 정착 기준을
+  충족하지 못해 이 설정 그대로는 시각 기준선으로 채택하지 않는다. 에너지
+  재계산 중 XML이 `integrator="RK4"`인데 이전 보고가 "semi-implicit Euler
+  절단오차"라 잘못 설명한 것을 정정했다 — 실제 원인은 분석 스크립트 자신의
+  work 적분(quadrature) 오차이며 RK4 상태 적분 자체는 이미 거의 완전히
+  수렴해 있다. 사용자가 영상에서 지적한 "배트가 먼저 움직인다"는 인상은
+  데이터로 확인됐다: `same_direction_staggered`의 "10ms 몸통 선행"은 raw
+  qvel 기준 실제 선행이 0초다 — `bat_hinge`가 `torso_yaw`의 자손이라 torso
+  가속이 swing 자유도에 즉시 반작용 각속도를 유도해 raw qvel 기반 측정을
+  오염시키기 때문이다. 컨트롤러 자신의 트리거 시각으로 재정의하고,
+  motion-triggered handoff라는 새 컨트롤러 모드(`torso_lead_handoff`)를
+  추가해 재탐색한 결과 torso_target=0.5/torso_ct=0.33/handoff_fraction=0.5
+  조건이 225ms의 진짜 제어 수준 선행, dt 수렴, 양 축 정착, 그립 도달성을
+  모두 통과했다(production dt 6.78m, 지금까지 KC-01a 최고치) — 다만 torso
+  정착이 자체 관절한계에 눌려서 이뤄진다는 우려가 남아 있어 "협응 우위"
+  결론이나 시각 기준선 확정 채택은 아직 하지 않는다.
 
 ## 알려진 한계 (임의로 고치지 않고 그대로 보고)
 
@@ -107,14 +123,17 @@
 ## 다음 작업
 
 [KC-01a 검증 보완과 시각 입력 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
-A절(물리 검증)과 B절(VISION-01 설계), 그리고 후속 원인 분리(발산 원인
-구동/접촉 분리, 관절한계 타이밍, 회전 방향 계약과 `same_direction_staggered`
-조건)까지 완료했다. 남은 것: (1) `same_direction_staggered`에 정착/에너지/
-타이밍 검증(A3-A5)과 구동-전용/접촉-전용 분리(A6)를 적용, (2)
-`torso_swing_with_arm_hold`의 gear 재보정은 사용자 승인 후 진행, (3) 공통
-에너지 예산 비교는 관심 조건들이 dt 수렴을 통과한 뒤 재개, (4) VISION-01의
-실제 구현 여부는 물리가 충분히 수렴한 뒤 결정, (5) VISION-01 §3의 검출
-가능성 가설은 렌더 실험으로 확인 전까지 가설로 유지.
+A절(물리 검증)과 B절(VISION-01 설계), 후속 원인 분리(A6-A8), `same_direction_
+staggered` 수용 검증과 몸통 선행 메커니즘 검증(A9-A14, `docs/records/
+KC-01a-VALIDATION.md`)까지 완료했다. 남은 것: (1) `torso_lead_handoff`
+(torso_target=0.5)에 구동-전용/접촉-전용 분리(A6과 같은 방식)를 적용, (2)
+그 조건의 torso 정착이 관절한계 하드 스톱에 의존하는 문제의 최소 수정안
+(사용자 승인 후), (3) `torso_swing_with_arm_hold`의 gear 재보정은 사용자
+승인 후 진행, (4) 공통 에너지 예산 비교는 관심 조건들이 dt 수렴을 통과한
+뒤 재개 — `torso_lead_handoff`의 6.78m을 포함해 어떤 점수도 아직 "협응이
+낫다"는 근거로 쓰지 않는다, (5) VISION-01의 실제 구현 여부는 위 (1)-(2)가
+마무리된 뒤 결정, (6) VISION-01 §3의 검출 가능성 가설은 렌더 실험으로
+확인 전까지 가설로 유지.
 [구현 작업표](../implementation/WORK_PACKAGES.md)에서 다음 배정을 받는다.
 KC-01b/8코스/RL/시각 제어 구현은 사용자가 명시적으로 지정하기 전에는 시작하지
 않는다.

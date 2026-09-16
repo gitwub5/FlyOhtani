@@ -20,7 +20,24 @@ axis -- only which axes move, and when, differs):
   environment's kinematics identical to B1's fixed-torso case).
 - "torso_only": swing/tilt held at prep; torso alone reaches the target.
 - "simultaneous": torso and swing triggered at the same crossing time.
-- "staggered": torso triggers earlier than swing (hips lead, arm follows).
+- "staggered": torso triggers earlier than swing (hips lead, arm follows) --
+  by a fixed TIME offset only; swing's own trigger is still purely
+  time-based (docs/design/KC-01a-DIRECTION-CONTRACT.md section 4/
+  docs/records/KC-01a-VALIDATION.md A8: this makes "leads" a claim about
+  COMMAND onset, not about torso having actually moved a meaningful amount
+  before swing's own command starts -- at torso's much lower a_max
+  (11.41 vs swing's 134.4 rad/s^2), a fixed-time lead can still coincide
+  with swing's own rapid response overtaking torso within 1-2 control
+  steps).
+- "torso_lead_handoff" (added for the user's follow-up: a genuine
+  motion-triggered handoff instead of a fixed time offset): torso triggers
+  the same way every other mode does (ball-approach crossing-time), but
+  swing's OWN trigger is not time-based at all -- swing stays in
+  "prepare"/hold until torso's own angular displacement toward its target
+  reaches `handoff_fraction` of that target (see TorsoBatController's own
+  docstring for the parameter). This is the only mode where one axis's
+  trigger condition depends on another axis's actual state rather than the
+  ball's arrival time.
 """
 from __future__ import annotations
 
@@ -151,8 +168,9 @@ class TorsoBatController:
         swing_target: float,
         torso_crossing_time: float,
         swing_crossing_time: float,
+        handoff_fraction: float = 0.3,
     ) -> None:
-        if mode not in ("arm_only", "torso_only", "simultaneous", "staggered"):
+        if mode not in ("arm_only", "torso_only", "simultaneous", "staggered", "torso_lead_handoff"):
             raise ValueError(f"unknown mode {mode!r}")
         self.mode = mode
         self.prep_torso = prep_torso
@@ -162,9 +180,15 @@ class TorsoBatController:
         self.swing_target = swing_target
         self.torso_crossing_time = torso_crossing_time
         self.swing_crossing_time = swing_crossing_time
+        # Only used by mode="torso_lead_handoff" (ignored otherwise): swing's
+        # own trigger fires once |torso_angle - prep_torso| reaches this
+        # fraction of |torso_target - prep_torso| -- a genuine
+        # motion-triggered handoff (docs/design/KC-01a-DIRECTION-CONTRACT.md
+        # section 4's follow-up), not a fixed time offset like "staggered".
+        self.handoff_fraction = handoff_fraction
 
-        torso_moves = mode in ("torso_only", "simultaneous", "staggered")
-        swing_moves = mode in ("arm_only", "simultaneous", "staggered")
+        torso_moves = mode in ("torso_only", "simultaneous", "staggered", "torso_lead_handoff")
+        swing_moves = mode in ("arm_only", "simultaneous", "staggered", "torso_lead_handoff")
         torso_dir = 1.0 if torso_target > prep_torso else -1.0
         swing_dir = 1.0 if swing_target > prep_swing else -1.0
         self._torso_axis = _Axis(
@@ -212,7 +236,20 @@ class TorsoBatController:
             and 0.0 < remaining <= self.torso_crossing_time
         ):
             self._torso_triggered = True
-        if (
+        if self.mode == "torso_lead_handoff":
+            # Motion-triggered, not time-triggered: swing waits for torso to
+            # have actually moved, regardless of how much real time that
+            # takes -- the point of this mode (docs/design/
+            # KC-01a-DIRECTION-CONTRACT.md section 4 follow-up).
+            handoff_target_disp = self.handoff_fraction * abs(self.torso_target - self.prep_torso)
+            if (
+                self._swing_moves
+                and not self._swing_triggered
+                and self._torso_triggered
+                and abs(torso_angle - self.prep_torso) >= handoff_target_disp
+            ):
+                self._swing_triggered = True
+        elif (
             self._swing_moves
             and not self._swing_triggered
             and approaching

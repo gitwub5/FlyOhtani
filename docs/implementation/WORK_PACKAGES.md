@@ -10,16 +10,20 @@
 ## 현재 배정 (2026-09-17)
 
 [KC-01a 검증 보완 + VISION-01 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
-A절(dt 수렴/정착/에너지/타이밍 검증)과 B절(VISION-01 설계), 그리고 후속
-원인 분리(발산 원인을 구동/접촉으로 분리, 관절한계 타이밍·구속종류/적분오차
-구분, [회전 방향 계약](../design/KC-01a-DIRECTION-CONTRACT.md)과 새
-`same_direction_staggered` 조건의 dt 수렴 확인)까지 완료했다
+A절(dt 수렴/정착/에너지/타이밍 검증)과 B절(VISION-01 설계), 후속 원인 분리
+(발산 원인을 구동/접촉으로 분리, 관절한계 타이밍·구속종류/적분오차 구분),
+[회전 방향 계약](../design/KC-01a-DIRECTION-CONTRACT.md)과
+`same_direction_staggered`의 수용 검증·몸통 선행 메커니즘 검증(A9-A14,
+motion-triggered handoff 모드 추가)까지 완료했다
 ([검증 결과](../records/KC-01a-VALIDATION.md), [VISION-01](../design/VISION-01.md)).
-`staggered_swing_and_torso`의 이전 "최고 성적" 결론은 철회됐다. 다음 배정은
-사용자가 명시적으로 지정한다 — `same_direction_staggered`에 정착/에너지/
-타이밍 검증 적용, `torso_swing_with_arm_hold`의 gear 재보정, 공통 에너지
-예산 비교, VISION-01 구현 여부 결정 중 무엇을 먼저 할지 자동으로 정하지
-않는다.
+`staggered_swing_and_torso`의 이전 "최고 성적" 결론은 철회됐다.
+`torso_lead_handoff`(torso_target=0.5)가 dt 수렴·양 축 정착·그립 도달성을
+모두 통과하며 production dt 6.78m을 냈지만, torso 정착이 관절한계 하드
+스톱에 의존해 "협응 우위"나 "시각 기준선 확정"으로는 아직 쓰지 않는다.
+다음 배정은 사용자가 명시적으로 지정한다 — `torso_lead_handoff`의 구동/
+접촉 분리 재검증, 그 정착 방식의 최소 수정안, `torso_swing_with_arm_hold`의
+gear 재보정, 공통 에너지 예산 비교, VISION-01 구현 여부 결정 중 무엇을
+먼저 할지 자동으로 정하지 않는다.
 
 ## 상태 표
 
@@ -45,7 +49,7 @@ A절(dt 수렴/정착/에너지/타이밍 검증)과 B절(VISION-01 설계), 그
 | I-08b | 실제 전신 역학 통합 | **미착수** |
 | KC-01a | 몸통-배트 협응 최소 역학 모델 | 시제품 구현 완료. dt 수렴 검증 완료 — 4개 조건 중 1개만 통과(그마저 유효 타구 실패), 나머지 우위 비교는 무효로 철회 |
 | KC-01a-validation | dt 수렴·정착·에너지·타이밍 보완 + VISION-01 설계 | 완료 — [검증 결과](../records/KC-01a-VALIDATION.md), [VISION-01](../design/VISION-01.md) |
-| KC-01a-direction-contract | 회전 방향 계약 + 동방향(same-direction) 조건 설계 | 완료 — [계약](../design/KC-01a-DIRECTION-CONTRACT.md), 역회전(상쇄) 발견, 새 조건 dt 수렴 통과, 정착/에너지/타이밍은 미적용 |
+| KC-01a-direction-contract | 회전 방향 계약 + 동방향(same-direction) 조건 설계 + motion-triggered handoff | 완료 — [계약](../design/KC-01a-DIRECTION-CONTRACT.md), 역회전(상쇄) 발견, `same_direction_staggered`는 정착 미충족으로 기준선 보류, `torso_lead_handoff`(torso_target=0.5)가 dt/정착/그립 모두 통과(6.78m, 협응 우위 미결론) |
 | KC-01b | 뒷다리 지지·실제 전신 전달 | **미착수** |
 
 완료 항목의 근거·수치·시행착오는 [완료 작업 색인](../records/INDEX.md)에서

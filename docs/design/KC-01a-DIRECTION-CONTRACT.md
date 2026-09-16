@@ -106,3 +106,47 @@ swing 이동량(Δ=1.234rad, prep -1.96→target -0.726)은 `arm_swing_with_tors
 - torso가 swing보다 훨씬 크게(혹은 작게) 기여하는 배치들 사이의 상대적
   우열은 이번 범위에서 다루지 않는다 — 첫 번째로 "부호가 맞는" 배치 하나를
   찾아 같은 검증 절차를 적용하는 것이 이번 목표다.
+
+## 6. "선행(lead)"을 실제로 측정하는 방법 — 명령 트리거 vs raw qvel (후속)
+
+`docs/records/KC-01a-VALIDATION.md` A9-A14에서 검증한 결과, §4에서 채택한
+`same_direction_staggered`(torso_ct가 swing_ct보다 10ms 이른 **고정 시간차**)는
+실제로는 "선행"이라 부를 수 없다는 것이 드러났다: torso와 swing의 raw
+qvel이 임계값(0.05rad/s)을 넘는 시각이 **완전히 같은 제어주기**였다. 원인은
+§1의 기구학적 사실과 같은 곳에서 나온다 — `bat_hinge`가 `torso_yaw`의
+자손이므로, torso가 가속하면 그 관성 반작용이 swing 자유도의 raw qvel을
+즉시(반작용 각속도로) 흔든다. **swing 자신의 액추에이터가 켜지기 전에도
+swing_qvel은 반작용만으로 임계값을 넘을 수 있다** — 이 사슬 구조 위에서는
+"두 축의 raw 각속도가 언제 움직이기 시작했는가"로 선행을 측정하는 것 자체가
+근본적으로 신뢰할 수 없다.
+
+**정정된 계약**: "선행"은 반드시 **각 축 자신의 컨트롤러 트리거**
+(`TorsoBatController`의 `_torso_triggered`/`_swing_triggered`, 즉 그 축이
+"prepare"/hold에서 "accelerate"로 전환되는 시각)로 정의한다. raw qvel
+임계값 교차 시각은 참고 자료로만 보고하고(반작용 오염 가능성을 항상 함께
+표기), "선행" 주장의 근거로 단독으로 쓰지 않는다.
+
+## 7. Motion-triggered handoff 모드 (고정 시간차 대신)
+
+작은 고정 시간차(10ms)는 torso의 낮은 최대 각가속도(11.41rad/s², swing의
+134.4rad/s²보다 약 12배 작음) 때문에 실제 운동에서 무의미해진다 — torso가
+그 10ms 안에 얻는 각속도가 너무 작아 swing의 반작용 흔들림에 묻힌다. 진짜
+의미 있는 선행을 만들려면 "고정 시간"이 아니라 "torso가 실제로 얼마나
+움직였는가"에 swing의 트리거를 거는 것이 필요하다는 결론에 따라
+`controllers/baseball_kc01a.py`에 새 모드 `"torso_lead_handoff"`를
+추가했다: swing은 torso의 각변위가 자기 목표의 `handoff_fraction`에 도달할
+때까지 순수 P-hold만 하고, 그 전까지는 최대 토크로 가속하지 않는다(§4 규칙
+2의 "모든 축을 최대 입력으로 몰지 않는다" 요구와 §5의 "선행 시간을 늘리면
+항상 낫다고 가정하지 않는다" 요구를 함께 만족 — 실제로 60개 조합 중
+2개, 확장 탐색 140개 중 10개만 유효했고 handoff_fraction이 클수록 항상
+좋아지지도 않았다). 기존 4개 모드(`arm_only`/`torso_only`/`simultaneous`/
+`staggered`)의 동작은 이 추가로 전혀 바뀌지 않는다(코드·테스트로 확인).
+
+가장 좋은 검증된 결과는 torso_target=0.5, torso_ct=0.33,
+handoff_fraction=0.5 — 컨트롤러 트리거 기준 225ms의 진짜 선행,
+production dt 6.78m, dt 수렴·양 축 정착·그립 도달성 모두 통과
+(`docs/records/KC-01a-VALIDATION.md` A11-A12). 단, torso 정착이 자체
+관절한계(±0.6rad)에 눌려서 이뤄진다는 새로운 우려가 남아 있다(같은 문서
+A12/A14) — "몸통 선행 + 유효 타격"은 이번 탐색 범위에서 함께 달성됐지만,
+그 정착 방식이 관절한계 하드 스톱에 의존한다는 점에서 완전히 깨끗한 결과는
+아니다.

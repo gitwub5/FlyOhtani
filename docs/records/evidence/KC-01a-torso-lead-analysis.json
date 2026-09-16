@@ -1,0 +1,36 @@
+{
+  "config": {
+    "controller_mode": "staggered",
+    "torso_target": 0.3,
+    "swing_target": -1.7099999999999997,
+    "torso_ct": 0.12200000000000004,
+    "swing_ct": 0.11200000000000004
+  },
+  "trigger_vs_onset": {
+    "torso_command_trigger_t": 0.3449999999999897,
+    "swing_command_trigger_t": 0.3549999999999886,
+    "torso_motion_onset_t": 0.3449999999999897,
+    "swing_motion_onset_t": 0.3449999999999897,
+    "onset_qvel_threshold": 0.05,
+    "torso_state_at_swing_onset": {
+      "applicable": true,
+      "torso_angle_at_swing_onset": -1.9382729913610458e-05,
+      "torso_vel_at_swing_onset": 0.0007957913047928646,
+      "torso_lead_time_s": 0.0
+    }
+  },
+  "contribution_accel_window": {
+    "n_rows": 77,
+    "torso_share_min": 0.0035952626698296845,
+    "torso_share_max": 0.7907146661425601,
+    "torso_share_mean": 0.22356775419941108
+  },
+  "holdmotor_baseline": {
+    "w_torso_hold_net_j": -1.2212772885341021,
+    "peak_abs_torso_power_w": 46.32686504611724,
+    "scoring_valid": true,
+    "batting_score": 2.6260235529577747,
+    "note": "torso target=0 the whole episode (arm_only baseline); this is the actuator work spent RESISTING reaction forces while nominally 'not moving', not zero as a naive reading of 'held' would suggest."
+  },
+  "epistemic_caveat": "contrib_torso_x/contrib_swing_x is an INSTANTANEOUS velocity-Jacobian decomposition (v_point = sum_i jacp[:,i]*qvel[i]) at each control step -- it shows which joint's angular velocity is contributing how much to the bat point's CURRENT velocity at that instant. It is NOT a measurement of energy or momentum transferred FROM one axis TO the other over time; no such flow analysis was performed, and this ratio should not be read as one."
+}
