@@ -1,0 +1,214 @@
+<mujoco model="fly_ohtani_baseball_b0">
+  <!-- ENV-002 B0. Coordinate system per docs/design/ENV-002-baseball.md section 1:
+       origin = home plate's back vertex, +x toward the pitcher's rubber,
+       +y toward third base, +z up. Ball travels mostly in -x.
+
+       Field dimensions are standard, widely-documented MLB values (not fetched
+       from the official 2025 rules PDF referenced in ENV-002 -- see
+       docs/design/ENV-002-calibration.json for exactly which numbers are
+       taken from ENV-002's own spec vs. this session's standard-dimension
+       assumptions). Outfield/stands/pitcher body are omitted for B0 (non-
+       essential visual assets per ENV-002 section 1); only ground/bat/ball/
+       batter body are collidable.
+  -->
+  <compiler angle="radian" coordinate="local" inertiafromgeom="true"/>
+  <!-- physics_dt=0.00025s (not ENV-002 section 7's 0.0005s candidate): the
+       contact-boundary convergence investigation (I-07a-1 item A;
+       docs/records/VALIDATION_LOG.md, analysis/env002_dt_convergence.py)
+       found dt=0.0005s misses the swing-timing hit/miss boundary by 0.875ms
+       relative to the converged (finest-dt) reference, exceeding the 0.5ms
+       criterion; dt=0.00025s is the largest candidate that meets it
+       (0.125ms/0.1875ms on the two boundaries). control_dt stays 0.005s via
+       frame_skip=20 (BaseballB0Env's default). -->
+  <option timestep="0.00025" gravity="0 0 -9.81" integrator="RK4"/>
+
+  <default>
+    <geom condim="3" friction="0.8 0.02 0.001" solref="0.01 1" solimp="0.9 0.95 0.001"/>
+    <joint damping="0.05" armature="0.002"/>
+  </default>
+
+  <visual>
+    <global offwidth="1280" offheight="720"/>
+  </visual>
+
+  <asset>
+    <material name="ground_mat" rgba="0.16 0.42 0.18 1"/>
+    <material name="dirt_mat" rgba="0.55 0.4 0.28 1"/>
+    <material name="plate_mat" rgba="0.9 0.9 0.9 1"/>
+    <material name="rubber_mat" rgba="0.85 0.85 0.85 1"/>
+    <material name="box_mat" rgba="0.9 0.9 0.2 0.35"/>
+    <material name="line_mat" rgba="0.95 0.95 0.95 1"/>
+    <material name="batter_mat" rgba="0.1 0.35 0.75 1"/>
+    <material name="bat_mat" rgba="0.6 0.4 0.15 1"/>
+    <material name="ball_mat" rgba="0.95 0.18 0.18 1"/>
+  </asset>
+
+  <!-- Only the hinge attachment between the batter's body and the bat
+       legitimately overlaps; every other pair (ball-ground, ball-bat,
+       ball-batter, bat-ground) stays active. -->
+  <contact>
+    <exclude body1="batter_body" body2="bat_body"/>
+    <!-- bat_geom now lives on bat_tilt_body (child of bat_body, added for
+         B1's tilt DOF); exclude it from the torso too, for the same reason
+         as the bat_body exclude above (legitimate hinge-adjacent overlap). -->
+    <exclude body1="batter_body" body2="bat_tilt_body"/>
+  </contact>
+
+  <worldbody>
+    <light name="key" pos="9 -6 12" dir="0 1 -1.2" diffuse="1.2 1.2 1.1" directional="true"/>
+    <light name="fill" pos="9 8 10" dir="0 -1 -1.2" diffuse="0.6 0.6 0.6" directional="true"/>
+    <light name="overhead" pos="9 0 15" dir="0 0 -1" diffuse="0.5 0.5 0.5" directional="true"/>
+
+    <!-- cameras: full park, behind catcher, batter side view, fly POV -->
+    <camera name="park_wide" pos="9 -22 14" xyaxes="1 0 0 0 0.55 0.85"/>
+    <camera name="behind_catcher" pos="-3.2 0 1.6" xyaxes="0 -1 0 0.15 0 0.99"/>
+    <camera name="batter_side" pos="0.2 6.2 1.7" xyaxes="-1 0 0 0 -0.12 0.99"/>
+    <camera name="fly_pov" pos="0.25 0.65 1.5" xyaxes="0 -1 0 0.2 0 0.98"/>
+
+    <geom name="ground" type="plane" pos="9 0 0" size="20 15 0.1" material="ground_mat"/>
+
+    <!-- home plate: visual reference only, non-colliding (ball/bat interact
+         with the flat ground, not the plate's raised edge) -->
+    <geom
+      name="home_plate"
+      type="box"
+      pos="0.2159 0 0.006"
+      size="0.2159 0.2159 0.006"
+      material="plate_mat"
+      contype="0"
+      conaffinity="0"
+    />
+
+    <!-- pitcher's rubber: visual marker at the official mound distance.
+         Size corrected to the rule's exact 24in x 6in (rule 2.04): half-size
+         x=3in=0.0762m (front-to-back, narrow), y=12in=0.3048m (side-to-side,
+         long) -- was swapped/imprecise (0.09 x 0.3) before the field
+         comparison. See docs/design/ENV-002-field-comparison.md. -->
+    <geom
+      name="pitcher_rubber"
+      type="box"
+      pos="18.4404 0 0.0076"
+      size="0.0762 0.3048 0.0076"
+      material="rubber_mat"
+      contype="0"
+      conaffinity="0"
+    />
+
+    <!-- right-handed batter's box: standard 6in offset from the plate edge,
+         4ft x 6ft box (ENV-002 section 1) -->
+    <!-- x-center corrected to 0.2159 (home plate's own front-back center),
+         per Appendix 2 Diagram No. 2's box length split (3'0" each side of
+         the plate center) -- see docs/design/ENV-002-field-comparison.md. -->
+    <geom
+      name="batter_box_rh"
+      type="box"
+      pos="0.2159 0.9779 0.003"
+      size="0.9144 0.6096 0.003"
+      material="box_mat"
+      contype="0"
+      conaffinity="0"
+    />
+
+    <!-- foul lines: visual only, +/-45 degrees from home plate -->
+    <geom
+      name="foul_line_first"
+      type="box"
+      pos="14.849 -14.849 0.004"
+      size="21 0.04 0.004"
+      euler="0 0 -0.7853981634"
+      material="line_mat"
+      contype="0"
+      conaffinity="0"
+    />
+    <geom
+      name="foul_line_third"
+      type="box"
+      pos="14.849 14.849 0.004"
+      size="21 0.04 0.004"
+      euler="0 0 0.7853981634"
+      material="line_mat"
+      contype="0"
+      conaffinity="0"
+    />
+
+    <!-- batter: fixed support point (per ENV-002 B0, "지지점 고정"), body
+         frame placed at hand/bat height (1.0m, matching the fixed pitch
+         target height so the horizontal swing naturally passes through it).
+         A single capsule geom stands in visually for the human-scale body. -->
+    <body name="batter_body" pos="0.1 0.9 1.0">
+      <geom
+        name="batter_torso"
+        type="capsule"
+        fromto="0 0 -1.0 0 0 0.35"
+        size="0.14"
+        mass="55"
+        material="batter_mat"
+      />
+      <body name="bat_body" pos="0.15 -0.25 0">
+        <!-- horizontal swing about the vertical axis -->
+        <joint name="bat_hinge" type="hinge" axis="0 0 1" range="-2.0 2.0" limited="true"/>
+        <!-- bat_body itself carries no geom (the bat moved to bat_tilt_body
+             below, as the child that actually tilts) -- inertiafromgeom has
+             nothing to derive from, so give it an explicit negligible
+             "wrist" inertial instead of a dummy visual geom. -->
+        <inertial pos="0 0 0" mass="0.001" diaginertia="1e-6 1e-6 1e-6"/>
+        <!-- B1 aiming DOF: tilt, a child hinge about bat_body's *local* -Y
+             axis (so it rotates WITH the swing -- always perpendicular to
+             the bat's own length, regardless of the current swing angle).
+             axis="0 -1 0" so positive tilt raises the tip (intuitive "aim
+             high"): rotating (1,0,0) by +tilt about -Y gives
+             ~(cos(tilt),0,sin(tilt)), i.e. +z for +tilt. See
+             docs/design/ENV-002-B1-courses.md for the geometry sweep this
+             was verified against. -->
+        <body name="bat_tilt_body" pos="0 0 0">
+          <joint name="bat_tilt_hinge" type="hinge" axis="0 -1 0" range="-0.6 0.6" limited="true"/>
+          <geom
+            name="bat_geom"
+            type="capsule"
+            fromto="0 0 0 0.85 0 0"
+            size="0.025"
+            mass="0.9"
+            material="bat_mat"
+          />
+        </body>
+      </body>
+    </body>
+
+    <!-- pitcher release marker (ENV-002: "손 표시와 생성 위치는 정확히 같아야
+         한다"). No full pitcher body for B0; env code asserts the ball's
+         reset() spawn position equals this marker's position exactly. -->
+    <geom
+      name="release_marker"
+      type="sphere"
+      pos="16.5 0 1.8"
+      size="0.05"
+      material="rubber_mat"
+      contype="0"
+      conaffinity="0"
+    />
+
+    <body name="ball" pos="16.5 0 1.8">
+      <!-- damping=0 and armature=0: see envs/assets/fly_batter.xml. Missing
+           the armature override here (default 0.002) reduced effective
+           gravity by ~1.4% (mass 0.145 / (mass+armature)), a ~14mm error at
+           this flight time/speed -- large enough to be caught by
+           tests/test_baseball_env.py's analytic-ballistics check rather
+           than being mistaken for stop-time quantization. -->
+      <joint name="ball_free" type="free" damping="0" armature="0"/>
+      <geom name="ball_geom" type="sphere" size="0.0366" mass="0.145" material="ball_mat"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- gear=12: smallest of [4,8,12,16] that swings the bat from prep_angle
+         (1.0 rad) to the interception alignment angle (-1.30 rad) within
+         0.30s without ball contact -- re-measured for this scale's much
+         larger bat inertia, not copied from ENV-001's gear=0.08. See
+         docs/design/ENV-002-calibration.json. -->
+    <motor name="bat_motor" joint="bat_hinge" gear="12" ctrllimited="true" ctrlrange="-1 1"/>
+    <!-- gear=6: smallest of [2,4,6,8] driving tilt from 0 to +/-0.41rad
+         (largest course need) within 0.30s, calibrated separately from the
+         swing motor (different DOF/inertia). docs/design/ENV-002-B1-courses.md. -->
+    <motor name="bat_tilt_motor" joint="bat_tilt_hinge" gear="6" ctrllimited="true" ctrlrange="-1 1"/>
+  </actuator>
+</mujoco>

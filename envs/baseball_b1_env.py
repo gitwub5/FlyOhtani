@@ -1,0 +1,473 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, ClassVar
+
+import gymnasium as gym
+import mujoco
+import numpy as np
+from gymnasium import spaces
+
+ASSET_PATH = Path(__file__).resolve().parent / "assets" / "baseball_park_b1.xml"
+
+END_REASON_HIT = "hit"
+END_REASON_GROUND_CONTACT = "ground_contact"
+END_REASON_PASSED_NO_CONTACT = "passed_no_contact"
+END_REASON_TIMEOUT = "timeout"
+
+# Course grid (docs/design/ENV-002-B1-courses.md section 1). x is always the
+# same plate-front reference as B0 (0.4318); only y (inside/outside) and z
+# (high/low) vary per course.
+ZONE_CENTER = np.array([0.4318, 0.0, 1.0])
+ZONE_HALF_WIDTH_Y = 0.2159
+ZONE_HALF_HEIGHT_Z = 0.35
+_U = {"in": 2 / 3, "mid": 0.0, "out": -2 / 3}
+_V = {"high": 2 / 3, "mid": 0.0, "low": -2 / 3}
+COURSES: dict[str, np.ndarray] = {
+    f"{uname}_{vname}": np.array(
+        [ZONE_CENTER[0], ZONE_CENTER[1] + u * ZONE_HALF_WIDTH_Y, ZONE_CENTER[2] + v * ZONE_HALF_HEIGHT_Z]
+    )
+    for uname, u in _U.items()
+    for vname, v in _V.items()
+}
+
+# Per-course (swing, tilt) alignment configuration from the 2D grid search in
+# docs/design/ENV-002-B1-courses.md section 3 -- used only by the privileged
+# reachability oracle (controllers/baseball_b1.py), never by the env itself.
+ALIGNMENT: dict[str, tuple[float, float]] = {
+    "in_high": (-1.226, 0.410),
+    "in_mid": (-1.226, 0.000),
+    "in_low": (-1.226, -0.410),
+    "mid_high": (-1.298, 0.332),
+    "mid_mid": (-1.298, 0.000),
+    "mid_low": (-1.298, -0.332),
+    "out_high": (-1.346, 0.280),
+    "out_mid": (-1.346, 0.000),
+    "out_low": (-1.346, -0.280),
+}
+
+# Per-axis bang-bang trigger time (seconds before planned arrival) for each
+# course, searched DIRECTLY in the full coupled environment (both axes held/
+# driven together, exactly as OracleAimController uses them) --
+# docs/design/ENV-002-B1-courses.md section 4. An earlier attempt calibrated
+# swing and tilt SEPARATELY (tilt left uncontrolled during the swing
+# calibration and vice versa); that missed real inertial coupling between
+# the two nested rotating joints -- e.g. out_mid's isolated swing-only
+# crossing time (0.289s) undershot the target by 0.11rad when tilt was
+# actively held during the same run, because holding tilt changes the
+# swing axis's effective dynamics. These values are validated end-to-end:
+# every course's OracleAimController run hits (see
+# docs/records/VALIDATION_LOG.md).
+CROSSING_TIME_S: dict[str, tuple[float, float]] = {
+    "in_high": (0.25, 0.41),
+    "in_mid": (0.27, 0.0),
+    "in_low": (0.23, 0.33),
+    "mid_high": (0.27, 0.28),
+    "mid_mid": (0.28, 0.0),
+    "mid_low": (0.25, 0.30),
+    "out_high": (0.29, 0.28),
+    "out_mid": (0.29, 0.0),
+    "out_low": (0.26, 0.31),
+}
+
+
+@dataclass(frozen=True)
+class RewardWeights:
+    """Same b0-contact-v1 definition as envs/baseball_env.py (I-07a-1 item B) --
+    contact_velocity intentionally 0 (unreviewed), hit/miss/control_cost kept."""
+
+    hit_success: float = 10.0
+    contact_velocity: float = 0.0
+    control_cost: float = 0.2
+    miss: float = 3.0
+
+
+class BaseballB1Env(gym.Env):
+    """ENV-002 stage B1: same fixed release/horizontal-speed pitch as B0, but
+    aimed at one of 9 courses (inside/middle/outside x high/mid/low), and a
+    2-DOF bat (horizontal swing + tilt) to reach them.
+
+    Kept as a separate class/XML from BaseballB0Env (envs/baseball_env.py) so
+    B0's already-verified behavior/tests are never at risk of regressing; see
+    docs/design/ENV-002-B1-courses.md.
+
+    Action: [swing_ctrl, tilt_ctrl], both in [-1, 1].
+    Observation (13-dim): ball_pos(3), ball_vel(3), swing_angle, swing_vel,
+    tilt_angle, tilt_vel, predicted_time_to_target, prev_contact,
+    normalized_step. The course identity/target is NOT in the observation
+    (ENV-002 section 6) -- only info["course"] carries it, for logging.
+    """
+
+    metadata: ClassVar[dict[str, Any]] = {
+        "render_modes": ["human", "rgb_array", None],
+        "render_fps": 60,
+    }
+
+    RELEASE = np.array([16.5, 0.0, 1.8])
+    HORIZONTAL_SPEED = 35.0
+
+    def __init__(
+        self,
+        xml_path: str | Path = ASSET_PATH,
+        render_mode: str | None = None,
+        frame_skip: int = 20,
+        episode_seconds: float = 1.2,
+        reward_weights: RewardWeights | None = None,
+        seed: int | None = None,
+        prep_swing: float = 1.0,
+        prep_tilt: float = 0.0,
+        pass_margin: float = 0.25,
+        default_course: str = "mid_mid",
+    ) -> None:
+        super().__init__()
+        self.xml_path = Path(xml_path)
+        self.model = mujoco.MjModel.from_xml_path(str(self.xml_path))
+        self.data = mujoco.MjData(self.model)
+        self.frame_skip = frame_skip
+        self.render_mode = render_mode
+        self.max_steps = int(episode_seconds / (self.model.opt.timestep * frame_skip))
+        self.reward_weights = reward_weights or RewardWeights()
+        self._rng = np.random.default_rng(seed)
+        self._renderer: dict[str, mujoco.Renderer] = {}
+
+        self.prep_swing = float(prep_swing)
+        self.prep_tilt = float(prep_tilt)
+        self.pass_x = float(ZONE_CENTER[0] - pass_margin)
+        self.default_course = default_course
+
+        self._step_count = 0
+        self._hit_step: int | None = None
+        self._hit_time: float | None = None
+        self._planned_arrival: float | None = None
+        self._last_contact_velocity = 0.0
+        self._prev_contact = 0.0
+        self._end_reason: str | None = None
+        self._done = False
+        self._held_swing: float | None = None
+        self._held_tilt: float | None = None
+        self._course: str = default_course
+        self._target = COURSES[default_course].copy()
+
+        self.ball_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "ball")
+        self.ball_geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "ball_geom")
+        self.bat_geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "bat_geom")
+        self.bat_body_id = int(self.model.geom_bodyid[self.bat_geom_id])
+        self.ground_geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, "ground")
+        self.batter_box_geom_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_GEOM, "batter_box_rh"
+        )
+        self.batter_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "batter_body")
+        self.swing_joint_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, "bat_hinge")
+        self.tilt_joint_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_JOINT, "bat_tilt_hinge"
+        )
+        self.swing_qpos_adr = self.model.jnt_qposadr[self.swing_joint_id]
+        self.swing_qvel_adr = self.model.jnt_dofadr[self.swing_joint_id]
+        self.tilt_qpos_adr = self.model.jnt_qposadr[self.tilt_joint_id]
+        self.tilt_qvel_adr = self.model.jnt_dofadr[self.tilt_joint_id]
+        self.ball_free_joint_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_JOINT, "ball_free"
+        )
+        self.ball_qpos_adr = self.model.jnt_qposadr[self.ball_free_joint_id]
+        self.ball_qvel_adr = self.model.jnt_dofadr[self.ball_free_joint_id]
+
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(13,), dtype=np.float32)
+
+    def reset(
+        self, *, seed: int | None = None, options: dict[str, Any] | None = None
+    ) -> tuple[np.ndarray, dict[str, Any]]:
+        super().reset(seed=seed)
+        if seed is not None:
+            self._rng = np.random.default_rng(seed)
+
+        options = options or {}
+        course = options.get("course", self.default_course)
+        if course not in COURSES:
+            raise ValueError(f"unknown course {course!r}; must be one of {sorted(COURSES)}")
+        self._course = course
+        self._target = COURSES[course].copy()
+
+        mujoco.mj_resetData(self.model, self.data)
+        self._step_count = 0
+        self._hit_step = None
+        self._hit_time = None
+        self._last_contact_velocity = 0.0
+        self._prev_contact = 0.0
+        self._end_reason = None
+        self._done = False
+        self._held_swing = None
+        self._held_tilt = None
+
+        flight_time = (self.RELEASE[0] - self._target[0]) / self.HORIZONTAL_SPEED
+        self._planned_arrival = float(flight_time)
+        gravity = np.array(self.model.opt.gravity, dtype=float)
+        ball_vel = (self._target - self.RELEASE - 0.5 * gravity * flight_time**2) / flight_time
+        self._launch_speed_total = float(np.linalg.norm(ball_vel))
+        self._launch_speed_horizontal = float(np.linalg.norm(ball_vel[:2]))
+
+        self.data.qpos[self.ball_qpos_adr : self.ball_qpos_adr + 3] = self.RELEASE
+        self.data.qpos[self.ball_qpos_adr + 3 : self.ball_qpos_adr + 7] = [1.0, 0.0, 0.0, 0.0]
+        self.data.qvel[self.ball_qvel_adr : self.ball_qvel_adr + 3] = ball_vel
+        self.data.qvel[self.ball_qvel_adr + 3 : self.ball_qvel_adr + 6] = [0.0, 0.0, 0.0]
+        self.data.qpos[self.swing_qpos_adr] = self.prep_swing
+        self.data.qvel[self.swing_qvel_adr] = 0.0
+        self.data.qpos[self.tilt_qpos_adr] = self.prep_tilt
+        self.data.qvel[self.tilt_qvel_adr] = 0.0
+
+        mujoco.mj_forward(self.model, self.data)
+        self._check_no_initial_penetration()
+        obs = self._get_obs()
+        return obs, self._info(reward_terms={})
+
+    def _check_no_initial_penetration(self) -> None:
+        min_dist = min((float(c.dist) for c in self.data.contact), default=0.0)
+        if min_dist < -1e-6:
+            bad = [
+                (
+                    mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, c.geom1),
+                    mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, c.geom2),
+                    float(c.dist),
+                )
+                for c in self.data.contact
+                if c.dist < -1e-6
+            ]
+            raise RuntimeError(f"reset() produced an initial penetration: {bad}")
+
+    def set_held_pose(self, swing: float | None, tilt: float | None) -> None:
+        """held_rest diagnostic, exact at physics-substep resolution (both
+        axes). Pass (None, None) to release."""
+        self._held_swing = swing
+        self._held_tilt = tilt
+        if swing is not None:
+            self.data.qpos[self.swing_qpos_adr] = swing
+            self.data.qvel[self.swing_qvel_adr] = 0.0
+        if tilt is not None:
+            self.data.qpos[self.tilt_qpos_adr] = tilt
+            self.data.qvel[self.tilt_qvel_adr] = 0.0
+        if swing is not None or tilt is not None:
+            mujoco.mj_forward(self.model, self.data)
+
+    def batter_feet_in_box(self) -> bool:
+        box_pos = self.model.geom_pos[self.batter_box_geom_id]
+        box_half = self.model.geom_size[self.batter_box_geom_id]
+        foot = self.model.body_pos[self.batter_body_id]
+        return bool(
+            abs(foot[0] - box_pos[0]) <= box_half[0] and abs(foot[1] - box_pos[1]) <= box_half[1]
+        )
+
+    def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
+        if self._done:
+            raise RuntimeError(
+                "step() called after the episode already terminated/truncated; call reset()."
+            )
+
+        action = np.asarray(action, dtype=np.float32)
+        swing_ctrl = float(np.clip(action[0], -1.0, 1.0)) if self._held_swing is None else 0.0
+        tilt_ctrl = float(np.clip(action[1], -1.0, 1.0)) if self._held_tilt is None else 0.0
+        self.data.ctrl[0] = swing_ctrl
+        self.data.ctrl[1] = tilt_ctrl
+
+        end_reason: str | None = None
+        hit_this_step = False
+        hit_velocity = 0.0
+        substeps_run = 0
+
+        for _ in range(self.frame_skip):
+            mujoco.mj_step(self.model, self.data)
+            substeps_run += 1
+
+            if self._held_swing is not None:
+                self.data.qpos[self.swing_qpos_adr] = self._held_swing
+                self.data.qvel[self.swing_qvel_adr] = 0.0
+            if self._held_tilt is not None:
+                self.data.qpos[self.tilt_qpos_adr] = self._held_tilt
+                self.data.qvel[self.tilt_qvel_adr] = 0.0
+
+            # I-07a-1 item A fix, ported to B1: refresh xpos/contact from the
+            # just-integrated qpos so every check below matches d.time.
+            mujoco.mj_forward(self.model, self.data)
+
+            ground_now = self._detect_ground_contact()
+            bat_hit, bat_speed = self._detect_bat_contact()
+
+            if ground_now:
+                end_reason = END_REASON_GROUND_CONTACT
+                break
+            if bat_hit:
+                end_reason = END_REASON_HIT
+                hit_this_step = True
+                hit_velocity = bat_speed
+                break
+            if self._ball_has_passed():
+                end_reason = END_REASON_PASSED_NO_CONTACT
+                break
+
+        self._step_count += 1
+        actual_substep_duration = substeps_run * self.model.opt.timestep
+
+        if hit_this_step:
+            self._hit_step = self._step_count
+            self._hit_time = float(self.data.time)
+            self._last_contact_velocity = hit_velocity
+
+        timeout = end_reason is None and self._step_count >= self.max_steps
+        if timeout:
+            end_reason = END_REASON_TIMEOUT
+        if end_reason is not None:
+            self._end_reason = end_reason
+
+        terminated = end_reason in (
+            END_REASON_HIT,
+            END_REASON_GROUND_CONTACT,
+            END_REASON_PASSED_NO_CONTACT,
+        )
+        truncated = end_reason == END_REASON_TIMEOUT
+        self._done = terminated or truncated
+
+        reward, reward_terms = self._reward(
+            swing_ctrl, tilt_ctrl, hit_this_step, end_reason, actual_substep_duration
+        )
+        obs = self._get_obs()
+        self._prev_contact = float(hit_this_step)
+
+        if self.render_mode == "human":
+            self.render()
+
+        return obs, reward, terminated, truncated, self._info(reward_terms)
+
+    def render(self, camera: str = "park_wide") -> np.ndarray | None:
+        if self.render_mode is None:
+            return None
+        if self.render_mode == "human":
+            return None
+        return self.render_rgb(camera)
+
+    def render_rgb(self, camera: str = "park_wide") -> np.ndarray:
+        if camera not in self._renderer:
+            self._renderer[camera] = mujoco.Renderer(self.model, width=960, height=540)
+        renderer = self._renderer[camera]
+        renderer.update_scene(self.data, camera=camera)
+        return renderer.render()
+
+    def close(self) -> None:
+        for renderer in self._renderer.values():
+            renderer.close()
+        self._renderer = {}
+
+    def _get_obs(self) -> np.ndarray:
+        ball_pos = self.data.xpos[self.ball_body_id].copy()
+        ball_vel = self.data.qvel[self.ball_qvel_adr : self.ball_qvel_adr + 3].copy()
+        swing_angle = float(self.data.qpos[self.swing_qpos_adr])
+        swing_vel = float(self.data.qvel[self.swing_qvel_adr])
+        tilt_angle = float(self.data.qpos[self.tilt_qpos_adr])
+        tilt_vel = float(self.data.qvel[self.tilt_qvel_adr])
+        predicted_time_to_target = self._predicted_time_to_target(ball_pos, ball_vel)
+        obs = np.array(
+            [
+                *ball_pos,
+                *ball_vel,
+                swing_angle,
+                swing_vel,
+                tilt_angle,
+                tilt_vel,
+                predicted_time_to_target,
+                self._prev_contact,
+                float(self._step_count) / max(self.max_steps, 1),
+            ],
+            dtype=np.float32,
+        )
+        return obs
+
+    def _reward(
+        self,
+        swing_ctrl: float,
+        tilt_ctrl: float,
+        hit_this_step: bool,
+        end_reason: str | None,
+        actual_substep_duration_s: float,
+    ) -> tuple[float, dict[str, float]]:
+        weights = self.reward_weights
+        hit_success = float(hit_this_step)
+        contact_velocity_term = self._last_contact_velocity if hit_this_step else 0.0
+        miss = float(
+            end_reason
+            in (END_REASON_GROUND_CONTACT, END_REASON_PASSED_NO_CONTACT, END_REASON_TIMEOUT)
+        )
+        control_cost = (swing_ctrl**2 + tilt_ctrl**2) * actual_substep_duration_s
+
+        reward_terms = {
+            "hit_success": weights.hit_success * hit_success,
+            "contact_velocity": weights.contact_velocity * contact_velocity_term,
+            "control_cost": -weights.control_cost * control_cost,
+            "miss": -weights.miss * miss,
+        }
+        return float(sum(reward_terms.values())), reward_terms
+
+    def _point_velocity(self, body_id: int, point: np.ndarray) -> np.ndarray:
+        jacp = np.zeros((3, self.model.nv))
+        jacr = np.zeros((3, self.model.nv))
+        mujoco.mj_jac(self.model, self.data, jacp, jacr, point, body_id)
+        return jacp @ self.data.qvel
+
+    def _detect_bat_contact(self) -> tuple[bool, float]:
+        for idx in range(self.data.ncon):
+            contact = self.data.contact[idx]
+            if contact.dist > 0:
+                continue
+            geom_pair = {contact.geom1, contact.geom2}
+            if self.ball_geom_id in geom_pair and self.bat_geom_id in geom_pair:
+                point = np.array(contact.pos, dtype=float)
+                v_ball = self._point_velocity(self.ball_body_id, point)
+                v_bat = self._point_velocity(self.bat_body_id, point)
+                return True, float(np.linalg.norm(v_ball - v_bat))
+        return False, 0.0
+
+    def _detect_ground_contact(self) -> bool:
+        for idx in range(self.data.ncon):
+            contact = self.data.contact[idx]
+            if contact.dist > 0:
+                continue
+            geom_pair = {contact.geom1, contact.geom2}
+            if self.ball_geom_id in geom_pair and self.ground_geom_id in geom_pair:
+                return True
+        return False
+
+    def _predicted_time_to_target(self, ball_pos: np.ndarray, ball_vel: np.ndarray) -> float:
+        vx = float(ball_vel[0])
+        if abs(vx) < 1e-6:
+            return 10.0
+        return float((self._target[0] - float(ball_pos[0])) / vx)
+
+    def _ball_has_passed(self) -> bool:
+        return bool(self.data.xpos[self.ball_body_id][0] < self.pass_x)
+
+    def _info(self, reward_terms: dict[str, float]) -> dict[str, Any]:
+        contact_time = self._hit_time
+        planned_arrival = self._planned_arrival
+        if contact_time is not None:
+            signed_timing_error = contact_time - planned_arrival
+            timing_error = abs(signed_timing_error)
+            timing_error_missing_reason = None
+        else:
+            signed_timing_error = None
+            timing_error = None
+            timing_error_missing_reason = "no_contact"
+        return {
+            "step": self._step_count,
+            "hit": self._hit_step is not None,
+            "hit_step": self._hit_step,
+            "end_reason": self._end_reason,
+            "contact_time_s": contact_time,
+            "planned_arrival_s": planned_arrival,
+            "signed_timing_error_s": signed_timing_error,
+            "timing_error": timing_error,
+            "timing_error_missing_reason": timing_error_missing_reason,
+            "contact_velocity_post_contact": self._last_contact_velocity,
+            "launch_speed_total_m_s": getattr(self, "_launch_speed_total", None),
+            "launch_speed_horizontal_m_s": getattr(self, "_launch_speed_horizontal", None),
+            "course": self._course,
+            "target": self._target.tolist(),
+            "reward_terms": reward_terms,
+        }
