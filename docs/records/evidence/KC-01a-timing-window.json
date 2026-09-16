@@ -1,0 +1,404 @@
+{
+  "condition": "torso_swing_with_arm_hold",
+  "note": "torso_swing_with_arm_hold is A2-convergent but was ALREADY invalid at every dt -- this sweep checks whether ANY nearby trigger time within +-20ms produces a valid hit, not just the one calibrated point.",
+  "sweep": [
+    {
+      "offset_ms": -20.0,
+      "trigger_control_step": 24,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -19.0,
+      "trigger_control_step": 24,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -18.0,
+      "trigger_control_step": 24,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -17.0,
+      "trigger_control_step": 24,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -16.0,
+      "trigger_control_step": 24,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -15.0,
+      "trigger_control_step": 23,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -14.0,
+      "trigger_control_step": 23,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -13.0,
+      "trigger_control_step": 23,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -12.0,
+      "trigger_control_step": 23,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -11.0,
+      "trigger_control_step": 23,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -10.0,
+      "trigger_control_step": 22,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -9.0,
+      "trigger_control_step": 22,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -8.0,
+      "trigger_control_step": 22,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -7.0,
+      "trigger_control_step": 22,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -6.0,
+      "trigger_control_step": 22,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -5.0,
+      "trigger_control_step": 21,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -4.0,
+      "trigger_control_step": 21,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -3.0,
+      "trigger_control_step": 21,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -2.0,
+      "trigger_control_step": 21,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": -1.0,
+      "trigger_control_step": 21,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 0.0,
+      "trigger_control_step": 20,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 1.0,
+      "trigger_control_step": 20,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 2.0,
+      "trigger_control_step": 20,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 3.0,
+      "trigger_control_step": 20,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 4.0,
+      "trigger_control_step": 20,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 5.0,
+      "trigger_control_step": 19,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 6.0,
+      "trigger_control_step": 19,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 7.0,
+      "trigger_control_step": 19,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 8.0,
+      "trigger_control_step": 19,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 9.0,
+      "trigger_control_step": 19,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 10.0,
+      "trigger_control_step": 18,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 11.0,
+      "trigger_control_step": 18,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 12.0,
+      "trigger_control_step": 18,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 13.0,
+      "trigger_control_step": 18,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 14.0,
+      "trigger_control_step": 18,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 15.0,
+      "trigger_control_step": 17,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 16.0,
+      "trigger_control_step": 17,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 17.0,
+      "trigger_control_step": 17,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 18.0,
+      "trigger_control_step": 17,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 19.0,
+      "trigger_control_step": 17,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    },
+    {
+      "offset_ms": 20.0,
+      "trigger_control_step": 16,
+      "scoring_valid": false,
+      "status": "complete",
+      "batting_score": 0.0,
+      "end_reason": "batted_ball_landing"
+    }
+  ],
+  "distinct_control_steps_hit": 9,
+  "offsets_per_control_step": {
+    "24": [
+      -20.0,
+      -19.0,
+      -18.0,
+      -17.0,
+      -16.0
+    ],
+    "23": [
+      -15.0,
+      -14.0,
+      -13.0,
+      -12.0,
+      -11.0
+    ],
+    "22": [
+      -10.0,
+      -9.0,
+      -8.0,
+      -7.0,
+      -6.0
+    ],
+    "21": [
+      -5.0,
+      -4.0,
+      -3.0,
+      -2.0,
+      -1.0
+    ],
+    "20": [
+      0.0,
+      1.0,
+      2.0,
+      3.0,
+      4.0
+    ],
+    "19": [
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0
+    ],
+    "18": [
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0
+    ],
+    "17": [
+      15.0,
+      16.0,
+      17.0,
+      18.0,
+      19.0
+    ],
+    "16": [
+      20.0
+    ]
+  },
+  "success_window_count_of_41": 0,
+  "success_window_fraction": 0.0,
+  "deferred_conditions": [
+    "arm_swing_with_torso_hold",
+    "simultaneous_swing_and_torso",
+    "staggered_swing_and_torso"
+  ],
+  "deferred_reason": "did not pass A2 dt-convergence; sweeping timing before a convergent baseline exists would be optimizing success rate before physics convergence, which the task explicitly prohibits."
+}
