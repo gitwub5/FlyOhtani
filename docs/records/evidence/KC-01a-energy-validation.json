@@ -1,0 +1,172 @@
+{
+  "noball_energy": {
+    "arm_swing_with_torso_hold": {
+      "0.00025": {
+        "dt": 0.00025,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 3.5335021504582618,
+        "pe1": 267.5226405171478,
+        "delta_ke_plus_pe": 2.9880826676060224,
+        "w_actuator_net": 4.077158717267188,
+        "w_damping": -0.8669380744330821,
+        "w_constraint": 0.0,
+        "predicted_delta_e": 3.2102206428341056,
+        "residual": -0.2221379752280832,
+        "residual_fraction_of_w_actuator": -0.054483524099100185,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.18451651050289045,
+        "hit_torso_joint_limit": "False"
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 3.5335021504577955,
+        "pe1": 267.5226405171474,
+        "delta_ke_plus_pe": 2.9880826676051697,
+        "w_actuator_net": 3.966080202951102,
+        "w_damping": -0.8669275972198927,
+        "w_constraint": 0.0,
+        "predicted_delta_e": 3.0991526057312093,
+        "residual": -0.1110699381260396,
+        "residual_fraction_of_w_actuator": -0.028004965215628796,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.18451651050318468,
+        "hit_torso_joint_limit": "False"
+      }
+    },
+    "torso_swing_with_arm_hold": {
+      "0.00025": {
+        "dt": 0.00025,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 2.0244040422964784,
+        "pe1": 267.5599105499458,
+        "delta_ke_plus_pe": 1.5162545922422055,
+        "w_actuator_net": 27.567950156403192,
+        "w_damping": -1.0028366697778124,
+        "w_constraint": -23.886575180961973,
+        "predicted_delta_e": 2.6785383056634053,
+        "residual": -1.1622837134211998,
+        "residual_fraction_of_w_actuator": -0.04216068684204425,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.6197102097646848,
+        "hit_torso_joint_limit": "True"
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 2.2620201120576415,
+        "pe1": 267.55981510759784,
+        "delta_ke_plus_pe": 1.753775219655438,
+        "w_actuator_net": 27.353756834439185,
+        "w_damping": -1.0037563212354654,
+        "w_constraint": -23.889938286744012,
+        "predicted_delta_e": 2.4600622264597085,
+        "residual": -0.7062870068042706,
+        "residual_fraction_of_w_actuator": -0.025820475449830512,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.619605408072212,
+        "hit_torso_joint_limit": "True"
+      }
+    },
+    "simultaneous_swing_and_torso": {
+      "0.00025": {
+        "dt": 0.00025,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 0.1092785902896752,
+        "pe1": 267.64609374560786,
+        "delta_ke_plus_pe": -0.31268766410255466,
+        "w_actuator_net": 2.6991595303411633,
+        "w_damping": -2.7211539841355594,
+        "w_constraint": 0.0,
+        "predicted_delta_e": -0.02199445379439613,
+        "residual": -0.29069321030815853,
+        "residual_fraction_of_w_actuator": -0.10769767664359432,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.5641333165919068,
+        "hit_torso_joint_limit": "False"
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 0.10927859028977381,
+        "pe1": 267.6460937455995,
+        "delta_ke_plus_pe": -0.31268766411079696,
+        "w_actuator_net": 2.5538092759880437,
+        "w_damping": -2.7211463896033434,
+        "w_constraint": 0.0,
+        "predicted_delta_e": -0.16733711361529968,
+        "residual": -0.14535055049549728,
+        "residual_fraction_of_w_actuator": -0.05691519404449754,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.5641333212635983,
+        "hit_torso_joint_limit": "False"
+      }
+    },
+    "staggered_swing_and_torso": {
+      "0.00025": {
+        "dt": 0.00025,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 0.084845879210143,
+        "pe1": 267.64882709760093,
+        "delta_ke_plus_pe": -0.33438702318898095,
+        "w_actuator_net": 13.819048182068942,
+        "w_damping": -2.0115428451226816,
+        "w_constraint": -12.077987153190085,
+        "predicted_delta_e": -0.2704818162438247,
+        "residual": -0.06390520694515622,
+        "residual_fraction_of_w_actuator": -0.004624428984050952,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.6237626602368441,
+        "hit_torso_joint_limit": "True"
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "ke0": 0.0,
+        "pe0": 268.06806000000006,
+        "ke1": 0.08483659722434089,
+        "pe1": 267.64880502042143,
+        "delta_ke_plus_pe": -0.3344183823542721,
+        "w_actuator_net": 13.699815012864354,
+        "w_damping": -2.0113052620572707,
+        "w_constraint": -11.794044437351436,
+        "predicted_delta_e": -0.1055346865443525,
+        "residual": -0.22888369580991963,
+        "residual_fraction_of_w_actuator": -0.016707064700873263,
+        "torso_range_rad": [
+          -0.6,
+          0.6
+        ],
+        "max_abs_torso_angle_observed_rad": 0.6236345665149488,
+        "hit_torso_joint_limit": "True"
+      }
+    }
+  }
+}
