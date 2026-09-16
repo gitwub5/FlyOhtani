@@ -1,6 +1,6 @@
 # 현재 상태
 
-2026-09-16 갱신(R-01 문서 정리, `docs/implementation/REFACTOR-PLAN.md`). 이 문서는
+2026-09-17 갱신(KC-01a 몸통-배트 협응 모델). 이 문서는
 **지금** 무엇이 검증됐고 무엇이 막혀 있는지만 담는다. 시행착오·정정 경위·과거
 수치는 [상태 이력](STATUS_HISTORY.md)에, 실행 명령·원자료는
 [검증 기록 색인](VALIDATION_LOG.md)에 있다. 다음 작업 배정은
@@ -45,6 +45,15 @@
   qpos/qvel까지 고정): 접촉점 속도 7.62m/s, exit_speed 8.61m/s, 발사각 41.2°,
   carry 8.48m(`batted-ball-v1` 기준 old 5.82m 대비 +46%), scoring_valid=true,
   재접촉 0.
+- **KC-01a**(`docs/design/KC-01a-TORSO-BAT-COORDINATION.md`, B1과 별도 모델·XML·
+  env, B1은 무변경): 고정 기반 위 실제 유한 관성 몸통 회전(`torso_yaw`)을 추가해
+  배트 swing/tilt를 그 위에 얹었다. mid_mid 4개 협응 조건(팔만/몸통만/동시/시차)을
+  같은 하드웨어에서 비교(`docs/records/KC-01a-COMPARISON.md`) — 시차 구동
+  (`staggered`, score 3.64m)이 동시 구동(`simultaneous`, 0.67m)과 팔만(`arm_only`,
+  2.63m)을 모두 앞섰고, 몸통 단독(`torso_only`)은 최선의 타이밍에서도 유효 타구를
+  만들지 못했다(몸통 관성이 배트보다 훨씬 커 각가속도 부족). ±5ms 타이밍 취약성은
+  네 조건 모두에서 재현됐고, 가장 성적이 좋았던 `staggered`는 물리 timestep을
+  절반으로 줄이면 무효로 뒤집힌다(dt 미수렴) — 그대로 보고했다.
 
 ## 알려진 한계 (임의로 고치지 않고 그대로 보고)
 
@@ -58,13 +67,16 @@
   성공은 미검증. 사용 금지.
 - **I-08b(전신 역학 통합) 미착수**: 현재 파리는 물리적으로는 단순 강체 배트
   기구이고 NeuroMechFly 메시는 순수 시각 오버레이다.
+- **KC-01a는 고정 기반**: 뒷다리 지면 반력·균형 제어·실제 전신 역학은 KC-01b(다음
+  단계, 미착수)다. 정착(0.5s+연속 0.2s) 판정 기준은 착지 전 episode 길이 안에서
+  네 조건 모두 확정적으로 충족하지 못했다(관찰 창 부족, `docs/records/
+  KC-01a-COMPARISON.md` §3).
 
-## 테스트·린트 (R-02/R-03 정리 후)
+## 테스트·린트
 
-`python -m pytest`/`pytest` 두 진입점 모두 **87 passed**로 일치(이전엔 진입점에
-따라 1개 차이 — 원인/수정: `docs/records/evidence/R00-known-failures-at-checkpoint.md`).
-lint 클린(이전 7건 수정), 비editable wheel 설치로 모델 로드까지 확인
-(`docs/records/evidence/R03-wheel-install-check.txt`).
+`python -m pytest`/`pytest` 두 진입점 모두 **99 passed**로 일치(B1/B0/ENV-001은
+87개로 무변경, KC-01a 12개 추가). lint 클린. 비editable wheel 설치로 모델 로드까지
+확인(`docs/records/evidence/R03-wheel-install-check.txt`).
 
 ## 다음 작업
 
