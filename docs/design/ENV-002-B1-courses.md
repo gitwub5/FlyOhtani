@@ -1,5 +1,7 @@
 # ENV-002 B1 — 조준과 9개 코스
 
+> **대체됨 (R-01, 2026-09-16):** 이 문서의 완료된 지시/시행착오는 현재 `docs/design/BASEBALL-SPEC.md`로 통합됐다. 코드 주석·다른 문서가 가리키는 이 파일 경로는 그대로 유효하며(역사적 설계 근거), 현재 유효한 규칙은 BASEBALL-SPEC.md에서 확인한다.
+
 > **현재 판정 변경:** 기존 contact-only 기준은 접촉 회귀용이다. 사용자 목표인 인필드 방향 타격에는 [타구 규약](ENV-002-BATTED-BALL.md)이 우선한다. I-07b-fix 완료 전 B2/RL로 진행하지 않는다.
 
 설계 버전 1.0 · 2026-09-16 · **구현 전 고정.** 기준: `docs/design/ENV-002-baseball.md` §3-4, §8. B0(`docs/design/ENV-002-calibration.json`, `docs/design/ENV-002-field-comparison.md`)의 검증된 구장·타자·타이밍은 그대로 재사용하고, B0의 XML/코드는 변경하지 않는다(회귀 방지). 신규 파일: `envs/assets/baseball_park_b1.xml`, `envs/baseball_b1_env.py`, `controllers/baseball_b1.py`.

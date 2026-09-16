@@ -7,14 +7,14 @@
 `docs/README.md`의 순서를 따른다:
 
 1. `docs/records/STATUS.md`의 최신 상태
-2. `docs/PLAN.md`의 연구 결정 (연구·환경·시각화 결정 D01~D12)
+2. `docs/PLAN.md`의 연구 결정 (연구·환경·시각화 결정 D01~D14)
 3. `docs/design/DATA_MODEL.md`의 수치·데이터 계약
 4. `docs/design/ARCHITECTURE.md`의 모듈·데이터 계약
 5. 해당 실험 문서: `docs/experiments/EXP-001-associative-learning.md`
 6. `docs/implementation/WORK_PACKAGES.md`의 작업 단위와 완료 기준
 7. `docs/implementation/VALIDATION.md`의 검증 명세
 
-결정의 단일 기준은 `docs/PLAN.md`이며 `docs/DECISIONS.md`는 위치 안내다. `docs/archive/`의 `PROJECT_PLAN.md`·`RESEARCH_PLAN.md`·`RESEARCH_REVIEW_2026-09-16.md`는 과거 로드맵/초안이며 각각 `docs/PLAN.md`, `docs/PLAN.md`, `docs/research/REVIEW.md`로 대체되었다. `configs/default.yaml`은 읽기 경로가 없는 legacy toy 설정이며, 과학적으로 확정된 기본값으로 취급하지 않는다.
+결정의 단일 기준은 `docs/PLAN.md`이며 `docs/DECISIONS.md`는 위치 안내다. `docs/archive/`의 `PROJECT_PLAN.md`·`RESEARCH_PLAN.md`·`RESEARCH_REVIEW_2026-09-16.md`는 과거 로드맵/초안이며 각각 `docs/PLAN.md`, `docs/PLAN.md`, `docs/research/REVIEW.md`로 대체되었다. 읽기 경로가 없던 legacy toy 설정 `configs/default.yaml`은 `docs/archive/configs-default.yaml`로 옮겼다(R-04) — 과학적으로 확정된 기본값으로 취급하지 않는다.
 
 ## 역할과 작업 원칙
 
@@ -29,26 +29,19 @@
 
 이 파일은 인계 안내이며 현재 사용자 지시가 우선한다.
 
+## 다음 작업
 
-## 다음 작업의 주의점
+`docs/records/STATUS.md`가 지금 검증된 상태와 알려진 한계를,
+`docs/implementation/WORK_PACKAGES.md`의 상태 표가 미착수/진행중 작업을 담는다.
+과거에는 이 파일에 완료된 작업의 "다음 지시"가 계속 쌓여 이미 끝난 일이 최신
+작업처럼 보이는 문제가 있었다(R-01 문서 정리, `docs/implementation/REFACTOR-PLAN.md`,
+가 이 파일을 포함해 바로잡았다) — 이제 그런 지시는 여기 남기지 않고 STATUS/
+작업표로만 관리한다. 완료된 작업의 경위는 `docs/records/INDEX.md`에서 작업
+ID로 찾는다.
 
-현재 우선 수정은 `docs/design/ENV-001-interception.md`에 따른 I-03b다. `docs/records/REVIEW_2026-09-16.md`가 이전 ‘모든 각도에서 정지 팔 충돌’ 해석을 정정한다. 무토크와 고정 자세를 구분하고, 초기 지면/몸통 충돌을 제거한 뒤 구동력을 측정한다.
-
-신경 실험은 EXP-001 1.0에 스케줄·점수·판정·예산까지 정해져 있다. 기존 ‘Q-05 미정’ 기록은 과거 상태다. 실제 구조와 spike 시각화는 `docs/design/VISUALIZATION.md`에 따른다. 문서 속 신규 CLI는 구현 목표이지 현재 명령이 아니다.
-
-
-야구장 확장은 `docs/design/ENV-002-baseball.md`와 I-07a/b/c를 따른다. 기존 환경의 안전한 초기상태·구동/종료 기반 수정 후 B0부터 진행한다. 구장/파리의 스케일과 투구 방향이 기존 ENV-001과 다르므로 좌표·시간·actuator를 그대로 복사하지 않는다.
-
-
-현재 최우선 작업은 I-07b-fix다. `docs/records/B1-BATTING-REVIEW.md`와 `docs/design/ENV-002-BATTED-BALL.md`를 먼저 읽는다. 기존 접촉9/9를 야구 타격 성공으로 취급하지 않으며, 스윙 방향·타구 추적·채점·영상 시간축을 고치기 전 B2나 RL로 진행하지 않는다.
-
-
-중앙 타격 이후 최신 순서는 `docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md`를 따른다. 팔로우스루 안정화/실제 contact 파라미터 기록, NeuroMechFly 시각 자산 적용, 나머지8코스 재보정 순이다. 시각 모델 추가가 물리 관성이나 접촉을 바꾸지 않게 검증한다.
-
-## 최신 외형 수정 인계
-
-I-08a 완료 보고보다 `docs/records/FLY-VISUAL-REVIEW.md`의 I-08a-fix를 우선한다. 원본 자산은 확인됐으나 좌표 배치와 비율이 잘못됐다. 앞다리2개 그립·뒷다리2개 접지·중간다리 접기, 전 부위 동일 배율을 적용한다.
-
-추가 사용자 요청: 다음 외형 작업 I-08a-style은 `docs/design/FLY-BATTING-STANCE-AND-COLOR.md`를 따른다. 옆선 타자 자세·머리 방향 분리와 원본 appearance 복원을 포함한다.
-
-최신 통합 작업은 `docs/design/BATTING-QUALITY-AND-SWING.md`: A 자세·색상, B 거리 점수/보상, C 중앙 스윙 개선 순서다. C에서는 제어 변경에 따른 타구 개선을 검증하며 A의 불변 조건과 구분한다. RL 훈련은 진행하지 않는다.
+현재 야구 환경(ENV-002)의 현행 규칙은 `docs/design/BASEBALL-SPEC.md`, 파리
+외형은 `docs/design/FLY-VISUAL-SPEC.md`에 통합돼 있다 — 개별 설계 문서
+(`ENV-002-baseball.md`, `ENV-002-B1-courses.md`, `ENV-002-BATTED-BALL.md`,
+`BATTING-QUALITY-AND-SWING.md`, `FOLLOWTHROUGH-AND-FLY-MODEL.md`,
+`FLY-BATTING-STANCE-AND-COLOR.md`)는 대체됨 표시와 함께 역사적 근거로
+보존했다(코드 주석이 여전히 그 경로를 가리킨다).

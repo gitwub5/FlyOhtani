@@ -1,6 +1,6 @@
 # 설정 계약
 
-현재 default.yaml은 기존 toy 타격 초안이며 실행기에 연결되지 않았다. 아래는 구현할 신규 설정의 계약이다. 실제 YAML·로더는 Claude가 I-02에서 작성한다.
+기존 `default.yaml`(toy 타격 초안, 어떤 실행 경로도 읽지 않음)은 R-04(`docs/implementation/REFACTOR-PLAN.md`)에서 `docs/archive/configs-default.yaml`로 옮겼다 — 유효한 기본 설정처럼 이 폴더에 두지 않기 위함이다(근거는 `docs/archive/README.md`). 아래는 구현할 신규 설정의 계약이다. 실제 YAML·로더는 Claude가 I-02에서 작성한다.
 
 ## exp001.yaml
 

@@ -1,6 +1,16 @@
 # 구조와 데이터 계약
 
-상태: 2026-09-16 설계 기준. 아래 모듈·계약은 구현 목표이며 현재 존재하는 API가 아니다. 기존 파일 경로는 필요한 작업을 수행할 때 점진적으로 정비한다.
+상태: 2026-09-16 설계 기준. 아래 모듈·계약은 **신경회로 트랙**의 구현 목표이며
+현재 존재하는 API가 아니다(신경회로 트랙은 아직 미착수, `docs/records/STATUS.md`).
+기존 파일 경로는 필요한 작업을 수행할 때 점진적으로 정비한다.
+
+**물리 환경 트랙(`envs/`)의 실제 현재 모듈 경계**는 이 설계와 별도로 이미
+구현돼 있다: `envs/baseball_b1_env.py`가 reset/step과 substep 사건 순서를
+조정하고, 독립적인 코스 기하/타이밍 설정은 `envs/baseball/courses.py`, 순수
+채점/보상 계산은 `envs/baseball/reward.py`로 분리했다(R-02,
+`docs/implementation/REFACTOR-PLAN.md`). 규칙 자체는 여기가 아니라
+[BASEBALL-SPEC](BASEBALL-SPEC.md)에 있다 — 이 문서는 아직 신경회로 쪽
+목표 구조만 다룬다.
 
 ## 1. 모듈 경계
 
