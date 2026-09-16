@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-16",
+  "spec": "docs/design/ENV-002-BATTED-BALL.md, docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md section B",
+  "stage": "B1, I-07b-fix + I-07b-followthrough",
+  "scope_note": "Only the mid_mid course is calibrated/verified against these values. The other 8 courses are unverified for this gear/contact-material combination (see envs/baseball_b1_env.py's CROSSING_TIME_S comment).",
+  "solver": {
+    "timestep_s": 0.00025,
+    "integrator": "RK4",
+    "refsafe_enabled": true,
+    "refsafe_floor_s": 0.0005,
+    "refsafe_note": "refsafe clamps any geom-level solref[0] (timeconst) below 2*timestep to that floor. The measured ball-bat effective timeconst below (0.0051s) is already 10x above the 0.0005s floor, so refsafe is NOT clamping it in this configuration -- included here only so a future timestep change can re-check this."
+  },
+  "declared_geom_contact_params": {
+    "ball_geom": {"solref": [0.0002, 0.01], "solimp": [0.9, 0.95, 0.0001, 0.5, 2], "priority": 0, "solmix": 1.0},
+    "bat_geom": {"solref": [0.01, 1.0], "solimp": [0.9, 0.95, 0.001, 0.5, 2], "priority": 0, "solmix": 1.0, "note": "inherited from <default>, not overridden"},
+    "ground": {"solref": [0.01, 1.0], "solimp": [0.9, 0.95, 0.001, 0.5, 2], "note": "inherited from <default>, unaffected by the ball_geom override"}
+  },
+  "actual_measured_ball_bat_contact": {
+    "solref": [0.0051, 0.505],
+    "solimp": [0.9, 0.95, 0.00055, 0.5, 2],
+    "measured_via": "data.contact[i].solref / .solimp read directly during a real mid_mid collision (OracleAimController, seed=0), not derived analytically",
+    "explanation": "MuJoCo mixes two equal-priority, equal-solmix (1.0) geoms' contact params by SIMPLE ARITHMETIC MEAN, not by taking the softer/lower-priority geom's own value. solref: (0.0002+0.01)/2=0.0051 (matches). solimp[2]: (0.0001+0.001)/2=0.00055 (matches). This corrects an earlier (wrong) claim in this codebase's comments/VALIDATION_LOG that 'the pair uses the softer/lower-priority of the two geoms' and that ball_geom's own declared solref was the value actually governing the collision -- see https://mujoco.readthedocs.io/en/stable/modeling.html#contact-parameters for MuJoCo's own documented mixing rule."
+  },
+  "gear_calibration": {
+    "method": "Sweep bat_motor gear in {12,20,30,45,60} x a per-gear trigger-time search (center = isolated swing-alone time from prep_swing=-1.9 to the mid_mid alignment angle -1.298rad, +-0.04s window, 0.001-0.002s resolution), with the ball_geom solref override already applied. Selected the smallest gear giving a clearly positive exit velocity and forward_flight_success -- not the single fastest/highest bat-speed candidate (45/60 had higher raw contact-point speed but overshot the alignment angle too fast for the achievable trigger resolution to land a well-aligned hit).",
+    "candidates": [
+      {"gear": 12, "swing_alone_time_to_target_s": 0.1498, "best_trigger_s": 0.316, "exit_vx_m_s": 2.64, "bat_contact_vx_m_s": 4.10, "forward_flight_success": false},
+      {"gear": 20, "swing_alone_time_to_target_s": 0.1163, "best_trigger_s": 0.346, "exit_vx_m_s": 6.30, "bat_contact_vx_m_s": 5.57, "forward_flight_success": false},
+      {"gear": 27, "best_trigger_s": 0.360, "exit_vx_m_s": 6.41, "bat_contact_vx_m_s": 6.59, "forward_flight_success": true, "note": "also succeeds, gear=30 kept for more margin"},
+      {"gear": 30, "swing_alone_time_to_target_s": 0.0950, "best_trigger_s": 0.365, "exit_vx_m_s": 7.30, "bat_contact_vx_m_s": 6.98, "forward_flight_success": true},
+      {"gear": 45, "swing_alone_time_to_target_s": 0.0775, "best_trigger_s": 0.386, "exit_vx_m_s": -3.92, "bat_contact_vx_m_s": 8.33, "forward_flight_success": false},
+      {"gear": 60, "swing_alone_time_to_target_s": 0.0673, "best_trigger_s": 0.396, "exit_vx_m_s": -5.54, "bat_contact_vx_m_s": 10.28, "forward_flight_success": false}
+    ],
+    "selected_gear": 30,
+    "applied_to": "envs/assets/baseball_park_b1.xml actuator[bat_motor] gear"
+  },
+  "measured_actuator_a_max": {
+    "swing": {"gear": 30, "a_max_rad_s2": 134.4, "measured_at": "ctrl=1.0, angle=-0.898rad (rest), isolated (no ball)", "implied_I_eff_kg_m2": 0.2232},
+    "tilt": {"gear": 6, "a_max_rad_s2": 10.07, "measured_at": "ctrl=1.0, angle=0.0rad (rest), isolated (no ball)", "implied_I_eff_kg_m2": 0.596, "note": "2.75x the naive rod-about-end geometric estimate (0.2168) -- used for the I-07b-followthrough brake gain derivation, docs/records/VALIDATION_LOG.md"}
+  },
+  "central_case_final_verification": {
+    "course": "mid_mid",
+    "controller": "OracleAimController with I-07b-followthrough _SwingAxis/_TiltAxis",
+    "bat_contact_vx_m_s": 6.980,
+    "exit_velocity_xyz_m_s": [7.291, 3.924, 2.068],
+    "forward_flight_success": true,
+    "first_landing_xyz_m": [5.545, 2.785, 0.036],
+    "recontact_count": 0,
+    "prolonged_contact": false,
+    "swing_settle_dt_after_latch_s": 0.435,
+    "swing_angle_peak_to_peak_next_0.2s_rad": 1.0e-05,
+    "tilt_settle_status": "not confirmed within the episode's natural lifetime (ball lands ~0.70s after latch); final in-episode state angle=-2.1e-4rad, vel=0.061rad/s (both well converged, no divergence/repeated reversal), see docs/records/VALIDATION_LOG.md for the full discussion of why tilt's gear=6 torque authority cannot meet the 0.5s design target against this disturbance magnitude"
+  },
+  "caveats": [
+    "Reflects real, converged MuJoCo contact-solver behavior (verified dt-independent down to 5e-6s, 25x finer than production), not a claim of real bat-ball coefficient-of-restitution accuracy.",
+    "No independent energy/momentum/impulse cross-check against real baseball bat-ball physics was performed -- see docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md section B's explicit caution against tuning material purely to pass the 5m gate.",
+    "gear=30/ball_geom solref combination is verified for mid_mid only."
+  ]
+}

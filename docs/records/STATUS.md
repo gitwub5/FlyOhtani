@@ -1,5 +1,96 @@
 # 현재 상태
 
+## 2026-09-16 — I-08a-style + I-07c-score + I-07c-swing 완료: 옆선 자세·원본 색상, 비거리 점수, 스윙 windup 개선 (최신)
+
+[통합 규약](../design/BATTING-QUALITY-AND-SWING.md)의 A(자세·색상)→B(점수/보상)→C(스윙) 순서를 완료했다. 8코스 확대·B2·변화구·RL 훈련·전신 역학(I-08b)은 진행하지 않았다. 상세 수치·코드 경로는 `docs/records/VALIDATION_LOG.md`(동일 날짜 항목)에 있다. 여기서는 **테스트 통과**와 **실제 외형·타격 개선**을 구분해 보고한다.
+
+**A. 옆선 자세·원본 색상** — 실제 외형 개선: 몸통이 투수에게 옆면(f·p=90.00°, 설계 허용 80~100°)을, 머리만 투수 릴리스 지점(RELEASE=(16.5,0,1.8))을 향하도록(실제 배치 씬 기준 오차 4.72°, 설계 허용 10° 이내 — 빌드 스크립트가 보고했던 고립 프로브 기준 0.00°와는 다른 숫자이니 혼동 주의) 렌더로 확인했다. flygym==1.2.1의 `config.yaml`(SHA-256 기록) appearance를 그대로 옮겨 45개 메시 전부에 원본 부위별 재질(황갈색 몸통/다리, 적갈색 눈, 반투명 날개)을 적용했다. 두 발 접지·양손 그립·동일 배율·기존 타격 물리 불변은 전부 재검증(테스트 통과 + 직접 렌더 확인)했다. 진단 이미지: `runs/env002-b1-neuromechfly/mid_mid/stance_axis_diagnostic.png`.
+
+**B. 비거리 점수/`forward-carry-v1` 보상** — 순수 계산 로직 추가(물리에 영향 없음, qpos/qvel 불변을 직접 확인): `carry_distance_m`(첫 접촉~첫 착지)/`landing_range_from_home_m`/`scoring_valid`(전방90° 부채꼴+정상분리+재접촉0)/`batting_score`(유효 시 carry, 아니면0)/`status`("complete"/"incomplete"/미확정 시 null 점수)를 `info`에 추가했다. 기존 `reward_terms`(활성, 기본값 `batted-ball-v1` 유지, 하위호환 무변경)와 별도로 `forward_carry_v1.reward_terms`를 항상 병기해 신·구 보상을 같은 episode에서 비교 가능하게 했다. RL 훈련은 시작하지 않았다.
+
+**C. 스윙 windup 개선** — 실제 타격 개선(테스트 통과와 별개로 눈으로/영상으로도 확인): 기존 준비각 -1.9rad을 관절범위(`bat_hinge` [-2.0,2.0], 불변) 안에서 -1.96rad까지 넓히고 트리거를 재계산했다. gear/질량/관성/재료/dt/투구는 전부 고정, 목표 접촉각(ALIGNMENT, 방향무관 기하값)도 불변 — 오직 "얼마나 뒤에서 준비해 가속 구간을 길게 쓰는가"만 바꿨다. 결과(중앙 mid_mid, 동일 oracle): 접촉점 속도 7.19→7.62m/s, exit_speed 8.53→8.61m/s, carry 5.82→8.48m, **batting_score +46%**, 정착시간 0.431s(0.5s 목표 이내)·정착 후 p-p 4.25e-5rad(0.02rad 목표 이내) 유지, 두 발 접지·양손 그립 전 구간 재확인(reach_error 항상 0). **정직하게 보고하는 한계**: (1) 발사각이 14°→41°로 크게 높아졌다 — 더 빠른 직선타가 아니라 궤적 형태 자체가 달라진 것이며 의도적으로 고른 결과가 아니라 트리거 재계산의 부산물이다. (2) 트리거 시각을 단 한 control step(0.005s)만 어긋나도 판정이 뒤집히는 취약성을 발견했는데, **이는 기존(prep=-1.9) 스윙에도 이미 있던 문제**이며 이번에 고치지 않았다(별도 재설계 과제로 기록). 전후 비교: 영상(`runs/env002-b1-i07c-swing/{before,after}/`, 동일 카메라 1×, 화면에 실거리/점수/상태 오버레이), 배트 궤적 그림(`runs/env002-b1-i07c-swing/bat_tip_trajectory_before_after.png`), 수치표(`runs/env002-b1-i07c-swing/final_comparison_table.json`).
+
+**테스트**: `pytest tests/` **87 passed**(A/B/C 전체 완료 시점, 신규 23개: B 19개 + C 4개). 옛 물리 회귀 테스트 2개는 새 수치로 재고정하되 이전 값·변경 이유를 테스트 docstring에 그대로 남겼다(옛 정답만 바꾸고 통과라 부르지 않기 위함).
+
+**남은 문제**: 나머지 8코스는 여전히 I-07b-fix 이전 기준으로 미보정(원래도 "사용 금지"), tilt축 0.5s 정착 목표 미충족(I-07b-followthrough에서 이미 보고된 gear=6 한계, 이번 범위 밖)은 그대로 남아 있다. 트리거 타이밍 취약성·41° 발사각은 위에 정직하게 남겼다.
+
+## 2026-09-16 — I-08a-fix: 외형 좌표 버그 수정·자세 재정의 완료
+
+- [외형 재검토와 수정 규약](FLY-VISUAL-REVIEW.md)의 요구를 그대로 따랐다. I-08b(전신 역학)·나머지8코스·B2/변화구/RL은 진행하지 않았다.
+- **근본 원인 확인**: 뒷발이 떠 있던 이유는 `scripts/build_fly_visual_asset.py`가 발을 fly_visual의 **로컬** z=0에 맞췄는데, 그 body가 **world z=1.0인 batter_body** 안에 중첩되면서 접지 보정이 상쇄되지 않고 그대로 1m 위로 올라간 것이었다(좌표계 혼동). 추가로 geom **origin**을 발바닥으로 취급해 실제 메시 최하단(발바닥) 대비 약8cm를 더 놓쳤다. 앞다리는 이 문제 때문에(도달거리를 잘못된 위치에서 측정) 실제로는 불필요했던3배 확대를 했었다.
+- **좌표 수정**: (1) `local_pos.z = -batter_world_z - min_sole_z`로 부모의 world z를 명시적으로 상쇄, (2) `scripts/fly_mesh_utils.py`를 새로 만들어 geom origin이 아니라 **실제 STL 정점을 world로 변환**해 발바닥·손끝을 측정, (3) 회전 피벗(FlyBody 원점)이 몸통(Thorax) 자신의 중심이 아니어서 회전만으로 몸통이 X축으로 약0.52m 밀려나던 것을 발견해 **XY 재중심화**(Thorax 회전후 위치가 batter_body 기준(0,0)에 오도록 fly_visual의 pos.xy를 보정)를 추가했다.
+- **자세 재정의(사용자 지시대로)**: 뒷다리(LH/RH)만 지면 지지, 중간다리(LM/RM)는 몸 옆으로 접음(Femur -120°·Tibia -150°, 원본 조인트 그리드서치로 탐색, 완전 편 상태 대비 약87% 접힘), 앞다리(LF/RF)만 동적 그립. 기존 "4다리 지지" 설계를 대체했다.
+- **앞다리 3배 확대 제거**: 좌표 버그를 고치고 나니 몸통과 **동일한 K=400**의 자연 팔 길이(Femur+Tibia+Tarsus1=0.580m)만으로 **전체 에피소드(준비→가속→접촉→감속→정착) 내내 도달 오차 0** — 이전 보고된 "1.265m 필요"는 좌표 버그가 만든 착시였다(실측으로 확인, 팔을 늘리지 않고도 해결됨을 직접 검증했으며 도달 불가능 사례는 없었다).
+- **앞다리에 Tarsus1(발끝) 복원**: 기존엔 Femur+Tibia만으로 Tibia 끝을 "손"으로 썼으나, 이제 3구간 IK(Femur+Tibia로 "손목"까지, Tarsus1이 손목→그립까지)로 실제 발끝 메시가 그립을 잡는다.
+- **검증(설계 문서의 완료 기준대로)**: 뒷발 world sole z 오차(LH: -1.1e-7m, RH: 3.9e-4m) 5mm 기준 이내, 타자 박스 안(좌표로 확인); 다리는 정적 리그라 준비~정착 간 미끄러짐이 원천적으로 0(관절 없음, 실측으로도 확인); 앞다리 발끝-그립 오차 <1mm(기준 5mm)를 전체 에피소드 매 스텝 확인, 도달 초과 0; 앞다리 메시 스케일이 몸통과 동일함을 직접 확인(3배 확대 제거); 물리 불변성(정확값 회귀)은 그대로 유지.
+- 정면·측면·그립 근접 정지화면(준비/접촉/정착)과 영상을 `runs/env002-b1-neuromechfly/mid_mid/`(stills/ + park_wide/behind_catcher/batter_side/grip_closeup.mp4)에 재기록.
+- manifest(`docs/design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json`)를 좌표 수정·자세 재정의·45개 메시(43개 아님, LFTarsus1/RFTarsus1도 이제 사용)·동일 스케일 근거로 갱신.
+- `pytest tests/` → **64 passed**(B1 30개: 기존26 + 신규4), `ruff` 클린.
+- **남은 문제(외형)**: 서 있는 키(약1.53m)가 이전(1.17m)보다 커짐(2다리 지지로 변경된 부수 효과, 목표 신장을 정한 적은 없음); 머리 목 관절 고정·시선 없음; 다리 Tarsus 대부분 1분절로 단순화; 팔꿈치 굽힘 평면은 임의 선택(world -Z, 해부학적 근거 아님); I-08b·나머지8코스·RL은 범위 밖.
+- 상세 실행 증거는 `docs/records/VALIDATION_LOG.md`.
+
+## 2026-09-16 — I-08a 외형 수용 실패: 수정 우선
+
+원본 wheel/STL 동일성은 확인했지만 뒷발이 약0.92m 떠 있고 앞다리만3배 확대됐다. 사용자 자세 기준은 앞다리2개 그립·뒷다리2개 접지·중간다리 접기다. **다음 작업은 I-08a-fix**이며 기존 완료 보고보다 [외형 재검토와 수정 규약](FLY-VISUAL-REVIEW.md)을 우선한다. 과거 기록은 보존한다.
+
+## 2026-09-16 — I-08a: NeuroMechFly 연구용 시각 모델 적용
+
+- `docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md`의 C(연구용 파리 모델)를 진행했다. **나머지 8코스 재보정·전신 역학 통합(I-08b)·강화학습은 진행하지 않았다.**
+- **자산 도입**: PyPI `flygym==1.2.1`(Apache-2.0, NeLy-EPFL)을 `pip download --no-deps`로 받아 실제 사용한 메시 43개(STL)와 라이선스만 `envs/assets/mesh_neuromechfly/`에 vendoring했다. 버전·해시·출처·재획득 절차는 `docs/design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json`과 `THIRD_PARTY_NOTICES.md`에, 연구 데이터 정책은 `docs/RESEARCH_SOURCES.md`에 기록했다. NeuroMechFly는 성체 암컷 개체이며 신경 서킷 트랙의 MaleCNS(수컷)와는 별도 데이터 계층임을 명시했다.
+- **일어선 자세**: 원본 리그(몸통이 수평인 정상 곤충 자세)를 MuJoCo 자체 forward kinematics로 재포즈했다 — 전체를 Y축 -90°로 회전(머리-꼬리 축을 수직으로) 한 뒤, 6개 다리 각각의 Coxa 관절에 동일 축 +90° 보정을 걸어(원본과 동일 축이라 정확히 상쇄) 다리 모양은 원본의 "지면 지지" 형태를 유지한 채 몸통만 세웠다. 시행착오(평탄화 추출 방식은 MuJoCo의 메시 배치 합성을 이중 적용해 머리가 몸통에서 분리되는 버그를 냄 → 원본의 중첩 body 트리를 직접 편집하는 방식으로 전환해 해결)를 `docs/records/VALIDATION_LOG.md`에 남겼다.
+- **양손 그립(동적)**: 앞다리 2개(Femur+Tibia만 사용, Tarsus 생략)는 정적 리그에서 제외하고 매 렌더 프레임 `envs/fly_visual.py`의 2관절 IK로 자세를 계산해 mocap 바디 4개(관절·DOF 없음)에 적용한다 — 고정된 어깨(LFCoxa/RFCoxa)에서 배트 손잡이 위의 이동하는 그립 사이트(`grip_L`/`grip_R`, 손잡이 쪽 x=0.05/0.12)까지 매 스텝 추적. 실측 어깨-그립 최대거리(1.265m, 준비자세가 고정 어깨에서 멀기 때문)가 몸통 스케일(K=400)의 팔 자연 길이(0.489m)를 크게 초과해, 앞다리 메시만 K=1200으로 별도 확대했다 — 명시적으로 기록한 스케일 조정.
+- **중간·뒷다리 4개**: 정적 리그에 포함(Coxa+Femur+Tibia+Tarsus1, Tarsus2-5는 생략), 발이 지면(z=0)에 닿도록 전체를 이동. 타자 박스 안에 서 있음(원본 곤충의 다리 벌림 형태를 그대로 물려받아 좌우로 다소 모여 있음 — 실제 파리 행동 재현이 아닌 캐릭터 설정임을 명시).
+- **물리 불변성**: `batter_torso`는 질량·충돌·제외 규칙을 전혀 건드리지 않고 rgba alpha만 0으로 만들어 렌더링만 숨겼다(batter_body는 관절이 없어 질량이 애초에 동역학에 무관함도 확인). 모든 파리 geom은 contype=0/conaffinity=0/질량 없음. **중앙 직구(mid_mid) 정확값 회귀 테스트**로 검증: bat_contact_vx·exit_velocity_xyz·forward_flight_success가 I-07b-followthrough 시점 기록과 소수점까지 동일. `mj_forward()` 재호출(mocap 갱신 후 파생량만 갱신, qpos/qvel 적분 없음)이 물리에 영향 없음도 실행으로 확인.
+- **회귀**: `tests/test_baseball_b1_env.py`에 4개 신규(시각 geom 비충돌 확인, 중앙 직구 정확값 불변, 그립 도달성, 등) — `pytest tests/` → **61 passed**(B1 27개+기존34개... 정확 수는 커밋 diff 참고), `ruff` 클린.
+- **영상**: `demos/record_baseball_b1_neuromechfly.py` → `runs/env002-b1-neuromechfly/mid_mid/{park_wide,behind_catcher,batter_side,grip_closeup}.mp4`(동일 200fps 실시간 축, 준비→타격→정착→착지 전체).
+- **남은 문제(외형)**: 중간·뒷다리가 좌우로 모여 있어 안정적인 4다리 지지처럼 보이지 않음(원본 곤충 다리 벌림을 그대로 사용); 앞다리가 몸통 대비 과도하게 길고 가늚(스케일 불일치의 시각적 대가); 머리 관절(3DOF)은 원본 정지각 고정, 시선 타기팅 없음; Tarsus 생략(발가락 단순화); I-08b(전신 역학 통합)·나머지 8코스·RL은 범위 밖.
+- 상세 실행 증거는 `docs/records/VALIDATION_LOG.md`.
+
+## 2026-09-16 — I-07b-followthrough: 팔로우스루 안정화·접촉 재료 설명 정정
+
+- `docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md`를 먼저 읽고 A(팔로우스루 안정화)·B(접촉 설명 정정)를 진행했다. **C(NeuroMechFly 시각 모델)와 나머지 8코스 재보정은 진행하지 않았다** — 지시대로 이 둘이 먼저 안정화된 뒤 진행한다.
+- **원인 확인**: Codex가 지적한 5회 토크 부호 반전은 실제로 재현됐다 — 원인은 `OracleAimController`가 목표각 통과 후에도 `1.0 if target>angle else -1.0`를 계속 반환해 목표각 주변에서 영원히 bang-bang을 반복하는 구조였다. **접촉(0.459~0.468s) 자체의 배트 속도·타구 결과에는 영향이 없었다** — sign flip은 전부 분리(0.468s) 이후에 시작됐다(최초 flip t=0.565s).
+- **`_SwingAxis`/`_TiltAxis` 상태기계 도입** (`controllers/baseball_b1.py`): prepare→accelerate→brake→hold. accelerate는 접촉 관측 또는 자기 자신의 목표각 통과(미래 정보 아님, 관측 가능한 스윙 진행 조건)로 딱 1회 래치되며, 이후 절대 accelerate로 되돌아가지 않는다. 스윙축은 감쇠 PD(brake), 틸트축은 시간최적 bang-bang(brake) — 두 축의 물리가 근본적으로 달라 하나의 게인 세트로 안 됐다(아래).
+- **스윙축(gear=30) 안정화 — 설계 목표 달성**: 실측 a_max=134.4rad/s²(ctrl=1)로 유효관성 I≈0.223kg·m² 역산, kp=8·ζ=0.9 임계감쇠 PD로 목표 팔로우스루각(-0.898rad, 접촉각+0.4rad)에 수렴. **래치 후 0.435s 안에 |qvel|<0.2rad/s 도달(설계기준 0.5s 이내), 이후 0.2s간 각도 peak-to-peak=1.0e-5rad(기준 0.02rad 이내), 오버슈트 없음.**
+- **틸트축(gear=6) — 설계 목표 미달, 원인은 실제 토크 한계**: 초기에 스윙과 같은 방식(감쇠 PD)을 시도했으나 kp를 4~500까지 올려도 결과가 전혀 안 바뀌었다 — 실제 교란(충돌 반동으로 각속도 -3.3rad/s, 각도 변위 0.4rad)에서는 ctrl이 항상 ±1로 포화되어 있어 PD 게인 선택 자체가 무의미했다(사실상 bang-bang과 동일). 실측 a_max=10.07rad/s²(ctrl=1, 기하 추정치 27.7의 절반 이하 — 실제 관성이 예상보다 큼)로 시간최적 bang-bang을 적용해 반전/발산은 제거했지만(각도 최종 -0.0002rad, 속도 0.06rad/s로 실질 수렴), **정착에 실제로 약 0.6~0.9s가 걸려 0.5s 설계 기준을 충족하지 못한다** — gear=6의 실제 구동력 한계이며 튜닝으로 해결되는 문제가 아니다(정확한 0.5s 충족은 gear 재보정이 필요, 이번 범위 밖). 타구 판정(공이 착지)이 먼저 끝나 에피소드 안에서는 최종 40스텝 연속 수렴 확인이 완료되지 못했다.
+- **중앙 직구 결과는 완전히 동일하게 보존됨**: bat_contact_vx=+6.980, exit_velocity_xyz=(+7.291,+3.924,+2.068), forward_flight_success=True, 착지 (5.545,2.785,0.036) — 팔로우스루 재작성 전/후 소수점까지 동일(접촉 이전 로직은 변경하지 않았기 때문).
+- **2차 발견 — `FixedPoseAlwaysSwing` 방향 오류**: 이전 I-07b-fix에서 놓친 잔여 버그. 이 baseline의 ctrl이 여전히 `-1.0`(구 역방향 스윙 기준)이라 새 `prep_swing=-1.9`에서는 -2.0 관절한계로 그대로 박혀 접촉이 전혀 없었다. `+1.0`으로 수정.
+- **B. 접촉 재료 설명 정정**: 실제 ball–bat 접촉의 solref는 **(0.0051, 0.505)**이며 이는 ball_geom 단독값 (0.0002,0.01)이 아니라 **동일 priority·solmix인 두 geom의 산술평균**(ball 0.0002·bat 0.01 → 0.0051; solimp[2]도 0.0001/0.001→0.00055로 일치)임을 직접 측정해 확인했다. 기존 "softer/lower-priority가 이긴다"는 XML 주석 설명은 틀렸다 — [MuJoCo 공식 문서](https://mujoco.readthedocs.io/en/stable/modeling.html#contact-parameters)의 혼합 규칙대로 정정했다. refsafe는 활성 상태이며 실측 timeconst(5.1ms)가 안전 하한(2×dt=0.5ms)보다 훨씬 커 이번 설정에서는 clamp가 작동하지 않았음도 확인했다.
+- **calibration manifest 신규**: `docs/design/ENV-002-B1-contact-calibration.json`에 solver 설정, 선언된/실측 접촉 파라미터, gear 스윕 표, 실측 a_max, 중앙 직구 최종 결과를 모두 기록했다(9코스 중 mid_mid만 검증됨을 명시).
+- 영상·timeline 재기록: `runs/env002-b1-fix-verification/mid_mid/{park_wide,batter_side}.mp4` + `timeline.json`(각도·속도·ctrl·state·접촉 per-step 기록).
+- `pytest tests/` → **58 passed**(B1 20개: 기존16 + 팔로우스루/접촉재료 신규4), `ruff` 클린.
+- **남은 문제**: 틸트축의 0.5s 설계 기준 미충족(gear 재보정 필요, 보류); NeuroMechFly 시각 모델(I-08a) 미착수; 나머지 8코스 재보정 미착수; B2·변화구·RL은 여전히 범위 밖.
+- 상세 실행 증거는 `docs/records/VALIDATION_LOG.md`.
+
+## 2026-09-16 — 중앙 타격 재현·팔로우스루 진단·외형 계획
+
+- 현재 미커밋 수정본에서 중앙 oracle의 전방 타격/출구 속도/착지를 Codex가 재현했다.9코스 전체 완료로 확대하지 않는다.
+- 접촉 후 최대 스윙 토크 부호5회 반전, 각도 약[-1.599,-0.960]rad. 충돌 반동과 목표각 bang-bang의 반복 작용을 분리해 안정화한다.
+- 실제 ball–bat solref=(0.0051,0.505): XML ball 단독값(0.0002,0.01)과 다르며 혼합 규칙 설명 정정 필요.
+- [새 계획](../design/FOLLOWTHROUGH-AND-FLY-MODEL.md): 팔로우스루 감속/정착 → NeuroMechFly 연구용 메시의 시각 적용 →8코스 재보정. 전신 역학 통합은 별도 단계.
+- 이번 작업에서 구현 코드는 바꾸지 않았고 전체 테스트/영상 검증이나 asset 취득은 하지 않았다.
+
+
+## 2026-09-16 — I-07b-fix: 중앙 직구(mid_mid) 실제 타구 검증 완료
+
+- `docs/records/B1-BATTING-REVIEW.md`와 `docs/design/ENV-002-BATTED-BALL.md`를 먼저 읽고 진행했다. **B2·변화구·강화학습 훈련은 진행하지 않았고, 9코스 확장도 시작하지 않았다** — 지시대로 중앙 직구만 검증했다.
+- **스윙 방향**: `prep_swing`을 1.0(과거) → **-1.9**로 바꾸고, 증가하는 각도(양의 ctrl) 방향으로 스윙하도록 고쳤다. 같은 접촉각(-1.298rad)이라도 회전 방향이 반대이면 배트 접촉점 속도의 x부호가 반대임을 직접 확인(θ=-1.298에서 dθ/dt=+1→(+0.819,+0.229,0), dθ/dt=-1→(-0.819,-0.229,0))했고, 새 prep 각에서 관통 없음·양의 ctrl이 각도를 증가시킴을 확인 후 반영했다.
+- **접촉-only 판정 제거**: `envs/baseball_b1_env.py`를 phase 상태기계(`pitch → bat_contact → batted_ball → done`)로 재작성했다. 접촉은 더 이상 종료 사유가 아니며, 2ms 연속 무접촉으로 분리를 확정하고 그 시각의 공 속도를 exit velocity로 기록, 착지(`batted_ball_landing`)까지 같은 스텝 루프 안에서 추적한다. 재접촉 시 분리 후보를 취소하는 로직, 50ms 초과 시 `prolonged_contact` 진단 플래그도 구현했다. `docs/design/ENV-002-BATTED-BALL.md`의 지표(contact_occurred, bat_contact_vx, exit_velocity_xyz, exit_speed, launch/spray angle, first_landing_xyz, carry_distance_xy, forward_flight_success 등)를 전부 `info`에 채운다.
+- **물리 재보정(중요, 예상 밖 발견)**: 스윙 방향만 고쳐서는 여전히 실패했다 — 접촉점 속도가 양수(+6.7 m/s)여도 공은 거의 그대로(-31 m/s대)로 계속 진행했다. 원인은 두 가지였다: (1) 기본 `solref="0.01 1"`(10ms 임계감쇠)가 35m/s 공과 배트의 1~3서브스텝(0.75~1ms)짜리 접촉에 비해 너무 무름 — 공 지오멤에 `solref="0.0002 0.01"`(더 뻣뻣하고 저감쇠/바운시)로 재정의. dt를 5e-6s(25배 더 세밀)까지 낮춰도 결과가 수렴해 변하지 않아 이산화 문제가 아니라 실제 접촉 모델 거동임을 확인했다. (2) gear=12(과거, 타이밍 맞추기용으로만 보정됨)는 접촉점 속도를 최대 ~7m/s밖에 못 냄 — 순수 탄성 충돌 추정으로는 이 정도도 충분해야 하나 실제로는 거의 무접촉처럼 그레이징됐다. gear∈{12,20,30,45,60} × 트리거 시각 탐색 결과 **gear=30**이 처음으로 확실한 양의 exit velocity를 냈다(gear=45/60은 목표각을 너무 빨리 지나쳐 탐색 해상도로 못 맞춤). 접촉 법선 방향(거의 X축 정렬)도 트리거 시각에 매우 민감함을 확인했다(구체 수치는 VALIDATION_LOG).
+- **중앙 직구 최종 검증 결과**(`OracleAimController`, `envs/assets/baseball_park_b1.xml`의 gear=30·공 solref 반영): bat_contact_vx=+6.98 m/s, exit_velocity_xyz=(+7.29, +3.92, +2.07) m/s, forward_flight_success=True(x=5m 기준면을 |y|≤x 부채꼴 안에서 통과), 착지 (5.54, 2.78, 0.036), end_reason=batted_ball_landing. 영상: `runs/env002-b1-fix-verification/mid_mid/{park_wide,batter_side}.mp4`(control_dt 기준 200fps로 일관된 실시간 축, 기존 20배 배속 불일치 버그 없음).
+- **보상**: `RewardWeights`를 `batted-ball-v1`로 교체했다(hit_success/contact_velocity 필드 제거, forward_flight_success=+10 1회, miss=-3, control_cost=-0.2∫u²dt는 형식 그대로 유지).
+- **9코스 중 mid_mid만 재보정됨**: `CROSSING_TIME_S`는 mid_mid만 새 값(0.094091, 0.0)으로 갱신했고 나머지 8개는 과거(gear=12·역방향 스윙 기준) 값 그대로 남겨 코드 주석과 문서에 "미검증/사용 금지"로 명시했다. `controllers/baseball_b1.py`는 구조 변경 없이 새 prep_swing/gear에서도 그대로 동작함을 확인(문서만 갱신).
+- `pytest tests/` → **54 passed**(B1 16개 전면 재작성 + 기존 38개), `demos/record_baseball_b1_episode.py`(9코스 baseline/영상 러너)는 아직 갱신하지 않았다 — 9코스 확장 단계에서 다룬다.
+- **남은 문제**: 8개 코스의 `CROSSING_TIME_S`/게인 재탐색, `demos/record_baseball_b1_episode.py`의 `info["hit"]` 기반 요약 갱신, exit velocity/착지 위치의 dt 수렴 검증(BATTED-BALL.md 5.3)은 다음 단계(9코스 확장)로 미뤘다. gear=30·solref 조합이 다른 8개 코스에서도 동일하게 작동하는지는 미확인.
+- 상세 실행 증거는 `docs/records/VALIDATION_LOG.md`.
+
+## 2026-09-16 — 타격 방향 오류 확인
+
+- 기준 c812766. Codex가 저장 영상 프레임·코드·9코스 oracle을 확인했다. 접촉 시 배트 vx가 모두 음수이며, 마지막 ctrl 유지100ms 진단 연장 뒤에도 공 vx가 모두 음수였다.
+- 이전 성공률은 접촉률로 제한한다. 실제 인필드 방향 타구 성공은 미검증/미구현이다. 원인과 수치는 [검토](B1-BATTING-REVIEW.md).
+- 다음은 I-07b-fix. 접촉 종료를 타구 추적으로 바꾸고 스윙 방향·판정·보상·영상 시간축을 고친다. 새 코드 구현은 하지 않았다.
+
+
 ## 2026-09-16 — I-07b B1 완료: 배트 조준(틸트)과 9개 코스 (최신)
 
 - 구현 전 `docs/design/ENV-002-B1-courses.md`에 코스 좌표·조준 방식·평가 목록·통과 기준을 먼저 고정한 뒤 구현했다(§4는 이후 실제 시행착오로 갱신).

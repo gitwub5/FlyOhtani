@@ -38,3 +38,17 @@
 
 
 야구장 확장은 `docs/design/ENV-002-baseball.md`와 I-07a/b/c를 따른다. 기존 환경의 안전한 초기상태·구동/종료 기반 수정 후 B0부터 진행한다. 구장/파리의 스케일과 투구 방향이 기존 ENV-001과 다르므로 좌표·시간·actuator를 그대로 복사하지 않는다.
+
+
+현재 최우선 작업은 I-07b-fix다. `docs/records/B1-BATTING-REVIEW.md`와 `docs/design/ENV-002-BATTED-BALL.md`를 먼저 읽는다. 기존 접촉9/9를 야구 타격 성공으로 취급하지 않으며, 스윙 방향·타구 추적·채점·영상 시간축을 고치기 전 B2나 RL로 진행하지 않는다.
+
+
+중앙 타격 이후 최신 순서는 `docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md`를 따른다. 팔로우스루 안정화/실제 contact 파라미터 기록, NeuroMechFly 시각 자산 적용, 나머지8코스 재보정 순이다. 시각 모델 추가가 물리 관성이나 접촉을 바꾸지 않게 검증한다.
+
+## 최신 외형 수정 인계
+
+I-08a 완료 보고보다 `docs/records/FLY-VISUAL-REVIEW.md`의 I-08a-fix를 우선한다. 원본 자산은 확인됐으나 좌표 배치와 비율이 잘못됐다. 앞다리2개 그립·뒷다리2개 접지·중간다리 접기, 전 부위 동일 배율을 적용한다.
+
+추가 사용자 요청: 다음 외형 작업 I-08a-style은 `docs/design/FLY-BATTING-STANCE-AND-COLOR.md`를 따른다. 옆선 타자 자세·머리 방향 분리와 원본 appearance 복원을 포함한다.
+
+최신 통합 작업은 `docs/design/BATTING-QUALITY-AND-SWING.md`: A 자세·색상, B 거리 점수/보상, C 중앙 스윙 개선 순서다. C에서는 제어 변경에 따른 타구 개선을 검증하며 A의 불변 조건과 구분한다. RL 훈련은 진행하지 않는다.

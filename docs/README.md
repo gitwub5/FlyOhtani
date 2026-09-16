@@ -38,3 +38,7 @@
 - [VIZ-001](design/VISUALIZATION.md): 실제 연결 구조와 스파이크 시각화 계획.
 
 - [ENV-002 야구장](design/ENV-002-baseball.md): 투수 릴리스·타자 박스·파리 타자, 코스/구속/변화구 확장.
+
+- **현재 최우선:** [역방향 스윙 검토](records/B1-BATTING-REVIEW.md) → [인필드 타구 규약](design/ENV-002-BATTED-BALL.md), I-07b-fix.
+
+- [팔로우스루 안정화·NeuroMechFly 모델 적용](design/FOLLOWTHROUGH-AND-FLY-MODEL.md): 중앙 타격 다음 작업, I-07b-followthrough/I-08a.

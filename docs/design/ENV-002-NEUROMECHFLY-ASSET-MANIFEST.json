@@ -1,0 +1,103 @@
+{
+  "date": "2026-09-16",
+  "spec": "docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md section C (I-08a), docs/records/FLY-VISUAL-REVIEW.md (I-08a-fix), docs/design/FLY-BATTING-STANCE-AND-COLOR.md (I-08a-style)",
+  "revision_note": "I-08a-fix corrects three errors Codex's independent review (docs/records/FLY-VISUAL-REVIEW.md, evidence in docs/records/FLY-VISUAL-AUDIT.json) found in the original I-08a manifest/build: (1) 45 mesh files were actually copied, not 43 (2 were unused in I-08a; both are used now, see below); (2) a world/local coordinate bug left the rig's feet ~0.92-1.07m above the true ground; (3) front legs used a separate 3x mesh scale, violating uniform-scale/no-stretching. All three are fixed here -- see 'i08a_fix_changes' below. docs/records/VALIDATION_LOG.md has the full before/after measurements. I-08a-style (this revision) adds two independent, purely-visual changes on top of the I-08a-fix rig (physics/DOF/actuator/mass untouched, see 'i08a_style_changes' below): (a) a sideways batting stance (added yaw, on top of the existing stand-up pitch) with the head separately rotated to face the pitcher's release point, and (b) per-body-part appearance (materials/textures) restored from flygym==1.2.1's own config.yaml, replacing the single flat fly_mat color.",
+  "source": {
+    "project": "flygym (NeuroMechFly v2)",
+    "authors": "Sibo Wang-Chen et al., NeLy lab, EPFL",
+    "repository": "https://github.com/NeLy-EPFL/flygym",
+    "homepage": "https://neuromechfly.org/",
+    "pypi_package": "flygym",
+    "pypi_version": "1.2.1",
+    "acquisition_method": "pip download flygym==1.2.1 --no-deps -d <dir> (PyPI wheel; no git clone/commit pin available since we did not clone the repository)",
+    "wheel_filename": "flygym-1.2.1-py3-none-any.whl",
+    "wheel_sha256": "5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d",
+    "wheel_sha256_cross_checked_against": "PyPI 1.2.1 release metadata (https://pypi.org/pypi/flygym/1.2.1/json), confirmed matching by Codex's independent review",
+    "license": "Apache-2.0",
+    "license_file_in_repo": "envs/assets/mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt",
+    "original_mjcf_used_as_reference": "flygym/data/mjcf/neuromechfly_seqik_kinorder_ypr.xml (inside the wheel; NOT vendored into this repo -- only the specific mesh STLs below and the license file are vendored; the body/joint hierarchy and rest-pose numeric values were read from it once by scripts/build_fly_visual_asset.py and are reproduced/derived in envs/assets/fly_visual_assets.xml, fly_visual_body.xml, fly_visual_front_legs.xml, and envs/fly_visual.py)",
+    "citation_note": "Per flygym's own documentation this represents an adult FEMALE Drosophila melanogaster body derived from micro-CT scanning; simplified (low-poly, non-fullsize) meshes are what ship inside the PyPI package itself (no separate fullsize download was performed for this task)."
+  },
+  "vendored_mesh_files": {
+    "count": 45,
+    "count_note": "All 45 STL files copied into envs/assets/mesh_neuromechfly/ ARE referenced by the current build (LFTarsus1.stl/RFTarsus1.stl, unused in I-08a, are now the front legs' real fingertip mesh -- see kept_body_parts.dynamic_arm_meshes below).",
+    "byte_identity": "Every one of the 45 files' SHA-256 matches the same-named file inside the wheel exactly (verified independently by Codex's review; per-file hashes recorded in docs/records/FLY-VISUAL-AUDIT.json, not duplicated here to avoid a second source of truth -- see that file for the full list)."
+  },
+  "i08a_fix_changes": [
+    "WORLD-FRAME GROUNDING BUG FIXED: scripts/build_fly_visual_asset.py computed the ground offset in fly_visual's OWN local frame (feet at local z=0) but that body is nested inside batter_body, which sits at world z=1.0 (envs/assets/baseball_park_b1.xml) -- so feet ended up ~0.92-1.07m off the true ground, not 0. Now BATTER_WORLD_POS[2] is explicitly subtracted so real feet land at world z=0 (verified to <1mm via actual transformed mesh vertices, not geom origins -- see below).",
+    "SOLE/FINGERTIP MEASURED FROM REAL MESH VERTICES, NOT GEOM ORIGINS: a geom's local (0,0,0) is not its mesh's lowest/outermost point -- I-08a's ground calibration silently absorbed ~8cm of this gap. scripts/fly_mesh_utils.py now re-reads each mesh's raw STL vertices and transforms them by the geom's actual compiled world pos/mat for every ground/reach measurement.",
+    "XY RECENTERING ADDED: the root upright rotation pivots around FlyBody's origin, which is NOT at Thorax's own center -- rotating swung Thorax (and everything attached to it, including the front-leg shoulders) about 0.52m sideways in X. This alone made the arms fall ~0.11-0.15m short of the grip sites for the ENTIRE episode (including before any swing motion), which I-08a's build script never actually measured before choosing to stretch the arms. Fixed by translating fly_visual's X/Y so Thorax's POST-rotation position lands back at (0,0) relative to batter_body.",
+    "POSTURE REDEFINED per the user's explicit spec: only LH/RH (hind legs, 2 total) are grounded/support the character. LM/RM (middle legs) are folded in against the body (Femur=-120deg, Tibia=-150deg pitch, found by grid search over the source rig's own joints -- residual coxa-to-tarsus distance ~0.21 rad-units vs ~1.6 fully extended, i.e. ~87% folded), not grounded and not used as extra arms. LF/RF remain the only dynamic (grip-tracking) legs. This replaces I-08a's 4-leg 'stand normally' pose for all of LH/RH/LM/RM.",
+    "UNIFORM SCALE: I-08a's separate front_leg_arm_K=1200 (3x the body's K=400) is REMOVED. With the world-frame and recentering fixes above, the natural K=400 arm reach (0.580m: Femur 0.282+Tibia 0.207+Tarsus1 0.090) turned out to be sufficient with ZERO reach error across the entire mid_mid episode (measured, not assumed) -- the 3x stretch in I-08a was compensating for the placement bugs, not a real anatomical shortfall.",
+    "FRONT LEGS NOW INCLUDE TARSUS1 (the real fingertip mesh) as a genuine third IK segment, not just Femur+Tibia with Tibia's own end standing in for a hand."
+  ],
+  "enlargement": {
+    "K": 400.0,
+    "K_note": "Applied UNIFORMLY to every kept mesh (torso/head/abdomen/wings/antennae/all 6 legs including the dynamic front-leg Femur/Tibia/Tarsus1) and every kept <body pos> value (scaled by K/1000), in scripts/build_fly_visual_asset.py. Chosen empirically in I-08a: gives an overall standing height (feet to head-top) of about 1.5m with the new 2-leg posture -- not derived from any specific target height, adjusted once by render inspection. No separate scale is used anywhere in the rig as of I-08a-fix."
+  },
+  "pose_construction": {
+    "method": "MuJoCo's own forward kinematics on the source rig (not hand-derived rotation matrices), see scripts/build_fly_visual_asset.py",
+    "upright_rotation": "FlyBody's root quat set to -90deg about Y, mapping the source rig's horizontal head-tail axis (+X) to vertical (+Z, head up).",
+    "sideways_yaw_i08a_style": "I-08a-style adds a further -90deg yaw about world Z, composed AFTER the upright pitch (ROOT_TOTAL_MAT = rot_z(yaw) @ rot_y(pitch)) -- verified by direct vector transform (not asserted) to send the body's ventral/chest direction (source local -Z) to world -Y (facing the plate, appropriate for a right-handed batter in the +Y-side box) and the shoulder axis (source local +Y) to world +X (parallel to the home->pitcher direction) SIMULTANEOUSLY. This satisfies FLY-BATTING-STANCE-AND-COLOR.md's f-perp-p / shoulder-parallel-p requirement with one added rotation; docs/records/VALIDATION_LOG.md has the numeric verification.",
+    "leg_compensation_unchanged_by_yaw": "The leg Coxa compensation below cancels ONLY the pitch component; adding the yaw did not require changing it, because a leg's total experienced rotation reduces to Yaw*Pitch*Pitch^-1 = Yaw, and a pure yaw (rotation about the same axis gravity acts along, world Z) cannot change how well a leg reaches 'down' -- only which horizontal direction the leg/body faces. Confirmed empirically: all I-08a-fix ground/box/reach checks still pass unchanged after adding the yaw.",
+    "head_direction_i08a_style": "The Head body (and its children -- eyes/antennae/proboscis all move with it, never rotated separately) gets its OWN local quat, solved numerically (not a fixed guessed angle) so its local +X forward axis points at BaseballB1Env.RELEASE=(16.5, 0, 1.8) in world coordinates, computed from the Head's actual compiled BODY-frame position/orientation (mujoco.MjData.xpos/xmat -- NOT geom_xpos/geom_xmat, which fold in MuJoCo's own internal mesh-placement alignment and gave an 11.17-11.21deg error before this fix was found; body-frame transforms gave exactly 0.00deg). Verified against the design doc's <=10deg tolerance (scripts/build_fly_visual_asset.py aborts the build via SystemExit if this check fails).",
+    "xy_recentering": "fly_visual's own pos.x/pos.y (NOT just pos.z) are set so Thorax's rotated position lands at (0,0) relative to batter_body -- see i08a_fix_changes above for why this was necessary. I-08a-style generalizes this from the old pitch-only 2D rotation to the full 3x3 ROOT_TOTAL_MAT (pitch+yaw).",
+    "leg_role_by_position": {
+      "ground_legs_LH_RH": "Coxa gets a static +90deg-about-Y quat (exact inverse of the root rotation, same physical axis since Thorax and every Coxa share an identity quat in the source rest pose) -- cancels the root rotation for everything distal to that Coxa, so the leg keeps the source's own 'stand on a horizontal floor' shape/orientation relative to true gravity.",
+      "fold_legs_LM_RM": "Same Coxa compensation as the ground legs, PLUS a static Femur quat (-120deg about Y) and Tibia quat (-150deg about Y) baked in the same way -- pulls the leg in against the body instead of reaching to the ground. Found by a grid search over the source rig's own Femur/Tibia pitch joints (see i08a_fix_changes).",
+      "front_legs_LF_RF": "Coxa gets the same root-rotation-cancelling compensation (defines the fixed shoulder anchor point only -- the compensation's ROTATION does not affect IK reach, only the Coxa's fixed POSITION does, which is what the recentering fix corrected). Femur/Tibia/Tarsus1 are NOT part of this static rig -- posed every render frame by envs/fly_visual.py."
+    },
+    "verification": "Confirmed by render AND by direct measurement of transformed mesh vertices (not geom origins) -- docs/records/VALIDATION_LOG.md has the full debugging history for both I-08a (the flattening bug that produced a floating head) and I-08a-fix (the world-frame grounding bug and the pivot-offset recentering bug). I-08a-style's sideways stance/head-direction and per-part color are re-verified against the SAME I-08a-fix ground/grip/scale bounds after the change (all 87 tests in tests/test_baseball_b1_env.py pass, including test_no_ground_or_torso_penetration_across_full_tilt_and_swing_range and test_front_leg_overlay_hands_track_the_grip_sites)."
+  },
+  "kept_body_parts": {
+    "static_rig_meshes": [
+      "Thorax", "A1A2", "A3", "A4", "A5", "A6", "Head", "LEye", "REye",
+      "Rostrum", "Haustellum", "LWing", "RWing", "LHaltere", "RHaltere",
+      "LPedicel", "LFuniculus", "LArista", "RPedicel", "RFuniculus", "RArista",
+      "LHCoxa", "LHFemur", "LHTibia", "LHTarsus1",
+      "RHCoxa", "RHFemur", "RHTibia", "RHTarsus1",
+      "LMCoxa", "LMFemur", "LMTibia", "LMTarsus1",
+      "RMCoxa", "RMFemur", "RMTibia", "RMTarsus1",
+      "LFCoxa", "RFCoxa"
+    ],
+    "dynamic_arm_meshes": ["LFFemur", "LFTibia", "LFTarsus1", "RFFemur", "RFTibia", "RFTarsus1"],
+    "simplifications": [
+      "Support legs (LH/RH/LM/RM) keep only Coxa/Femur/Tibia/Tarsus1 -- Tarsus2-5 (the source's multi-segment foot) are dropped; a single foot segment stands in for the whole tarsus, since these legs are purely static/decorative (not load-bearing, no real ground contact physics).",
+      "Front legs (LF/RF) keep Coxa (static) + Femur + Tibia + Tarsus1 (all dynamic, mocap-driven) -- Tarsus2-5 are still dropped; Tarsus1's own distal end is the real fingertip that tracks the bat's grip site.",
+      "All leg/head/antenna joints (yaw/pitch/roll hinges in the source rig) are removed -- every kept body except the 6 front-leg mocap bodies is now a fixed, jointless child of batter_body (via fly_visual_body.xml), matching this task's 'visual only, no new DOF' requirement.",
+      "Head's own 3-DOF neck joint is removed (fixed at the source's rest angle, i.e. facing forward/down as authored) -- no per-course gaze targeting was implemented."
+    ]
+  },
+  "grip_targets": {
+    "definition": "Two <site> elements (grip_L, grip_R) on bat_tilt_body at local x=0.05 and x=0.12 (near the handle end, opposite the striking tip at x=0.85) -- 'top hand'/'bottom hand' stacked along the bat's own length, matching a real two-handed grip, per envs/assets/baseball_park_b1.xml.",
+    "tracking_method": "envs/fly_visual.py's FrontLegGripOverlay: 3-segment IK per frame -- Femur+Tibia (2-link analytic IK, law of cosines, fixed bend-plane reference world -Z) reach a 'wrist' point placed Tarsus1's own length back from the grip target along the current approach direction; Tarsus1 then spans wrist->target directly, so the mesh that actually touches the grip site is the real fingertip (Tarsus1's distal end), not an abstract IK endpoint. Three mocap bodies per arm (Femur, Tibia, Tarsus1) are re-posed every frame; mocap bodies have no DOF and cannot affect physics.",
+    "reach_verification": "docs/records/VALIDATION_LOG.md reports the measured shoulder-to-grip-site distance across the ENTIRE mid_mid episode (prepare through settle) at K=400 (uniform, no arm stretch): max reach error is 0 (never exceeds the natural 0.580m arm length) -- the I-08a report of a 1.265m required reach was itself an artifact of the placement bugs above, not a real limit."
+  },
+  "appearance": {
+    "spec": "docs/design/FLY-BATTING-STANCE-AND-COLOR.md section 2 (I-08a-style)",
+    "source_file": "flygym/config.yaml (inside the same flygym==1.2.1 wheel already recorded under 'source' above -- wheel_sha256 5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d covers this file's integrity transitively)",
+    "source_file_sha256": "97c7a3c1d4131121213868fd1565d5e370ebd456b0b9adfbe9cc456f0f8de7f0",
+    "source_file_sha256_note": "SHA-256 of the extracted config.yaml itself (317 lines), computed directly from the same wheel extraction used for the mesh files -- recorded as a second, file-level check on top of the wheel-level hash.",
+    "cross_referenced_against": "flygym/fly.py's _set_geom_colors method (same wheel), per the design doc's instruction to use both the config data and the loader code as the appearance-mapping reference, not config.yaml's raw text alone.",
+    "items_taken": "The entire top-level 'appearance:' mapping (14 body-part groups: wing, eye, arista, haltere, head, thorax, antenna, proboscis, coxa, femur, tibia, tarsus, a12345, a6), transcribed verbatim into APPEARANCE_GROUPS in scripts/build_fly_visual_asset.py. No numeric values were hand-edited or approximated from memory -- every rgba/texture rgb1/rgb2/markrgb/size/random value in APPEARANCE_GROUPS is a direct copy from this file.",
+    "derived_material_generation": "scripts/build_fly_visual_asset.py programmatically emits one MuJoCo <texture type=\"2d\" builtin=\"flat|gradient\"> + <material texture=... rgba=...> pair per appearance group (procedural MuJoCo textures, not baked image files -- deterministic, no wall-clock seeding despite config.yaml's own 'random' texture-noise field being present in some groups' source values, since MuJoCo's builtin procedural generator is itself deterministic given fixed random/size parameters). strip_physics_attrs() maps every kept geom's name to its appearance group via PART_TO_GROUP and raises (not a silent fallback color) if any kept part has no mapping.",
+    "differences_from_original": "None recorded -- this is a direct restoration of the original per-part appearance (not a readability/opacity override). If a future change diverges from the source values (e.g. for render-visibility reasons), it must be recorded here with the specific value and reason, per the design doc's requirement.",
+    "dynamic_front_leg_materials": "envs/assets/fly_visual_front_legs.xml's 6 mocap geoms (LF/RF femur, tibia, tarsus1) use the same fly_appearance_femur/tibia/tarsus materials as the static rig -- not a separate/simplified color set.",
+    "verification": "Visual render confirmation only (docs/records/VALIDATION_LOG.md) -- tan/gold thorax-head texture, reddish-brown eyes, translucent wings, graduated leg-segment shading all visually match the config.yaml values above; no automated color-pixel test was written."
+  },
+  "files_added_to_repo": [
+    "envs/assets/mesh_neuromechfly/*.stl (45 files, copied unmodified from the wheel; see docs/records/FLY-VISUAL-AUDIT.json for the byte-identity check)",
+    "envs/assets/mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt",
+    "envs/assets/fly_visual_assets.xml (generated)",
+    "envs/assets/fly_visual_body.xml (generated)",
+    "envs/assets/fly_visual_front_legs.xml (hand-written, 6 mocap bodies)",
+    "envs/fly_visual.py (hand-written, IK + mocap update)",
+    "scripts/fly_mesh_utils.py (hand-written, STL-vertex-based world measurement, added in I-08a-fix)",
+    "scripts/build_fly_visual_asset.py (generator, re-runnable against a freshly downloaded flygym==1.2.1 wheel)"
+  ],
+  "not_vendored": [
+    "The rest of the flygym package (Python source, dm_control-based env classes, non-mesh assets, other MJCF variants) -- only the specific STL files and license listed above were copied out of the wheel.",
+    "flygym's 'fullsize' (non-simplified) meshes, which flygym's own docs describe as a separate download -- not fetched; this task used only the simplified meshes bundled directly in the PyPI package."
+  ],
+  "data_provenance_distinction": "This visual mesh is from NeuroMechFly (an adult FEMALE Drosophila, per its own documentation). The connectome/circuit data referenced elsewhere in this project's neural-circuit track (see docs/PLAN.md) is MaleCNS (male). These are explicitly NOT the same individual or sex, and this asset integration does not claim otherwise -- the visual character and any future neural-circuit embodiment work are separate data layers, per docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md section C item 5."
+}

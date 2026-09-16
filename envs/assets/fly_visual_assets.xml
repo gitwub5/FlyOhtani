@@ -1,0 +1,71 @@
+<mujocoinclude>
+<mesh name="fly_mesh_Thorax" file="mesh_neuromechfly/Thorax.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_A1A2" file="mesh_neuromechfly/A1A2.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_A3" file="mesh_neuromechfly/A3.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_A4" file="mesh_neuromechfly/A4.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_A5" file="mesh_neuromechfly/A5.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_A6" file="mesh_neuromechfly/A6.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_Head" file="mesh_neuromechfly/Head.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_REye" file="mesh_neuromechfly/REye.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_Rostrum" file="mesh_neuromechfly/Rostrum.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_Haustellum" file="mesh_neuromechfly/Haustellum.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RPedicel" file="mesh_neuromechfly/RPedicel.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RFuniculus" file="mesh_neuromechfly/RFuniculus.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RArista" file="mesh_neuromechfly/RArista.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RFCoxa" file="mesh_neuromechfly/RFCoxa.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RFFemur" file="mesh_neuromechfly/RFFemur.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RFTibia" file="mesh_neuromechfly/RFTibia.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RFTarsus1" file="mesh_neuromechfly/RFTarsus1.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RHaltere" file="mesh_neuromechfly/RHaltere.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RHCoxa" file="mesh_neuromechfly/RHCoxa.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RHFemur" file="mesh_neuromechfly/RHFemur.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RHTibia" file="mesh_neuromechfly/RHTibia.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RHTarsus1" file="mesh_neuromechfly/RHTarsus1.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RMCoxa" file="mesh_neuromechfly/RMCoxa.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RMFemur" file="mesh_neuromechfly/RMFemur.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RMTibia" file="mesh_neuromechfly/RMTibia.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RMTarsus1" file="mesh_neuromechfly/RMTarsus1.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_RWing" file="mesh_neuromechfly/RWing.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LEye" file="mesh_neuromechfly/LEye.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LPedicel" file="mesh_neuromechfly/LPedicel.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LFuniculus" file="mesh_neuromechfly/LFuniculus.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LArista" file="mesh_neuromechfly/LArista.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LFCoxa" file="mesh_neuromechfly/LFCoxa.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LFFemur" file="mesh_neuromechfly/LFFemur.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LFTibia" file="mesh_neuromechfly/LFTibia.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LFTarsus1" file="mesh_neuromechfly/LFTarsus1.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LHaltere" file="mesh_neuromechfly/LHaltere.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LHCoxa" file="mesh_neuromechfly/LHCoxa.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LHFemur" file="mesh_neuromechfly/LHFemur.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LHTibia" file="mesh_neuromechfly/LHTibia.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LHTarsus1" file="mesh_neuromechfly/LHTarsus1.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LMCoxa" file="mesh_neuromechfly/LMCoxa.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LMFemur" file="mesh_neuromechfly/LMFemur.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LMTibia" file="mesh_neuromechfly/LMTibia.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LMTarsus1" file="mesh_neuromechfly/LMTarsus1.stl" scale="400.0 400.0 400.0" />
+<mesh name="fly_mesh_LWing" file="mesh_neuromechfly/LWing.stl" scale="400.0 400.0 400.0" />
+<material name="fly_appearance_wing" rgba="0.8 0.8 0.9 0.3"/>
+<material name="fly_appearance_eye" rgba="0.67 0.21 0.12 1"/>
+<material name="fly_appearance_arista" rgba="0.26 0.2 0.16 1"/>
+<material name="fly_appearance_haltere" rgba="0.59 0.43 0.24 0.6"/>
+<texture name="fly_tex_head" type="2d" builtin="flat" rgb1="0.59 0.39 0.12" rgb2="0.59 0.39 0.12" markrgb="0.7 0.49 0.2" random="0.3" width="50" height="50"/>
+<material name="fly_appearance_head" texture="fly_tex_head" texuniform="true" rgba="1 1 1 1"/>
+<texture name="fly_tex_thorax" type="2d" builtin="flat" rgb1="0.59 0.39 0.12" rgb2="0.59 0.39 0.12" markrgb="0.7 0.49 0.2" random="0.3" width="50" height="50"/>
+<material name="fly_appearance_thorax" texture="fly_tex_thorax" texuniform="true" rgba="1 1 1 1"/>
+<texture name="fly_tex_antenna" type="2d" builtin="flat" rgb1="0.59 0.39 0.12" rgb2="0.59 0.39 0.12" markrgb="0 0 0" random="0.1" width="50" height="50"/>
+<material name="fly_appearance_antenna" texture="fly_tex_antenna" texuniform="true" rgba="1 1 1 0.8"/>
+<texture name="fly_tex_proboscis" type="2d" builtin="flat" rgb1="0.59 0.39 0.12" rgb2="0.59 0.39 0.12" markrgb="0 0 0" random="0.1" width="50" height="50"/>
+<material name="fly_appearance_proboscis" texture="fly_tex_proboscis" texuniform="true" rgba="1 1 1 0.8"/>
+<texture name="fly_tex_coxa" type="2d" builtin="flat" rgb1="0.59 0.39 0.12" rgb2="0.59 0.39 0.12" markrgb="0 0 0" random="0.05" width="500" height="500"/>
+<material name="fly_appearance_coxa" texture="fly_tex_coxa" texuniform="true" rgba="1 1 1 0.8"/>
+<texture name="fly_tex_femur" type="2d" builtin="flat" rgb1="0.63 0.43 0.16" rgb2="0.63 0.43 0.16" markrgb="0 0 0" random="0.05" width="500" height="500"/>
+<material name="fly_appearance_femur" texture="fly_tex_femur" texuniform="true" rgba="1 1 1 0.7"/>
+<texture name="fly_tex_tibia" type="2d" builtin="flat" rgb1="0.67 0.47 0.2" rgb2="0.67 0.47 0.2" markrgb="0 0 0" random="0.05" width="500" height="500"/>
+<material name="fly_appearance_tibia" texture="fly_tex_tibia" texuniform="true" rgba="1 1 1 0.6"/>
+<texture name="fly_tex_tarsus" type="2d" builtin="flat" rgb1="0.71 0.51 0.24" rgb2="0.71 0.51 0.24" markrgb="0 0 0" random="0.05" width="500" height="500"/>
+<material name="fly_appearance_tarsus" texture="fly_tex_tarsus" texuniform="true" rgba="1 1 1 0.5"/>
+<texture name="fly_tex_a12345" type="2d" builtin="gradient" rgb1="0.59 0.39 0.12" rgb2="0.82 0.67 0.47" markrgb="0.7 0.49 0.2" random="0.3" width="200" height="200"/>
+<material name="fly_appearance_a12345" texture="fly_tex_a12345" texuniform="true" rgba="1 1 1 1"/>
+<texture name="fly_tex_a6" type="2d" builtin="gradient" rgb1="0.39 0.2 0" rgb2="0.82 0.67 0.47" markrgb="0.7 0.49 0.2" random="0.3" width="200" height="200"/>
+<material name="fly_appearance_a6" texture="fly_tex_a6" texuniform="true" rgba="1 1 1 1"/>
+</mujocoinclude>
