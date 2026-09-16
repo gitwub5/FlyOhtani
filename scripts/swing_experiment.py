@@ -77,7 +77,7 @@ def run_episode(prep_swing: float, swing_crossing_time: float, course: str = "mi
             # PREVIOUS iteration, before this act() call) is the state the
             # action was actually computed under.
             state = controller._swing_axis.state
-            obs, reward, terminated, truncated, info = env.step(action)
+            obs, _reward, terminated, truncated, info = env.step(action)
             angle = float(env.data.qpos[env.swing_qpos_adr])
             vel = float(env.data.qvel[env.swing_qvel_adr])
             t = float(env.data.time)

@@ -1,3 +1,22 @@
+"""LEGACY (I-07b, pre-I-07b-fix): this was the original 9-course sweep
+baseline/video runner, written when B1 "success" still meant bare bat
+contact (see its `run_episode`/`record_course_video`, which both read
+`info.get("hit", ...)`). I-07b-fix (docs/records/B1-BATTING-REVIEW.md)
+replaced contact-only success with real batted-ball tracking
+(docs/design/ENV-002-BATTED-BALL.md) and BaseballB1Env's `info` dict no
+longer has a "hit" key at all -- so every summary this script prints or
+writes would silently read `False`/`None` for it and look like a
+uniform-miss run regardless of what actually happened
+(docs/records/evidence/R00-known-failures-at-checkpoint.md item 3).
+
+Its multi-course sweep (all 9 `COURSES`, not just mid_mid) is still
+potentially useful once the 9-course recalibration in
+docs/design/ENV-002-B1-courses.md is done, so R-02
+(docs/implementation/REFACTOR-PLAN.md) blocks it here instead of deleting
+it or silently reinterpreting "hit" as some other field. For a current,
+correct mid_mid recorder use demos/record_baseball_b1_mid_mid_fix.py or
+demos/record_i07c_before_after.py.
+"""
 from __future__ import annotations
 
 import argparse
@@ -14,6 +33,17 @@ from envs.baseball_b1_env import COURSES, BaseballB1Env
 
 DEV_SEEDS = range(20)
 CAMERAS = ["park_wide", "behind_catcher", "batter_side", "fly_pov"]
+
+_LEGACY_BLOCK_MESSAGE = (
+    "demos/record_baseball_b1_episode.py is blocked: it is a pre-I-07b-fix, "
+    "contact-only-'hit' 9-course runner and BaseballB1Env's info dict no "
+    "longer has a 'hit' key (see this file's module docstring). Use "
+    "demos/record_baseball_b1_mid_mid_fix.py or "
+    "demos/record_i07c_before_after.py for the current mid_mid batted-ball "
+    "runner, or update this script's success schema to "
+    "scoring_valid/batting_score before recalibrating and re-enabling the "
+    "full 9-course sweep."
+)
 
 
 class ZeroController:
@@ -213,6 +243,7 @@ def record_course_video(course: str, out_dir: Path, seed: int = 0, post_contact_
 
 
 def main() -> None:
+    raise SystemExit(_LEGACY_BLOCK_MESSAGE)
     parser = argparse.ArgumentParser(description="ENV-002 B1 baseline runner / per-course video recorder.")
     parser.add_argument("--mode", choices=["baselines", "video", "all"], default="all")
     parser.add_argument("--out", type=Path, default=Path("runs/env002-b1-demo"))

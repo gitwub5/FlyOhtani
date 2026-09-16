@@ -38,10 +38,18 @@ video = [
 ]
 
 [tool.setuptools]
-packages = ["envs", "controllers", "encoders", "train", "analysis", "demos"]
+packages = ["envs", "envs.baseball", "controllers", "encoders", "train", "analysis", "demos"]
 
 [tool.setuptools.package-data]
-envs = ["assets/*.xml"]
+# R-03 (docs/implementation/REFACTOR-PLAN.md): "assets/*.xml" alone missed
+# everything under envs/assets/mesh_neuromechfly/ (the vendored NeuroMechFly
+# STL meshes and their Apache-2.0 LICENSE file, added for I-08a -- see
+# docs/RESEARCH_SOURCES.md and THIRD_PARTY_NOTICES.md) because it does not
+# match nested paths. "assets/**/*" covers the XMLs, the STL meshes, and
+# the license file in one clean (non-editable) wheel install; verified by
+# actually building and installing a wheel into a temp venv and loading
+# BaseballB1Env's XML from it (docs/records/evidence/R03-wheel-install-check.txt).
+envs = ["assets/**/*"]
 
 [tool.ruff]
 line-length = 100

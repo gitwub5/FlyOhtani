@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -9,6 +8,31 @@ import gymnasium as gym
 import mujoco
 import numpy as np
 from gymnasium import spaces
+
+from envs.baseball.courses import ALIGNMENT, COURSES, CROSSING_TIME_S, ZONE_CENTER
+from envs.baseball.reward import (
+    ForwardCarryRewardWeights,
+    RewardWeights,
+    compute_reward_terms,
+    compute_scoring,
+)
+
+# R-02 (docs/implementation/REFACTOR-PLAN.md): course geometry/timing config
+# and reward/scoring now live in envs/baseball/{courses,reward}.py. COURSES
+# and ZONE_CENTER are used directly below; ALIGNMENT and CROSSING_TIME_S are
+# not used in this file's own code, only re-exported (declared in __all__
+# below so ruff's unused-import check doesn't flag them) because
+# controllers/baseball_b1.py, tests, and demos all still do
+# `from envs.baseball_b1_env import ALIGNMENT, COURSES, CROSSING_TIME_S` --
+# moving the definitions did not need to change any of those import sites.
+__all__ = [
+    "ALIGNMENT",
+    "COURSES",
+    "CROSSING_TIME_S",
+    "BaseballB1Env",
+    "ForwardCarryRewardWeights",
+    "RewardWeights",
+]
 
 ASSET_PATH = Path(__file__).resolve().parent / "assets" / "baseball_park_b1.xml"
 
@@ -27,138 +51,18 @@ PROLONGED_CONTACT_S = 0.05
 FORWARD_GATE_X = 5.0
 OUT_OF_BOUNDS_XY = 150.0
 
-# I-07c-score (docs/design/BATTING-QUALITY-AND-SWING.md section 1): field
-# coordinate origin is home plate's own back vertex, +x toward the pitcher's
-# rubber (envs/assets/baseball_park_b1.xml line 2-4 coordinate-system
-# comment) -- so "home reference point" is just the world XY origin and
-# "forward" is +x. Recorded here (not derived from a runtime geom lookup)
-# because home_plate's own geom pos (0.2159, 0, ...) is the plate's *visual
-# center*, not its back-vertex origin-defining corner.
-HOME_REFERENCE_XY = np.array([0.0, 0.0])
-
-# Course grid (docs/design/ENV-002-B1-courses.md section 1). x is always the
-# same plate-front reference as B0 (0.4318); only y (inside/outside) and z
-# (high/low) vary per course.
-ZONE_CENTER = np.array([0.4318, 0.0, 1.0])
-ZONE_HALF_WIDTH_Y = 0.2159
-ZONE_HALF_HEIGHT_Z = 0.35
-_U = {"in": 2 / 3, "mid": 0.0, "out": -2 / 3}
-_V = {"high": 2 / 3, "mid": 0.0, "low": -2 / 3}
-COURSES: dict[str, np.ndarray] = {
-    f"{uname}_{vname}": np.array(
-        [ZONE_CENTER[0], ZONE_CENTER[1] + u * ZONE_HALF_WIDTH_Y, ZONE_CENTER[2] + v * ZONE_HALF_HEIGHT_Z]
-    )
-    for uname, u in _U.items()
-    for vname, v in _V.items()
-}
-
-# Per-course (swing, tilt) geometric alignment: the (swing, tilt) angle pair
-# where the bat passes closest to the course's target point (2D grid search,
-# docs/design/ENV-002-B1-courses.md section 3). This is direction-independent
-# geometry, so it is UNCHANGED by the I-07b-fix swing-direction reversal --
-# only which direction/prep angle the bat approaches it from changed.
-ALIGNMENT: dict[str, tuple[float, float]] = {
-    "in_high": (-1.226, 0.410),
-    "in_mid": (-1.226, 0.000),
-    "in_low": (-1.226, -0.410),
-    "mid_high": (-1.298, 0.332),
-    "mid_mid": (-1.298, 0.000),
-    "mid_low": (-1.298, -0.332),
-    "out_high": (-1.346, 0.280),
-    "out_mid": (-1.346, 0.000),
-    "out_low": (-1.346, -0.280),
-}
-
-# Per-course (swing_crossing_time, tilt_crossing_time): how long before the
-# ball's predicted arrival each axis's bang-bang trigger should fire so it
-# crosses ALIGNMENT near arrival ("cross, don't stop-and-hold", same
-# philosophy as BaseballB0Env's scripted controller -- see
-# controllers/baseball_b1.py). ONLY mid_mid is recalibrated (first for
-# I-07b-fix, then again for I-07c-swing below). The other 8 entries are
-# UNCHANGED from before I-07b-fix (commit c812766): calibrated for the old
-# prep_swing=1.0, decreasing-angle (backward) swing at gear=12, against a
-# contact-only success criterion. They are almost certainly wrong for the
-# current prep_swing/gear=30/solref-fixed physics and must NOT be used as
-# evidence of reachability until a future 9-course expansion step
-# recalibrates them the same way mid_mid was.
-#
-# I-07c-swing (docs/design/BATTING-QUALITY-AND-SWING.md section 2;
-# docs/records/VALIDATION_LOG.md has the full prep-angle/trigger sweep):
-# prep_swing widened from -1.9 to -1.96 (bat_hinge's fixed joint range is
-# [-2.0, 2.0] -- gear/mass/inertia/material/dt/pitch all held fixed, ONLY
-# the windup distance and its matching trigger time changed). Under the
-# swing axis's already-optimal constant-max-torque "accelerate" phase (no
-# premature target-arrival braking -- see _SwingAxis), a longer windup
-# purely from a further-back prep angle raises contact-point speed
-# (v=sqrt(2*a_max*delta_theta)): mid_mid, trigger=0.09425316355759385s of a
-# 0.459091s flight, bat_contact_vx=+7.40 m/s (was +6.98), exit_speed=8.61
-# m/s (was 8.53), forward_flight_success=True, batting_score=8.48m (was
-# 5.82m, +46%), settle 0.431s post-contact / 4.3e-5rad peak-to-peak (both
-# within the 0.5s/0.02rad targets). Trade-off found and reported, not
-# hidden: exit launch angle rose to 41.2deg (was 14.0deg) -- a markedly
-# higher trajectory, not merely a faster line drive, because the new
-# contact instant (still a purely kinematic function of trigger timing, not
-# hand-picked for its look) lands at a different point along the bat's
-# continuous sweep. ALSO found and reported: BOTH the old (-1.9) and new
-# (-1.96) trigger times are extremely sensitive to a single control-step
-# (0.005s) shift -- either direction flips forward_flight_success to False
-# on BOTH prep angles (verified for -1.9 too, not unique to this change).
-# This is a pre-existing contact-timing fragility of the bang-bang
-# oracle/collision design, unchanged in kind by this recalibration; fixing
-# it would need a different (closed-loop/contact-triggered) control
-# approach, out of scope here. Only mid_mid uses -1.96; the other 8 courses
-# keep whatever prep_swing they're constructed with (single scalar; see
-# BaseballB1Env.__init__).
-CROSSING_TIME_S: dict[str, tuple[float, float]] = {
-    "in_high": (0.25, 0.41),
-    "in_mid": (0.27, 0.0),
-    "in_low": (0.23, 0.33),
-    "mid_high": (0.27, 0.28),
-    "mid_mid": (0.09425316355759385, 0.0),  # I-07c-swing recalibration (was 0.094091 for prep_swing=-1.9; see comment above)
-    "mid_low": (0.25, 0.30),
-    "out_high": (0.29, 0.28),
-    "out_mid": (0.29, 0.0),
-    "out_low": (0.26, 0.31),
-}
-
-
-@dataclass(frozen=True)
-class RewardWeights:
-    """batted-ball-v1 (I-07b-fix, docs/design/ENV-002-BATTED-BALL.md section 4).
-    Replaces b0-contact-v1's on-contact reward entirely: mere contact scores
-    0; only forward_flight_success scores +10 (once). miss=-3 on any other
-    normal (non-timeout) termination. control_cost unchanged in form, now
-    integrated across the whole episode (pitch + contact + flight)."""
-
-    forward_flight_success: float = 10.0
-    miss: float = 3.0
-    control_cost: float = 0.2
-
-
-@dataclass(frozen=True)
-class ForwardCarryRewardWeights:
-    """forward-carry-v1 (I-07c-score, docs/design/BATTING-QUALITY-AND-SWING.md
-    section 1). Named and versioned separately from batted-ball-v1 -- never
-    silently mixed with it (CLAUDE.md reward-versioning discipline). Always
-    computed alongside batted-ball-v1 (see BaseballB1Env._info()'s
-    "forward_carry_v1" key) so the two can be compared on identical
-    episodes, but batted-ball-v1 remains the reward actually returned by
-    step() until a caller explicitly opts in via reward_version=
-    "forward-carry-v1". RL training on this reward has not started.
-
-    On a normal (non-timeout, non-out-of-bounds) termination: outcome =
-    outcome_scale * batting_score if scoring_valid else -miss_penalty.
-    control_cost is the same time-integrated -0.2*(u_swing^2+u_tilt^2)dt as
-    batted-ball-v1 (unchanged, per spec). Timeout/out-of-bounds endings
-    (status="incomplete") get neither the outcome reward nor the miss
-    penalty -- only the already-accrued control cost is kept. The old
-    contact/gate +10 (forward_flight_success) is intentionally NOT included
-    here to avoid double-paying it alongside the new outcome term.
-    """
-
-    outcome_scale: float = 0.1
-    miss_penalty: float = 3.0
-    control_cost: float = 0.2
+# Sets of end reasons compute_scoring/compute_reward_terms (envs/baseball/reward.py)
+# need but do not import, to avoid a circular import with this module.
+_INCOMPLETE_END_REASONS = frozenset({END_TIMEOUT_PITCH, END_TIMEOUT_FLIGHT, END_OUT_OF_BOUNDS})
+_MISS_END_REASONS = frozenset(
+    {
+        END_NO_PITCH_CONTACT,
+        END_GROUND_BEFORE_BAT_CONTACT,
+        END_GROUND_BEFORE_SEPARATION,
+        END_BATTED_BALL_LANDING,
+        END_OUT_OF_BOUNDS,
+    }
+)
 
 
 class BaseballB1Env(gym.Env):
@@ -566,60 +470,20 @@ class BaseballB1Env(gym.Env):
 
     def _compute_scoring(self) -> dict[str, Any]:
         """I-07c-score (docs/design/BATTING-QUALITY-AND-SWING.md section 1).
-        Pure function of already-recorded episode state (self._end_reason
-        and the contact/landing bookkeeping populated in step()) -- reads
-        no mutable physics state itself, so it is safe to call from both
-        _reward() and _info() on the same step without side effects."""
-        end_reason = self._end_reason
-        landing_xy = (
-            self._first_landing_xyz[:2].copy() if self._first_landing_xyz is not None else None
+        Thin wrapper around envs.baseball.reward.compute_scoring (R-02,
+        docs/implementation/REFACTOR-PLAN.md) -- the pure computation lives
+        there; this method's only job is reading this episode's mutable
+        state into it. Safe to call from both _reward() and _info() on the
+        same step without side effects."""
+        return compute_scoring(
+            end_reason=self._end_reason,
+            incomplete_end_reasons=_INCOMPLETE_END_REASONS,
+            first_landing_xyz=self._first_landing_xyz,
+            first_contact_ball_pos=self._first_contact_ball_pos,
+            exit_velocity=self._exit_velocity,
+            recontact_count=self._recontact_count,
+            prolonged_contact=self._prolonged_contact,
         )
-
-        carry_distance_m = None
-        if landing_xy is not None and self._first_contact_ball_pos is not None:
-            carry_distance_m = float(
-                np.linalg.norm(landing_xy - self._first_contact_ball_pos[:2])
-            )
-
-        landing_range_from_home_m = None
-        if landing_xy is not None:
-            landing_range_from_home_m = float(np.linalg.norm(landing_xy - HOME_REFERENCE_XY))
-
-        if end_reason is None:
-            status = None
-        elif end_reason in (END_TIMEOUT_PITCH, END_TIMEOUT_FLIGHT, END_OUT_OF_BOUNDS):
-            # Landing was never observed (truncated or flew past the safety
-            # bound while still in flight) -- undetermined, not a 0-distance
-            # miss. Distinct from a definite failure below.
-            status = "incomplete"
-        else:
-            status = "complete"
-
-        scoring_valid = False
-        if (
-            status == "complete"
-            and landing_xy is not None
-            and self._exit_velocity is not None  # confirmed clean separation
-            and float(self._exit_velocity[0]) > 0.0
-            and self._recontact_count == 0
-            and not self._prolonged_contact
-        ):
-            x_rel = float(landing_xy[0] - HOME_REFERENCE_XY[0])
-            y_rel = float(landing_xy[1] - HOME_REFERENCE_XY[1])
-            scoring_valid = x_rel > 0.0 and abs(y_rel) <= x_rel
-
-        if status == "complete":
-            batting_score = carry_distance_m if (scoring_valid and carry_distance_m is not None) else 0.0
-        else:
-            batting_score = None  # incomplete or episode still in progress: undetermined
-
-        return {
-            "status": status,
-            "carry_distance_m": carry_distance_m,
-            "landing_range_from_home_m": landing_range_from_home_m,
-            "scoring_valid": scoring_valid,
-            "batting_score": batting_score,
-        }
 
     def _reward(
         self,
@@ -628,53 +492,21 @@ class BaseballB1Env(gym.Env):
         end_reason: str | None,
         actual_substep_duration_s: float,
     ) -> tuple[float, dict[str, float], dict[str, Any], dict[str, float]]:
-        weights = self.reward_weights
-        success = float(
-            end_reason is not None and self._forward_flight_success and end_reason != END_TIMEOUT_FLIGHT
+        """Thin wrapper around envs.baseball.reward.compute_reward_terms
+        (R-02) -- see that function for the actual weight/scoring math."""
+        return compute_reward_terms(
+            weights=self.reward_weights,
+            forward_carry_weights=self.forward_carry_reward_weights,
+            swing_ctrl=swing_ctrl,
+            tilt_ctrl=tilt_ctrl,
+            end_reason=end_reason,
+            forward_flight_success=self._forward_flight_success,
+            timeout_flight_reason=END_TIMEOUT_FLIGHT,
+            miss_end_reasons=_MISS_END_REASONS,
+            actual_substep_duration_s=actual_substep_duration_s,
+            scoring=self._compute_scoring(),
+            reward_version=self.reward_version,
         )
-        miss = float(
-            end_reason
-            in (
-                END_NO_PITCH_CONTACT,
-                END_GROUND_BEFORE_BAT_CONTACT,
-                END_GROUND_BEFORE_SEPARATION,
-                END_BATTED_BALL_LANDING,
-                END_OUT_OF_BOUNDS,
-            )
-            and not self._forward_flight_success
-        )
-        control_cost = (swing_ctrl**2 + tilt_ctrl**2) * actual_substep_duration_s
-
-        reward_terms = {
-            "forward_flight_success": weights.forward_flight_success * success,
-            "control_cost": -weights.control_cost * control_cost,
-            "miss": -weights.miss * miss,
-        }
-
-        scoring = self._compute_scoring()
-        fc_weights = self.forward_carry_reward_weights
-        if scoring["status"] == "complete":
-            if scoring["scoring_valid"]:
-                fc_outcome = fc_weights.outcome_scale * scoring["batting_score"]
-            else:
-                fc_outcome = -fc_weights.miss_penalty
-        else:
-            # Not done, or truncated/out-of-bounds before landing: no
-            # outcome reward and no miss penalty, only the control cost
-            # already spent (docs/design/BATTING-QUALITY-AND-SWING.md
-            # section 1: "외부 truncation에는 outcome reward/실패 벌점을
-            # 지급하지 않고 소모된 제어비용만 유지한다").
-            fc_outcome = 0.0
-        forward_carry_reward_terms = {
-            "outcome": fc_outcome,
-            "control_cost": -fc_weights.control_cost * control_cost,
-        }
-
-        if self.reward_version == "forward-carry-v1":
-            active_terms = forward_carry_reward_terms
-        else:
-            active_terms = reward_terms
-        return float(sum(active_terms.values())), reward_terms, scoring, forward_carry_reward_terms
 
     def _point_velocity(self, body_id: int, point: np.ndarray) -> np.ndarray:
         jacp = np.zeros((3, self.model.nv))

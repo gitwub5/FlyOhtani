@@ -20,8 +20,8 @@ OUT_DIR = Path("runs/env002-b1-i07c-swing")
 
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    before, before_tl = run_episode(-1.9, 0.094091)
-    after, after_tl = run_episode(-1.96, 0.09425316355759385)
+    _before, before_tl = run_episode(-1.9, 0.094091)
+    _after, after_tl = run_episode(-1.96, 0.09425316355759385)
 
     fig, (ax_top, ax_side) = plt.subplots(1, 2, figsize=(12, 5))
 

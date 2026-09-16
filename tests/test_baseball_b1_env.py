@@ -571,7 +571,7 @@ def test_ground_legs_soles_touch_the_true_world_ground_inside_the_batter_box():
     mesh vertices (not geom origins, which is the other half of what went
     wrong) of both hind feet (LH/RH, the only grounded legs in the new
     posture) land within 5mm of world z=0 and inside the batter's box."""
-    from scripts.fly_mesh_utils import geom_world_vertices
+    from envs.fly_visual_mesh import geom_world_vertices
 
     env = make_env()
     try:
@@ -1073,10 +1073,10 @@ def test_forward_carry_v1_outcome_is_flat_penalty_on_miss_no_double_counting():
     guaranteed rather than merely likely."""
     env = make_env()
     try:
-        obs, _ = env.reset(seed=0, options={"course": "mid_mid"})
+        _obs, _ = env.reset(seed=0, options={"course": "mid_mid"})
         info: dict = {}
         while True:
-            obs, _reward, terminated, truncated, info = env.step(np.zeros(2, dtype=np.float32))
+            _obs, _reward, terminated, truncated, info = env.step(np.zeros(2, dtype=np.float32))
             if terminated or truncated:
                 break
         assert info["end_reason"] == "no_pitch_contact"
@@ -1098,10 +1098,10 @@ def test_forward_carry_v1_gives_neither_reward_nor_penalty_on_timeout():
     reward/실패 벌점을 지급하지 않고 소모된 제어비용만 유지한다'."""
     env = make_env(pitch_timeout_s=0.001)  # force END_TIMEOUT_PITCH almost immediately
     try:
-        obs, _ = env.reset(seed=0, options={"course": "mid_mid"})
+        _obs, _ = env.reset(seed=0, options={"course": "mid_mid"})
         info: dict = {}
         for _ in range(5):
-            obs, _reward, terminated, truncated, info = env.step(np.zeros(2, dtype=np.float32))
+            _obs, _reward, terminated, truncated, info = env.step(np.zeros(2, dtype=np.float32))
             if terminated or truncated:
                 break
         assert truncated is True
@@ -1140,7 +1140,7 @@ def test_active_reward_scalar_switches_with_reward_version():
                     break
             results[label] = (total_reward, total_old_terms, total_new_terms, info["scoring_valid"])
 
-        old_total, old_terms_sum, old_new_terms_sum, old_valid = results["old"]
+        old_total, old_terms_sum, _old_new_terms_sum, old_valid = results["old"]
         new_total, new_terms_sum, new_new_terms_sum, new_valid = results["new"]
         assert old_valid is True and new_valid is True
         # env_old's active scalar matches ONLY its own batted-ball-v1 terms.

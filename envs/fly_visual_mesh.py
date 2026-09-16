@@ -5,6 +5,19 @@ mesh SURFACE (sole, fingertip) -- a geom's origin can sit well above/inside
 the real lowest/outermost vertex. Every ground-contact and grip-reach
 measurement in this fix reads real transformed mesh vertices, not geom
 origins.
+
+R-02 (docs/implementation/REFACTOR-PLAN.md): moved here from
+scripts/fly_mesh_utils.py so it is part of the installed `envs` package
+(pyproject.toml's `[tool.setuptools] packages`) instead of the unpackaged
+`scripts/` CLI directory. That unpackaged location was the direct cause of
+docs/records/evidence/R00-known-failures-at-checkpoint.md item 1: `pytest`
+(the console-script entry point) does not add the current working directory
+to sys.path, only `python -m pytest` does -- so
+`from scripts.fly_mesh_utils import geom_world_vertices` (used by a ground-
+contact test) resolved under one invocation and raised ModuleNotFoundError
+under the other. Runtime/test code should never need to import a CLI
+script's internals; this move fixes that at the source instead of adding a
+sys.path workaround.
 """
 from __future__ import annotations
 

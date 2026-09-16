@@ -111,7 +111,7 @@ def main() -> None:
             "",
             xy=(start_xy[0] + vec[0] * scale, start_xy[1] + vec[1] * scale),
             xytext=(start_xy[0], start_xy[1]),
-            arrowprops=dict(arrowstyle="->", color=color, lw=2.5),
+            arrowprops={"arrowstyle": "->", "color": color, "lw": 2.5},
         )
         ax.plot([], [], color=color, label=label, lw=2.5)
 

@@ -1,0 +1,12 @@
+B1 XML loaded OK, nbody= 51
+envs.fly_visual import OK: <class 'envs.fly_visual.FrontLegGripOverlay'>
+envs.baseball.courses import OK, n_courses= 9
+envs.baseball.reward import OK: <class 'envs.baseball.reward.RewardWeights'>
+envs.fly_visual_mesh import OK: <function geom_world_vertices at 0x1059acae0>
+installed mesh_neuromechfly STL count: 45 (source has 45)
+installed license files: ['/Users/gwshin/Dev/fly-ohtani-snn/envs/assets/mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt']
+BaseballB1Env().reset() OK, obs.shape= (13,)
+
+RESULT: clean (non-editable) wheel install loads the B1 MuJoCo model, all vendored
+NeuroMechFly STL meshes + license, and every new R-02 submodule (envs.baseball.*,
+envs.fly_visual, envs.fly_visual_mesh) with no import errors.

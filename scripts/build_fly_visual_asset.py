@@ -23,7 +23,7 @@ I-08a-fix changes from I-08a (docs/records/FLY-VISUAL-REVIEW.md's findings):
    below) -- so feet actually ended up ~1.0m off the ground, not 0. This
    version subtracts BATTER_WORLD_POS[2] so feet land at true world z=0.
 2. SOLE/FINGERTIP, NOT GEOM ORIGIN: ground/reach calibration now reads
-   real transformed mesh vertices (scripts/fly_mesh_utils.py) instead of a
+   real transformed mesh vertices (envs/fly_visual_mesh.py) instead of a
    geom's origin point -- a geom's local (0,0,0) is not the same as its
    mesh's lowest/outermost point, which was silently absorbing ~8cm of
    error in I-08a.
@@ -49,8 +49,7 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from fly_mesh_utils import geom_world_vertices
+from envs.fly_visual_mesh import geom_world_vertices
 
 if len(sys.argv) != 2:
     raise SystemExit(
