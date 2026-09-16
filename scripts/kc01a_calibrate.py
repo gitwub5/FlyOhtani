@@ -131,17 +131,21 @@ def step2_gear_sweep(env, candidate_gears, time_budget_s=0.30, target_angle=0.5)
     return {"results": results, "time_budget_s": time_budget_s, "chosen_gear": min(passing) if passing else None}
 
 
-def run_episode(mode, torso_target, swing_target, torso_ct, swing_ct, held=None):
+def run_episode(mode, torso_target, swing_target, torso_ct, swing_ct):
+    """The non-participating axis is held by the controller's own hold-gain
+    P-control (crossing_time=999.0, never triggered) -- NOT
+    env.set_held_pose()'s hard qpos/qvel override. Using the hard lock here
+    was tried first and found to change the ball-bat collision's effective
+    dynamics enough to eliminate every valid arm_only hit across a wide
+    trigger-time search (docs/design/KC-01a-TORSO-BAT-COORDINATION.md
+    section 5) -- a real finding about this contact model's sensitivity,
+    not a reason to keep searching for a hard-locked solution."""
     env = BaseballKC01aEnv(prep_torso=PREP_TORSO, prep_swing=PREP_SWING, prep_tilt=PREP_TILT)
     try:
         controller = TorsoBatController(
             mode, PREP_TORSO, PREP_SWING, PREP_TILT, torso_target, swing_target, torso_ct, swing_ct
         )
         obs, _ = env.reset(seed=0, options={"course": "mid_mid"})
-        if held == "torso":
-            env.set_held_pose(0.0, None, None)
-        elif held == "arm":
-            env.set_held_pose(None, PREP_SWING, PREP_TILT)
         controller.reset()
         info = {}
         while True:
@@ -158,14 +162,14 @@ def step3_trigger_sweeps() -> dict:
 
     best = None
     for ct in np.arange(0.085, 0.105, 0.0005):
-        info = run_episode("arm_only", 0.0, -1.298, 999.0, ct, held="torso")
+        info = run_episode("arm_only", 0.0, -1.298, 999.0, ct)
         if info["scoring_valid"] and (best is None or info["batting_score"] > best[1]):
             best = (ct, info["batting_score"], info["bat_contact_vx"])
     out["arm_only"] = {"swing_crossing_time_s": 0.09425316355759385, "note": "reuses B1's own value; see spec section 5"}
 
     best = None
     for ct in np.arange(0.15, 0.45, 0.005):
-        info = run_episode("torso_only", 0.496, PREP_SWING, ct, 999.0, held="arm")
+        info = run_episode("torso_only", 0.496, PREP_SWING, ct, 999.0)
         vx = info["bat_contact_vx"] or -999
         if best is None or vx > best[1]:
             best = (ct, vx, info["scoring_valid"])

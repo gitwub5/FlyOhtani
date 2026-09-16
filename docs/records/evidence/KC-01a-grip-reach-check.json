@@ -1,0 +1,22 @@
+{
+  "arm_only": {
+    "max_reach_error_L_m": 0.0,
+    "max_reach_error_R_m": 0.0,
+    "steps_checked": 151
+  },
+  "torso_only": {
+    "max_reach_error_L_m": 0.0,
+    "max_reach_error_R_m": 0.0,
+    "steps_checked": 308
+  },
+  "simultaneous": {
+    "max_reach_error_L_m": 0.0,
+    "max_reach_error_R_m": 0.0,
+    "steps_checked": 115
+  },
+  "staggered": {
+    "max_reach_error_L_m": 0.0,
+    "max_reach_error_R_m": 0.0,
+    "steps_checked": 159
+  }
+}

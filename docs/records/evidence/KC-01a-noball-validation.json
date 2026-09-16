@@ -1,0 +1,171 @@
+{
+  "joint_direction": {
+    "torso": {
+      "ctrl": 1.0,
+      "final_qvel": 0.2852626248056656,
+      "moved_in_ctrl_direction": true
+    },
+    "swing": {
+      "ctrl": 1.0,
+      "final_qvel": 3.8319671699151465,
+      "moved_in_ctrl_direction": true
+    },
+    "tilt": {
+      "ctrl": 1.0,
+      "final_qvel": 0.25099186930487044,
+      "moved_in_ctrl_direction": true
+    }
+  },
+  "inertial_coupling": {
+    "max_abs_torso_angle_rad_while_only_swing_driven": 0.2849686114160432,
+    "shows_reaction_coupling": true
+  },
+  "energy_budget": {
+    "arm_only": {
+      "mode": "arm_only",
+      "joint_positive_work_j": {
+        "torso": 3.529063346425967,
+        "swing": 23.677250851759787,
+        "tilt": 0.8683653683253901
+      },
+      "joint_negative_work_j": {
+        "torso": -4.895888148596762,
+        "swing": -3.884902277356688,
+        "tilt": -1.06832960724359
+      },
+      "net_actuator_work_j": 18.225559533314104,
+      "joint_peak_abs_power_w": {
+        "torso": 46.32686504611724,
+        "swing": 410.77431769944354,
+        "tilt": 9.987597873906742
+      },
+      "joint_peak_abs_torque_nm": {
+        "torso": 30.0,
+        "swing": 30.0,
+        "tilt": 6.0
+      }
+    },
+    "torso_only": {
+      "mode": "torso_only",
+      "joint_positive_work_j": {
+        "torso": 15.573034009759834,
+        "swing": 44.92872705677706,
+        "tilt": 7.745106495676782
+      },
+      "joint_negative_work_j": {
+        "torso": -7.232880022645133,
+        "swing": -30.759442302032774,
+        "tilt": -8.416725173431177
+      },
+      "net_actuator_work_j": 21.837820064104598,
+      "joint_peak_abs_power_w": {
+        "torso": 102.82471722305158,
+        "swing": 169.2088698306597,
+        "tilt": 30.556190855992263
+      },
+      "joint_peak_abs_torque_nm": {
+        "torso": 30.0,
+        "swing": 30.0,
+        "tilt": 6.0
+      }
+    },
+    "simultaneous": {
+      "mode": "simultaneous",
+      "joint_positive_work_j": {
+        "torso": 4.526164388005697,
+        "swing": 32.937139340549884,
+        "tilt": 0.3826486617902202
+      },
+      "joint_negative_work_j": {
+        "torso": -8.88196097301777,
+        "swing": -4.4543173545915264,
+        "tilt": -0.4644970225129648
+      },
+      "net_actuator_work_j": 24.04517704022354,
+      "joint_peak_abs_power_w": {
+        "torso": 95.51155040189093,
+        "swing": 482.6762372527085,
+        "tilt": 7.05393440250727
+      },
+      "joint_peak_abs_torque_nm": {
+        "torso": 30.0,
+        "swing": 30.0,
+        "tilt": 6.0
+      }
+    },
+    "staggered": {
+      "mode": "staggered",
+      "joint_positive_work_j": {
+        "torso": 12.989881041874252,
+        "swing": 40.34257572209856,
+        "tilt": 0.9476042922377246
+      },
+      "joint_negative_work_j": {
+        "torso": -6.980582611810979,
+        "swing": -1.3021449338324065,
+        "tilt": -1.4106429061186134
+      },
+      "net_actuator_work_j": 44.58669060444854,
+      "joint_peak_abs_power_w": {
+        "torso": 140.2127030796875,
+        "swing": 601.0618688482513,
+        "tilt": 11.533043598264825
+      },
+      "joint_peak_abs_torque_nm": {
+        "torso": 30.0,
+        "swing": 30.0,
+        "tilt": 6.0
+      }
+    }
+  },
+  "settle": {
+    "arm_only": {
+      "torso": {
+        "latch_time_s": null,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      },
+      "swing": {
+        "latch_time_s": 0.4649999999999765,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      }
+    },
+    "torso_only": {
+      "torso": {
+        "latch_time_s": 0.41999999999998144,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      },
+      "swing": {
+        "latch_time_s": null,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      }
+    },
+    "simultaneous": {
+      "torso": {
+        "latch_time_s": 0.46999999999997594,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      },
+      "swing": {
+        "latch_time_s": 0.46999999999997594,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      }
+    },
+    "staggered": {
+      "torso": {
+        "latch_time_s": 0.4649999999999765,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      },
+      "swing": {
+        "latch_time_s": 0.4649999999999765,
+        "settle_time_s": null,
+        "note": "never latched or never settled within the episode"
+      }
+    }
+  }
+}

@@ -57,8 +57,8 @@
       "note": "reuses B1's own value; see spec section 5"
     },
     "torso_only": {
-      "best_crossing_time_s": 0.31000000000000016,
-      "best_bat_contact_vx": 3.0785521646298193,
+      "best_crossing_time_s": 0.3600000000000002,
+      "best_bat_contact_vx": 4.857731019449334,
       "ever_valid": false
     },
     "simultaneous": {

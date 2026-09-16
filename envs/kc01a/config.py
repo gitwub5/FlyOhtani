@@ -60,8 +60,17 @@ SHARED_SWING_TARGET = -0.726
 # optimized, just the center of the first working window found; the
 # ±5ms sensitivity check in docs/design/KC-01a-TORSO-BAT-COORDINATION.md
 # section 4 characterizes how narrow that window is) ---
+# All four conditions hold their non-participating axis via the
+# CONTROLLER's own hold-gain P-control (crossing_time=999.0, never
+# triggered), not env.set_held_pose()'s hard qpos/qvel override --
+# switching arm_only to the hard lock was tried first and found to
+# eliminate every valid hit across a wide trigger-time search (the hard
+# lock's per-substep qvel=0 reset changes the ball-bat collision's
+# effective dynamics enough to matter, given this contact model's already-
+# documented extreme timing sensitivity). See docs/design/
+# KC-01a-TORSO-BAT-COORDINATION.md section 5.
 ARM_ONLY_SWING_CROSSING_TIME_S = 0.09425316355759385  # B1's own calibrated value; reproduces closely, not identically (see section 5's timing-fragility note)
-TORSO_ONLY_TORSO_CROSSING_TIME_S = 0.310  # best found; does NOT reach a valid hit at this or any timing searched
+TORSO_ONLY_TORSO_CROSSING_TIME_S = 0.360  # best found (peak bat_contact_vx); does NOT reach a valid hit at this or any timing searched
 SIMULTANEOUS_CROSSING_TIME_S = 0.096  # same crossing time on both axes (center of the [0.0942, 0.0990] valid window found)
 STAGGERED_SWING_CROSSING_TIME_S = 0.122  # center of the [0.120, 0.124] valid window found
 STAGGERED_TORSO_LEAD_S = 0.12  # torso triggers this much earlier than swing (torso_crossing_time = swing_crossing_time + this)
