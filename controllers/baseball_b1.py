@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import numpy as np
 
 from envs.baseball_b1_env import ALIGNMENT, COURSES, CROSSING_TIME_S
@@ -276,16 +278,32 @@ class OracleAimController:
     now runs _SwingAxis/_TiltAxis's brake/hold instead of chasing the
     target with bang-bang forever (see their docstrings). Only verified for
     mid_mid.
+
+    `crossing_time_s` (2026-09-17 cleanup, docs/implementation/REFACTOR-PLAN.md
+    R-02 follow-up): defaults to the module's immutable CROSSING_TIME_S, so
+    every existing default-constructed instance is unaffected. Pass an
+    explicit mapping (e.g. `dict(CROSSING_TIME_S) | {"mid_mid": (t, 0.0)}`)
+    to use a different calibration for one or more courses instead of the
+    old pattern of mutating the shared module-level dict and restoring it
+    afterward -- that pattern is no longer possible since CROSSING_TIME_S is
+    now a read-only `types.MappingProxyType`.
     """
 
-    def __init__(self, course: str, prep_swing: float = 1.0, prep_tilt: float = 0.0) -> None:
+    def __init__(
+        self,
+        course: str,
+        prep_swing: float = 1.0,
+        prep_tilt: float = 0.0,
+        crossing_time_s: Mapping[str, tuple[float, float]] | None = None,
+    ) -> None:
         if course not in ALIGNMENT:
             raise ValueError(f"unknown course {course!r}")
         self.course = course
         self.prep_swing = prep_swing
         self.prep_tilt = prep_tilt
+        self.crossing_time_s = crossing_time_s if crossing_time_s is not None else CROSSING_TIME_S
         self.swing_target, self.tilt_target = ALIGNMENT[course]
-        self.swing_crossing_time, self.tilt_crossing_time = CROSSING_TIME_S[course]
+        self.swing_crossing_time, self.tilt_crossing_time = self.crossing_time_s[course]
         swing_direction = 1.0 if self.swing_target > prep_swing else -1.0
         self._swing_axis = _SwingAxis(
             prep_swing, self.swing_target, self.swing_target + _FOLLOW_THROUGH_OFFSET * swing_direction
@@ -332,23 +350,32 @@ class ScriptedAimController:
     known (course, alignment, crossing-time) triples -- a genuine aim/timing
     computation, not a label lookup. Same crossing-time trigger philosophy,
     and the same I-07b-followthrough brake/hold sequencing, as
-    OracleAimController."""
+    OracleAimController.
+
+    `crossing_time_s` (2026-09-17 cleanup): same explicit-override mechanism
+    as OracleAimController's, defaulting to the module's immutable
+    CROSSING_TIME_S -- see that class's docstring."""
 
     def __init__(
-        self, prep_swing: float = 1.0, prep_tilt: float = 0.0, gravity_z: float = -9.81
+        self,
+        prep_swing: float = 1.0,
+        prep_tilt: float = 0.0,
+        gravity_z: float = -9.81,
+        crossing_time_s: Mapping[str, tuple[float, float]] | None = None,
     ) -> None:
         self.prep_swing = prep_swing
         self.prep_tilt = prep_tilt
         self.gravity_z = gravity_z
+        self.crossing_time_s = crossing_time_s if crossing_time_s is not None else CROSSING_TIME_S
         self._swing_coef, self._tilt_coef = self._fit_aim_model()
         # Tilt crossing time is strongly asymmetric (gravity helps negative
         # targets, fights positive ones) -- fit separate through-origin
         # slopes rather than one linear model.
-        pos = [(ALIGNMENT[c][1], CROSSING_TIME_S[c][1]) for c in COURSES if ALIGNMENT[c][1] > 0]
-        neg = [(ALIGNMENT[c][1], CROSSING_TIME_S[c][1]) for c in COURSES if ALIGNMENT[c][1] < 0]
+        pos = [(ALIGNMENT[c][1], self.crossing_time_s[c][1]) for c in COURSES if ALIGNMENT[c][1] > 0]
+        neg = [(ALIGNMENT[c][1], self.crossing_time_s[c][1]) for c in COURSES if ALIGNMENT[c][1] < 0]
         self._tilt_slope_pos = sum(t / a for a, t in pos) / len(pos)
         self._tilt_slope_neg = sum(t / a for a, t in neg) / len(neg)
-        self._swing_crossing_time = sum(v[0] for v in CROSSING_TIME_S.values()) / len(CROSSING_TIME_S)
+        self._swing_crossing_time = sum(v[0] for v in self.crossing_time_s.values()) / len(self.crossing_time_s)
         self._swinging = False
         self._tilting = False
 

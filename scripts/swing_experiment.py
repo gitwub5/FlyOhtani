@@ -48,13 +48,17 @@ PP_TOL = 0.02
 def run_episode(prep_swing: float, swing_crossing_time: float, course: str = "mid_mid") -> dict:
     """Runs one full mid_mid episode with the given prep_swing/crossing_time
     (tilt untouched -- mid_mid's tilt never needs to aim), returns the
-    measurement table + timeline this section needs. Restores the module
-    dict it mutates."""
+    measurement table + timeline this section needs. CROSSING_TIME_S is a
+    read-only mappingproxy (2026-09-17 cleanup) -- this builds its own local
+    calibration dict for the controller instead of mutating the shared
+    module default."""
     env = BaseballB1Env(prep_swing=prep_swing, prep_tilt=0.0)
-    original = CROSSING_TIME_S["mid_mid"]
-    CROSSING_TIME_S["mid_mid"] = (swing_crossing_time, original[1])
+    calibration = dict(CROSSING_TIME_S)
+    calibration[course] = (swing_crossing_time, CROSSING_TIME_S[course][1])
     try:
-        controller = OracleAimController(course, prep_swing=env.prep_swing, prep_tilt=env.prep_tilt)
+        controller = OracleAimController(
+            course, prep_swing=env.prep_swing, prep_tilt=env.prep_tilt, crossing_time_s=calibration
+        )
         obs, _ = env.reset(seed=0, options={"course": course})
         controller.reset()
 
@@ -184,7 +188,6 @@ def run_episode(prep_swing: float, swing_crossing_time: float, course: str = "mi
         }
         return result, timeline
     finally:
-        CROSSING_TIME_S["mid_mid"] = original
         env.close()
 
 

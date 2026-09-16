@@ -57,11 +57,17 @@ def run_and_record(
     out_dir: Path,
 ) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
-    original = CROSSING_TIME_S["mid_mid"]
-    CROSSING_TIME_S["mid_mid"] = (swing_crossing_time, original[1])
+    # CROSSING_TIME_S is a read-only mappingproxy (2026-09-17 cleanup) -- each
+    # named run (BEFORE/AFTER) gets its own local calibration dict passed
+    # explicitly to the controller instead of mutating the shared module
+    # default and restoring it afterward.
+    calibration = dict(CROSSING_TIME_S)
+    calibration["mid_mid"] = (swing_crossing_time, CROSSING_TIME_S["mid_mid"][1])
     env = BaseballB1Env(render_mode="rgb_array", prep_swing=prep_swing, prep_tilt=0.0)
     try:
-        controller = OracleAimController("mid_mid", prep_swing=env.prep_swing, prep_tilt=env.prep_tilt)
+        controller = OracleAimController(
+            "mid_mid", prep_swing=env.prep_swing, prep_tilt=env.prep_tilt, crossing_time_s=calibration
+        )
         obs, _ = env.reset(seed=0, options={"course": "mid_mid"})
         controller.reset()
 
@@ -137,7 +143,6 @@ def run_and_record(
         (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
         return manifest
     finally:
-        CROSSING_TIME_S["mid_mid"] = original
         env.close()
 
 

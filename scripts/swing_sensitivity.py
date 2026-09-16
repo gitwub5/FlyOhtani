@@ -29,13 +29,18 @@ def run(prep_swing: float, crossing_time: float, half_dt: bool = False, replay_c
     if half_dt:
         env.model.opt.timestep = 0.000125
         env.frame_skip = 40  # control_dt stays 0.005s: 0.000125*40 == 0.00025*20
-    original = CROSSING_TIME_S["mid_mid"]
-    CROSSING_TIME_S["mid_mid"] = (crossing_time, original[1])
+    # CROSSING_TIME_S is a read-only mappingproxy (2026-09-17 cleanup) -- pass
+    # this run's calibration explicitly instead of mutating the shared
+    # module default.
+    calibration = dict(CROSSING_TIME_S)
+    calibration["mid_mid"] = (crossing_time, CROSSING_TIME_S["mid_mid"][1])
     try:
         obs, _ = env.reset(seed=0, options={"course": "mid_mid"})
         recorded_ctrl = []
         if replay_ctrl is None:
-            controller = OracleAimController("mid_mid", prep_swing=env.prep_swing, prep_tilt=env.prep_tilt)
+            controller = OracleAimController(
+                "mid_mid", prep_swing=env.prep_swing, prep_tilt=env.prep_tilt, crossing_time_s=calibration
+            )
             controller.reset()
             info = {}
             i = 0
@@ -68,7 +73,6 @@ def run(prep_swing: float, crossing_time: float, half_dt: bool = False, replay_c
             "first_landing_xyz": info["first_landing_xyz"],
         }, recorded_ctrl
     finally:
-        CROSSING_TIME_S["mid_mid"] = original
         env.close()
 
 

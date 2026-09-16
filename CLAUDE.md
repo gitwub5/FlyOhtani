@@ -4,15 +4,20 @@
 
 ## 읽는 순서
 
-`docs/README.md`의 순서를 따른다:
+필독은 이 파일 + `docs/README.md`의 3개뿐이다(`docs/README.md`가 정확한
+목록·표를 갖는 단일 기준이며 아래는 그 요약이다 — 둘이 어긋나면
+`docs/README.md`가 맞다):
 
-1. `docs/records/STATUS.md`의 최신 상태
-2. `docs/PLAN.md`의 연구 결정 (연구·환경·시각화 결정 D01~D14)
-3. `docs/design/DATA_MODEL.md`의 수치·데이터 계약
-4. `docs/design/ARCHITECTURE.md`의 모듈·데이터 계약
-5. 해당 실험 문서: `docs/experiments/EXP-001-associative-learning.md`
-6. `docs/implementation/WORK_PACKAGES.md`의 작업 단위와 완료 기준
-7. `docs/implementation/VALIDATION.md`의 검증 명세
+1. `docs/records/STATUS.md`의 최신 상태 (연구 결정은 D01~D14, `docs/PLAN.md`)
+2. `docs/PLAN.md`의 연구 결정
+
+이 2개를 읽은 뒤에는 **`docs/README.md`의 "작업별로 읽을 문서" 표에서 실제로
+맡은 작업에 해당하는 spec 하나만 추가로 읽는다** (예: 야구 환경 작업이면
+`docs/design/BASEBALL-SPEC.md`, 신경회로 실험이면
+`docs/experiments/EXP-001-associative-learning.md`). `docs/design/DATA_MODEL.md`·
+`docs/design/ARCHITECTURE.md`·`docs/implementation/WORK_PACKAGES.md`·
+`docs/implementation/VALIDATION.md`을 매번 전부 읽을 필요는 없다 — 모두
+신경회로 트랙 전용이며 물리 환경(야구/파리 외형) 작업에는 해당하지 않는다.
 
 결정의 단일 기준은 `docs/PLAN.md`이며 `docs/DECISIONS.md`는 위치 안내다. `docs/archive/`의 `PROJECT_PLAN.md`·`RESEARCH_PLAN.md`·`RESEARCH_REVIEW_2026-09-16.md`는 과거 로드맵/초안이며 각각 `docs/PLAN.md`, `docs/PLAN.md`, `docs/research/REVIEW.md`로 대체되었다. 읽기 경로가 없던 legacy toy 설정 `configs/default.yaml`은 `docs/archive/configs-default.yaml`로 옮겼다(R-04) — 과학적으로 확정된 기본값으로 취급하지 않는다.
 

@@ -1,12 +1,42 @@
-B1 XML loaded OK, nbody= 51
-envs.fly_visual import OK: <class 'envs.fly_visual.FrontLegGripOverlay'>
-envs.baseball.courses import OK, n_courses= 9
-envs.baseball.reward import OK: <class 'envs.baseball.reward.RewardWeights'>
-envs.fly_visual_mesh import OK: <function geom_world_vertices at 0x1059acae0>
-installed mesh_neuromechfly STL count: 45 (source has 45)
-installed license files: ['/Users/gwshin/Dev/fly-ohtani-snn/envs/assets/mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt']
-BaseballB1Env().reset() OK, obs.shape= (13,)
+R-03 clean-install verification (docs/implementation/REFACTOR-PLAN.md R-03):
+`python -m build --wheel` from the repo, then `pip install <wheel> mujoco
+gymnasium numpy PyYAML` (no `-e`, no repo on PYTHONPATH) into a throwaway
+venv under /private/tmp, then run the check script with cwd=/private/tmp/...
+(outside the repo entirely, so nothing could resolve via cwd-relative
+imports). Every module __file__ and asset path below is asserted NOT to
+contain the repo path and to resolve inside the temp venv's site-packages,
+so this is a genuine non-editable, outside-the-repo install check, not an
+editable/in-place one. Command output follows verbatim; assertions in the
+check script would have raised (and this file would show a traceback
+instead of "ALL CHECKS PASSED") if any path had leaked back to the repo.
 
-RESULT: clean (non-editable) wheel install loads the B1 MuJoCo model, all vendored
-NeuroMechFly STL meshes + license, and every new R-02 submodule (envs.baseball.*,
-envs.fly_visual, envs.fly_visual_mesh) with no import errors.
+envs.__file__: /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/__init__.py
+  points into repo source tree: False
+  points into this temp venv install: True
+envs.baseball_b1_env.__file__: /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/baseball_b1_env.py
+  points into repo source tree: False
+  points into this temp venv install: True
+envs.baseball.courses.__file__: /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/baseball/courses.py
+  points into repo source tree: False
+  points into this temp venv install: True
+envs.baseball.reward.__file__: /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/baseball/reward.py
+  points into repo source tree: False
+  points into this temp venv install: True
+envs.fly_visual.__file__: /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/fly_visual.py
+  points into repo source tree: False
+  points into this temp venv install: True
+envs.fly_visual_mesh.__file__: /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/fly_visual_mesh.py
+  points into repo source tree: False
+  points into this temp venv install: True
+BaseballB1Env ASSET_PATH (baseball_park_b1.xml): /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/assets/baseball_park_b1.xml
+  points into repo source tree: False
+  points into this temp venv install: True
+B1 XML loaded from installed location, nbody= 51
+BaseballB1Env().reset() OK from installed package, obs.shape= (13,)
+mesh_neuromechfly dir: /private/tmp/fo_wheel_verify/venv/lib/python3.11/site-packages/envs/assets/mesh_neuromechfly
+  points into repo source tree: False
+  points into this temp venv install: True
+installed STL count: 45
+
+ALL CHECKS PASSED: package resolves entirely from the non-editable wheel
+install, not from cwd or the repo source tree (cwd for this check was /private/tmp/fo_wheel_verify ).

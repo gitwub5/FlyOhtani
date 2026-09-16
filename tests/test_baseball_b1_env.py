@@ -920,31 +920,38 @@ def test_i07c_swing_improves_batting_score_over_the_old_i07b_fix_baseline():
     have "a longer swing" (docs/design/BATTING-QUALITY-AND-SWING.md section
     2 item 4's explicit bar)."""
     old_prep, old_crossing = -1.9, 0.094091
-    original = CROSSING_TIME_S["mid_mid"]
+    # CROSSING_TIME_S is a read-only mappingproxy (2026-09-17 cleanup) -- the
+    # pre-I-07c-swing calibration is passed explicitly as its own dict
+    # instead of temporarily mutating the shared module default and
+    # restoring it in a finally block.
+    old_calibration = dict(CROSSING_TIME_S)
+    old_calibration["mid_mid"] = (old_crossing, CROSSING_TIME_S["mid_mid"][1])
+
+    env_old = make_env(prep_swing=old_prep)
     try:
-        env_old = make_env(prep_swing=old_prep)
-        CROSSING_TIME_S["mid_mid"] = (old_crossing, original[1])
-        controller_old = OracleAimController("mid_mid", prep_swing=old_prep, prep_tilt=env_old.prep_tilt)
+        controller_old = OracleAimController(
+            "mid_mid", prep_swing=old_prep, prep_tilt=env_old.prep_tilt, crossing_time_s=old_calibration
+        )
         info_old = run_to_end(env_old, controller_old, "mid_mid")
+    finally:
         env_old.close()
 
-        CROSSING_TIME_S["mid_mid"] = original  # restore the new default before building env_new
-        env_new = make_env()
+    env_new = make_env()
+    try:
         controller_new = OracleAimController(
             "mid_mid", prep_swing=env_new.prep_swing, prep_tilt=env_new.prep_tilt
         )
         info_new = run_to_end(env_new, controller_new, "mid_mid")
+    finally:
         env_new.close()
 
-        assert info_old["scoring_valid"] is True
-        assert info_new["scoring_valid"] is True
-        assert info_new["batting_score"] > info_old["batting_score"]
-        assert info_new["carry_distance_m"] > info_old["carry_distance_m"]
-        assert info_new["forward_flight_success"] is True
-        assert info_new["recontact_count"] == 0
-        assert info_new["prolonged_contact"] is False
-    finally:
-        CROSSING_TIME_S["mid_mid"] = original
+    assert info_old["scoring_valid"] is True
+    assert info_new["scoring_valid"] is True
+    assert info_new["batting_score"] > info_old["batting_score"]
+    assert info_new["carry_distance_m"] > info_old["carry_distance_m"]
+    assert info_new["forward_flight_success"] is True
+    assert info_new["recontact_count"] == 0
+    assert info_new["prolonged_contact"] is False
 
 
 def test_i07c_swing_still_meets_settle_targets_at_the_new_prep_angle():
@@ -990,22 +997,27 @@ def test_i07c_swing_trigger_timing_is_a_known_shared_fragility():
     known, reproducible, currently-UNFIXED contact-timing sensitivity of the
     bang-bang oracle/collision design -- not asserted as acceptable, just
     tracked so a future change to it is a deliberate, visible decision."""
-    original = CROSSING_TIME_S["mid_mid"]
-    try:
-        for prep, crossing in ((-1.9, 0.094091), (-1.96, 0.09425316355759385)):
-            for offset in (-0.005, 0.005):
-                CROSSING_TIME_S["mid_mid"] = (crossing + offset, original[1])
-                env = make_env(prep_swing=prep)
-                controller = OracleAimController("mid_mid", prep_swing=prep, prep_tilt=env.prep_tilt)
-                info = run_to_end(env, controller, "mid_mid")
-                env.close()
-                assert info["scoring_valid"] is False, (
-                    f"prep={prep} offset={offset}: expected this KNOWN fragility to still "
-                    "flip the outcome invalid -- if it no longer does, the fragility may be "
-                    "fixed (update this test's docstring/scope, don't just loosen the assert)"
+    # CROSSING_TIME_S is a read-only mappingproxy (2026-09-17 cleanup) -- each
+    # offset's calibration is its own local dict passed explicitly, not a
+    # mutation of the shared module default.
+    base_tilt = CROSSING_TIME_S["mid_mid"][1]
+    for prep, crossing in ((-1.9, 0.094091), (-1.96, 0.09425316355759385)):
+        for offset in (-0.005, 0.005):
+            calibration = dict(CROSSING_TIME_S)
+            calibration["mid_mid"] = (crossing + offset, base_tilt)
+            env = make_env(prep_swing=prep)
+            try:
+                controller = OracleAimController(
+                    "mid_mid", prep_swing=prep, prep_tilt=env.prep_tilt, crossing_time_s=calibration
                 )
-    finally:
-        CROSSING_TIME_S["mid_mid"] = original
+                info = run_to_end(env, controller, "mid_mid")
+            finally:
+                env.close()
+            assert info["scoring_valid"] is False, (
+                f"prep={prep} offset={offset}: expected this KNOWN fragility to still "
+                "flip the outcome invalid -- if it no longer does, the fragility may be "
+                "fixed (update this test's docstring/scope, don't just loosen the assert)"
+            )
 
 
 def test_forward_carry_v1_weights_are_distinct_from_batted_ball_v1():

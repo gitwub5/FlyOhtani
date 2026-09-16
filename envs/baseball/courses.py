@@ -7,18 +7,24 @@ re-exports these same names, and `controllers/baseball_b1.py` imports
 COURSES/ALIGNMENT/CROSSING_TIME_S from `envs.baseball_b1_env` as before --
 this move changes no import path outside this package.
 
-CROSSING_TIME_S is deliberately still a single shared, mutable module-level
-dict (not a per-call parameter) so that existing tests/demos that
-temporarily monkeypatch one course's entry via
-`CROSSING_TIME_S["mid_mid"] = (...)` (see e.g.
-demos/record_i07c_before_after.py) keep working unchanged. Passing an
-explicit calibration/profile object through the controller constructor
-instead of this shared-global pattern is flagged as remaining technical
-debt in docs/records/STATUS.md -- not done in this pass because every
-caller that currently mutates the global would need to change in lockstep,
-which is a larger, riskier edit than this refactor's scope.
+CROSSING_TIME_S is the DEFAULT calibration and is read-only
+(`types.MappingProxyType`) -- `CROSSING_TIME_S["mid_mid"] = (...)` now raises
+`TypeError` instead of silently mutating shared state. This replaces the
+previous pattern where tests/demos/scripts temporarily monkeypatched one
+course's entry, ran an episode, then restored the original value in a
+`finally` block (docs/implementation/REFACTOR-PLAN.md R-02's flagged
+technical debt, and the 2026-09-17 follow-up cleanup that resolved it).
+Callers that need a different calibration build their own `dict(...)` copy
+with the course(s) they want to override and pass it explicitly via
+`OracleAimController(..., crossing_time_s=...)` /
+`ScriptedAimController(..., crossing_time_s=...)`
+(controllers/baseball_b1.py) -- the env itself never reads this mapping, so
+this module's default is unaffected by any of that, and every existing
+default-constructed controller behaves exactly as before.
 """
 from __future__ import annotations
+
+import types
 
 import numpy as np
 
@@ -95,14 +101,16 @@ ALIGNMENT: dict[str, tuple[float, float]] = {
 # approach, out of scope here. Only mid_mid uses -1.96; the other 8 courses
 # keep whatever prep_swing they're constructed with (single scalar; see
 # BaseballB1Env.__init__).
-CROSSING_TIME_S: dict[str, tuple[float, float]] = {
-    "in_high": (0.25, 0.41),
-    "in_mid": (0.27, 0.0),
-    "in_low": (0.23, 0.33),
-    "mid_high": (0.27, 0.28),
-    "mid_mid": (0.09425316355759385, 0.0),  # I-07c-swing recalibration (was 0.094091 for prep_swing=-1.9; see comment above)
-    "mid_low": (0.25, 0.30),
-    "out_high": (0.29, 0.28),
-    "out_mid": (0.29, 0.0),
-    "out_low": (0.26, 0.31),
-}
+CROSSING_TIME_S: types.MappingProxyType[str, tuple[float, float]] = types.MappingProxyType(
+    {
+        "in_high": (0.25, 0.41),
+        "in_mid": (0.27, 0.0),
+        "in_low": (0.23, 0.33),
+        "mid_high": (0.27, 0.28),
+        "mid_mid": (0.09425316355759385, 0.0),  # I-07c-swing recalibration (was 0.094091 for prep_swing=-1.9; see comment above)
+        "mid_low": (0.25, 0.30),
+        "out_high": (0.29, 0.28),
+        "out_mid": (0.29, 0.0),
+        "out_low": (0.26, 0.31),
+    }
+)
