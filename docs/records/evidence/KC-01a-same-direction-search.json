@@ -1,0 +1,133 @@
+{
+  "geometry_search": {
+    "0.1": {
+      "dist": 0.000357398499745895,
+      "swing_target": -1.4379999999999995,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.15": {
+      "dist": 0.00022581975960558605,
+      "swing_target": -1.5079999999999996,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.2": {
+      "dist": 1.5776900786391454e-05,
+      "swing_target": -1.5759999999999996,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.25": {
+      "dist": 0.00045604590470816404,
+      "swing_target": -1.6439999999999997,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.3": {
+      "dist": 0.00018827875552922493,
+      "swing_target": -1.7099999999999997,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.35": {
+      "dist": 0.0006714490931701083,
+      "swing_target": -1.7759999999999998,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.4": {
+      "dist": 0.0004961237405584035,
+      "swing_target": -1.8399999999999999,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.45": {
+      "dist": 0.00034703834384875945,
+      "swing_target": -1.902,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": 1.0,
+      "same_direction_as_swing": true
+    },
+    "0.5": {
+      "dist": 0.00036479525200029954,
+      "swing_target": -1.964,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "swing_dir": -1.0,
+      "same_direction_as_swing": false
+    }
+  },
+  "chosen_torso_target": 0.3,
+  "chosen_swing_target": -1.7099999999999997,
+  "chosen_tilt_target": 5.377642775528102e-16,
+  "trigger_search": {
+    "found": true,
+    "swing_crossing_time_s": 0.11200000000000004,
+    "torso_lead_s": 0.01,
+    "torso_crossing_time_s": 0.12200000000000004,
+    "batting_score": 1.0914446731134952,
+    "bat_contact_vx": 1.9897615715207386
+  },
+  "final_run": {
+    "end_reason": "batted_ball_landing",
+    "scoring_valid": true,
+    "batting_score": 1.0914446731134952,
+    "exit_speed": 4.8479399426752146,
+    "bat_contact_vx": 1.9897615715207386,
+    "max_grip_reach_error_m": 0.0,
+    "grip_always_reachable": true,
+    "contact_point_jacobian": {
+      "point_world": [
+        0.334913377238308,
+        0.23476340159075243,
+        0.9972836594995482
+      ],
+      "v_point_from_jac": [
+        1.339002755496217,
+        0.354937853077399,
+        -0.3355536899601191
+      ],
+      "v_point_actual_ball_vel_at_contact": [
+        -32.52635023408729,
+        -0.05542026889583285,
+        -3.7614539531577025
+      ],
+      "per_joint_contribution": {
+        "torso": [
+          0.5715462703364014,
+          0.20182874023128397,
+          -0.0
+        ],
+        "swing": [
+          0.7678703222725025,
+          0.15100472010349442,
+          0.0
+        ],
+        "tilt": [
+          -0.00041383711268695484,
+          0.0021043927426206374,
+          -0.3355536899601191
+        ]
+      },
+      "torso_qvel": 0.8591623968120756,
+      "swing_qvel": 1.8413960040655302,
+      "tilt_qvel": -0.7895542207776539
+    }
+  }
+}

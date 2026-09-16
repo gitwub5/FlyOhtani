@@ -56,9 +56,23 @@
   KC-01a-COMPARISON.md` 상단에 정정 링크 추가, 원본은 보존). 정착은 착지 후
   관찰을 1.2s 이상 연장하자 3개 조건에서 명확히 확인됐고(`torso_swing_with_arm_hold`의
   torso만 실제로 미정착), 에너지 잔차는 관절한계 반력(`qfrc_constraint`)을
-  포함하자 대부분(잔차 0.5~4.2%, 단 `simultaneous`는 5.7~10.8%로 원인 미상)
-  설명됐다. 시각 정책 통합(`docs/design/VISION-01.md`, 설계만 완료)은 이
-  결과를 근거로 보류한다.
+  포함하자 대부분(잔차 0.5~4.2%) 설명됐다 — `simultaneous`의 5.7~10.8%도
+  후속 확인(아래)에서 평범한 절단오차로 밝혀졌다. 시각 정책 통합(`docs/design/
+  VISION-01.md`, 설계만 완료)은 이 결과를 근거로 보류한다.
+- **후속 원인 분리와 방향 계약**(`docs/records/KC-01a-VALIDATION.md` A6-A8,
+  `docs/design/KC-01a-DIRECTION-CONTRACT.md`): dt 발산의 원인이 구동/적분이
+  아니라 **접촉 계산 자체**임을 구동-전용·접촉-전용(동일 사전상태 재생) 분리로
+  직접 확인했다(더 이상 "추정" 아님). 또한 `simultaneous_swing_and_torso`/
+  `staggered_swing_and_torso`(옛 이름 `simultaneous`/`staggered`)의 torso
+  목표각(-0.4)이 swing과 **반대 부호**로, `torso_yaw`/`bat_hinge`가 같은
+  world Z축이라 배트 월드 각속도가 상쇄되고 있었다는 것을 발견했다 — 물리적
+  근거가 아니라 탐색 범위 제한(torso 음수만 훑음)이 만든 값이었다. 이 두
+  조건은 진단 기록으로 보존하고, 부호를 맞춘 새 조건 `same_direction_staggered`
+  (torso_target=+0.3, swing_target=-1.710)를 탐색해 그립 도달성을 만족하며
+  접촉점 속도에 torso/swing이 **같은 부호로 가산**(43%/57%)함을 확인했고,
+  A2와 동일한 사전 등록 기준으로 dt 수렴도 **통과**했다(기존 4개 조건 중
+  실제 타구가 나면서 수렴한 최초 사례). 정착·에너지·타이밍은 아직 이 새
+  조건에 적용하지 않아 협응 우위를 결론 내리지 않는다.
 
 ## 알려진 한계 (임의로 고치지 않고 그대로 보고)
 
@@ -77,8 +91,12 @@
 - **KC-01a는 dt 미수렴**: 4개 협응 조건 중 1개(`torso_swing_with_arm_hold`,
   일관되게 유효 타구 실패)만 timestep 수렴을 통과했다. 나머지 3개의 점수/유효
   여부는 물리 이산화에 민감해 신뢰할 수 없다 — 특히 `staggered_swing_and_torso`는
-  정밀 dt에서 무효로 뒤집힌다. 원인은 접촉의 이산화 민감도로 추정되며 재료/gear를
-  바꾸지 않고 진단만 했다(`docs/records/KC-01a-VALIDATION.md`).
+  정밀 dt에서 무효로 뒤집힌다. 원인은 접촉의 이산화 민감도로 **확인됐다**(더
+  이상 추정 아님 — 구동-전용은 완벽히 수렴, 동일 충돌 직전 상태에서 접촉만
+  재생해도 같은 패턴으로 발산), 재료/gear를 바꾸지 않고 진단만 했다
+  (`docs/records/KC-01a-VALIDATION.md` A2/A6). 부호를 맞춘 새 조건
+  `same_direction_staggered`는 dt 수렴을 통과했다(§A8) — 아직 정착/에너지/
+  타이밍 미검증이라 협응 결론에는 쓰지 않는다.
 
 ## 테스트·린트
 
@@ -89,9 +107,14 @@
 ## 다음 작업
 
 [KC-01a 검증 보완과 시각 입력 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
-A절(물리 검증)과 B절(VISION-01 설계)은 완료했다. 남은 것: (1) dt 미수렴 3개
-조건의 원인을 더 분해하고 최소 수정안을 사용자 승인 후 진행, (2) A2 수렴 후
-공통 에너지 예산 비교 재개, (3) VISION-01의 실제 구현 여부는 물리가 수렴한
-뒤 결정. [구현 작업표](../implementation/WORK_PACKAGES.md)에서 다음 배정을
-받는다. KC-01b/8코스/RL/시각 제어 구현은 사용자가 명시적으로 지정하기 전에는
-시작하지 않는다.
+A절(물리 검증)과 B절(VISION-01 설계), 그리고 후속 원인 분리(발산 원인
+구동/접촉 분리, 관절한계 타이밍, 회전 방향 계약과 `same_direction_staggered`
+조건)까지 완료했다. 남은 것: (1) `same_direction_staggered`에 정착/에너지/
+타이밍 검증(A3-A5)과 구동-전용/접촉-전용 분리(A6)를 적용, (2)
+`torso_swing_with_arm_hold`의 gear 재보정은 사용자 승인 후 진행, (3) 공통
+에너지 예산 비교는 관심 조건들이 dt 수렴을 통과한 뒤 재개, (4) VISION-01의
+실제 구현 여부는 물리가 충분히 수렴한 뒤 결정, (5) VISION-01 §3의 검출
+가능성 가설은 렌더 실험으로 확인 전까지 가설로 유지.
+[구현 작업표](../implementation/WORK_PACKAGES.md)에서 다음 배정을 받는다.
+KC-01b/8코스/RL/시각 제어 구현은 사용자가 명시적으로 지정하기 전에는 시작하지
+않는다.

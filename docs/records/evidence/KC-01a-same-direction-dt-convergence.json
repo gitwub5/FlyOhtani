@@ -1,0 +1,273 @@
+{
+  "same_direction_staggered": {
+    "config": {
+      "old_name": null,
+      "controller_mode": "staggered",
+      "torso_target": 0.3,
+      "swing_target": -1.7099999999999997,
+      "torso_ct": 0.12200000000000004,
+      "swing_ct": 0.11200000000000004
+    },
+    "independent": {
+      "0.00025": {
+        "end_reason": "batted_ball_landing",
+        "scoring_valid": true,
+        "status": "complete",
+        "first_contact_time_s": 0.45899999999997715,
+        "exit_time_s": 0.4677499999999762,
+        "recontact_count": 0,
+        "prolonged_contact": false,
+        "bat_contact_vx": 1.9897615715207386,
+        "bat_contact_velocity": [
+          1.9897615715207386,
+          0.5399562775689972,
+          -0.5326762828820009
+        ],
+        "exit_velocity_xyz": [
+          2.7945811463143055,
+          3.184203953932486,
+          -2.356625359324452
+        ],
+        "exit_speed": 4.8479399426752146,
+        "first_landing_xyz": [
+          1.1186415119512716,
+          0.8510389989723965,
+          0.035689483357667376
+        ],
+        "carry_distance_m": 1.0914446731134952,
+        "batting_score": 1.0914446731134952,
+        "contact_min_dist_m": -0.05156425352818451,
+        "contact_normal_at_min_dist": [
+          -0.9829020689628741,
+          -0.18362833925602856,
+          0.013570403478692204
+        ],
+        "contact_substep_count": 35,
+        "contact_duration_from_substeps_s": 0.008749999999999036
+      },
+      "0.000125": {
+        "end_reason": "batted_ball_landing",
+        "scoring_valid": true,
+        "status": "complete",
+        "first_contact_time_s": 0.45887499999996334,
+        "exit_time_s": 0.4676249999999624,
+        "recontact_count": 0,
+        "prolonged_contact": false,
+        "bat_contact_vx": 2.350868307206408,
+        "bat_contact_velocity": [
+          2.350868307206408,
+          0.6280378660058983,
+          -0.4993998416724243
+        ],
+        "exit_velocity_xyz": [
+          2.731677752620515,
+          3.2008128980518156,
+          -2.257499823755668
+        ],
+        "exit_speed": 4.775308577123954,
+        "first_landing_xyz": [
+          1.116629772090167,
+          0.8723169599069178,
+          0.036265647313952744
+        ],
+        "carry_distance_m": 1.104317364208053,
+        "batting_score": 1.104317364208053,
+        "contact_min_dist_m": -0.05115863410407718,
+        "contact_normal_at_min_dist": [
+          -0.9830611678095275,
+          -0.18245623923980508,
+          0.017333813989859788
+        ],
+        "contact_substep_count": 70,
+        "contact_duration_from_substeps_s": 0.008749999999999036
+      },
+      "6.25e-05": {
+        "end_reason": "batted_ball_landing",
+        "scoring_valid": true,
+        "status": "complete",
+        "first_contact_time_s": 0.45881250000004914,
+        "exit_time_s": 0.4676250000000521,
+        "recontact_count": 0,
+        "prolonged_contact": false,
+        "bat_contact_vx": 2.530318433037193,
+        "bat_contact_velocity": [
+          2.530318433037193,
+          0.6726959500222687,
+          -0.4828126632273393
+        ],
+        "exit_velocity_xyz": [
+          2.700678975573526,
+          3.2084887975254484,
+          -2.2125532801977386
+        ],
+        "exit_speed": 4.741672627951548,
+        "first_landing_xyz": [
+          1.1151575326699508,
+          0.8824479107606401,
+          0.03635722449690292
+        ],
+        "carry_distance_m": 1.1101447367393484,
+        "batting_score": 1.1101447367393484,
+        "contact_min_dist_m": -0.050960197615473726,
+        "contact_normal_at_min_dist": [
+          -0.9830865670166754,
+          -0.18286553082999296,
+          0.010049845055164989
+        ],
+        "contact_substep_count": 141,
+        "contact_duration_from_substeps_s": 0.008812500000002943
+      }
+    },
+    "replay": {
+      "0.000125": {
+        "end_reason": "batted_ball_landing",
+        "scoring_valid": true,
+        "status": "complete",
+        "first_contact_time_s": 0.45887499999996334,
+        "exit_time_s": 0.4676249999999624,
+        "recontact_count": 0,
+        "prolonged_contact": false,
+        "bat_contact_vx": 2.350868307206408,
+        "bat_contact_velocity": [
+          2.350868307206408,
+          0.6280378660058983,
+          -0.4993998416724243
+        ],
+        "exit_velocity_xyz": [
+          2.7316794105444098,
+          3.200813536112702,
+          -2.257513836270834
+        ],
+        "exit_speed": 4.775316577558896,
+        "first_landing_xyz": [
+          1.1166302181659695,
+          0.8723171316787528,
+          0.03626185360178615
+        ],
+        "carry_distance_m": 1.1043177734368868,
+        "batting_score": 1.1043177734368868,
+        "contact_min_dist_m": -0.05115863439238134,
+        "contact_normal_at_min_dist": [
+          -0.9830611758648219,
+          -0.18245623664643562,
+          0.01733338443852364
+        ],
+        "contact_substep_count": 70,
+        "contact_duration_from_substeps_s": 0.008749999999999036
+      },
+      "6.25e-05": {
+        "end_reason": "batted_ball_landing",
+        "scoring_valid": true,
+        "status": "complete",
+        "first_contact_time_s": 0.45881250000004914,
+        "exit_time_s": 0.4676250000000521,
+        "recontact_count": 0,
+        "prolonged_contact": false,
+        "bat_contact_vx": 2.530318433037193,
+        "bat_contact_velocity": [
+          2.530318433037193,
+          0.6726959500222687,
+          -0.4828126632273393
+        ],
+        "exit_velocity_xyz": [
+          2.700681385844867,
+          3.208489695835396,
+          -2.2125742820676715
+        ],
+        "exit_speed": 4.741684408498538,
+        "first_landing_xyz": [
+          1.1151581872292404,
+          0.882448155059425,
+          0.03635148255661929
+        ],
+        "carry_distance_m": 1.1101453280845397,
+        "batting_score": 1.1101453280845397,
+        "contact_min_dist_m": -0.05096019798841615,
+        "contact_normal_at_min_dist": [
+          -0.9830865738587635,
+          -0.18286552638692202,
+          0.010049256583043823
+        ],
+        "contact_substep_count": 141,
+        "contact_duration_from_substeps_s": 0.008812500000002943
+      },
+      "0.00025": {
+        "end_reason": "batted_ball_landing",
+        "scoring_valid": true,
+        "status": "complete",
+        "first_contact_time_s": 0.45899999999997715,
+        "exit_time_s": 0.4677499999999762,
+        "recontact_count": 0,
+        "prolonged_contact": false,
+        "bat_contact_vx": 1.9897615715207386,
+        "bat_contact_velocity": [
+          1.9897615715207386,
+          0.5399562775689972,
+          -0.5326762828820009
+        ],
+        "exit_velocity_xyz": [
+          2.7945811463143055,
+          3.184203953932486,
+          -2.356625359324452
+        ],
+        "exit_speed": 4.8479399426752146,
+        "first_landing_xyz": [
+          1.1186415119512716,
+          0.8510389989723965,
+          0.035689483357667376
+        ],
+        "carry_distance_m": 1.0914446731134952,
+        "batting_score": 1.0914446731134952,
+        "contact_min_dist_m": -0.05156425352818451,
+        "contact_normal_at_min_dist": [
+          -0.9829020689628741,
+          -0.18362833925602856,
+          0.013570403478692204
+        ],
+        "contact_substep_count": 35,
+        "contact_duration_from_substeps_s": 0.008749999999999036
+      }
+    },
+    "acceptance": {
+      "independent": {
+        "same_end_reason": true,
+        "same_scoring_valid": true,
+        "first_contact_time_diff_s": 6.249999991420063e-05,
+        "first_contact_time_ok": true,
+        "separation_time_diff_s": 8.970602038971265e-14,
+        "separation_time_ok": true,
+        "exit_velocity_diff_m_s": 0.055136515930398595,
+        "exit_velocity_ok": true,
+        "landing_xy_diff_m": 0.010237365584513184,
+        "landing_xy_ok": true,
+        "all_ok": true
+      },
+      "replay": {
+        "same_end_reason": true,
+        "same_scoring_valid": true,
+        "first_contact_time_diff_s": 6.249999991420063e-05,
+        "first_contact_time_ok": true,
+        "separation_time_diff_s": 8.970602038971265e-14,
+        "separation_time_ok": true,
+        "exit_velocity_diff_m_s": 0.05513043166292766,
+        "exit_velocity_ok": true,
+        "landing_xy_diff_m": 0.010237407377769719,
+        "landing_xy_ok": true,
+        "all_ok": true
+      }
+    },
+    "converged": true
+  },
+  "thresholds": {
+    "separation_time_tol_s": 0.0005,
+    "landing_xy_abs_tol_m": 0.05,
+    "landing_xy_rel_tol": 0.02,
+    "exit_vel_abs_tol_m_s": 0.1,
+    "exit_vel_rel_tol": 0.02,
+    "dt_candidates": [
+      0.00025,
+      0.000125,
+      6.25e-05
+    ]
+  }
+}

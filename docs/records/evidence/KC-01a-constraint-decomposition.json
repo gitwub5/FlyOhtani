@@ -1,0 +1,262 @@
+{
+  "withball_constraint_timing": {
+    "arm_swing_with_torso_hold": {
+      "first_contact_time_s": 0.45899999999997715,
+      "brake_latch_time_s": null,
+      "first_torso_limit_active_time_s": null,
+      "limit_active_substeps": 0,
+      "time_from_latch_to_limit_active_s": null,
+      "time_from_contact_to_limit_active_s": null,
+      "w_limit_torso_total_j": 0.0,
+      "w_limit_torso_post_latch_j": 0.0,
+      "w_actuator_torso_post_latch_j": 0.0,
+      "w_damping_torso_post_latch_j": 0.0,
+      "torso_range_rad": [
+        -0.6,
+        0.6
+      ],
+      "end_reason": "batted_ball_landing",
+      "scoring_valid": true
+    },
+    "torso_swing_with_arm_hold": {
+      "first_contact_time_s": 0.45424999999997767,
+      "brake_latch_time_s": 0.41999999999998144,
+      "first_torso_limit_active_time_s": 0.4484999999999783,
+      "limit_active_substeps": 1213,
+      "time_from_latch_to_limit_active_s": 0.02849999999999686,
+      "time_from_contact_to_limit_active_s": -0.005749999999999367,
+      "w_limit_torso_total_j": -9.497361708708347,
+      "w_limit_torso_post_latch_j": -9.497361708708347,
+      "w_actuator_torso_post_latch_j": -7.070902079042876,
+      "w_damping_torso_post_latch_j": -0.018840869067993284,
+      "torso_range_rad": [
+        -0.6,
+        0.6
+      ],
+      "end_reason": "batted_ball_landing",
+      "scoring_valid": false
+    },
+    "simultaneous_swing_and_torso": {
+      "first_contact_time_s": 0.45899999999997715,
+      "brake_latch_time_s": 0.46999999999997594,
+      "first_torso_limit_active_time_s": null,
+      "limit_active_substeps": 0,
+      "time_from_latch_to_limit_active_s": null,
+      "time_from_contact_to_limit_active_s": null,
+      "w_limit_torso_total_j": 0.0,
+      "w_limit_torso_post_latch_j": 0.0,
+      "w_actuator_torso_post_latch_j": -8.881960056864557,
+      "w_damping_torso_post_latch_j": -0.043928392376938886,
+      "torso_range_rad": [
+        -0.6,
+        0.6
+      ],
+      "end_reason": "batted_ball_landing",
+      "scoring_valid": true
+    },
+    "staggered_swing_and_torso": {
+      "first_contact_time_s": 0.4587499999999772,
+      "brake_latch_time_s": 0.4649999999999765,
+      "first_torso_limit_active_time_s": 0.5014999999999725,
+      "limit_active_substeps": 195,
+      "time_from_latch_to_limit_active_s": 0.036499999999996036,
+      "time_from_contact_to_limit_active_s": 0.04274999999999535,
+      "w_limit_torso_total_j": -25.0000435115747,
+      "w_limit_torso_post_latch_j": -25.0000435115747,
+      "w_actuator_torso_post_latch_j": -6.952171210715186,
+      "w_damping_torso_post_latch_j": -0.04504808353319509,
+      "torso_range_rad": [
+        -0.6,
+        0.6
+      ],
+      "end_reason": "batted_ball_landing",
+      "scoring_valid": true
+    }
+  },
+  "noball_energy_3dt": {
+    "arm_swing_with_torso_hold": {
+      "0.00025": {
+        "dt": 0.00025,
+        "delta_ke_plus_pe": 2.9880826676060224,
+        "w_actuator_net": 4.077158717267188,
+        "w_damping": -0.8669380744330821,
+        "w_limit_joint": 0.0,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": 0.0,
+        "predicted_delta_e": 3.2102206428341056,
+        "residual": -0.2221379752280832,
+        "residual_fraction_of_w_actuator": -0.054483524099100185
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "delta_ke_plus_pe": 2.9880826676051697,
+        "w_actuator_net": 3.966080202951102,
+        "w_damping": -0.8669275972198927,
+        "w_limit_joint": 0.0,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": 0.0,
+        "predicted_delta_e": 3.0991526057312093,
+        "residual": -0.1110699381260396,
+        "residual_fraction_of_w_actuator": -0.028004965215628796
+      },
+      "6.25e-05": {
+        "dt": 6.25e-05,
+        "delta_ke_plus_pe": 2.988082667605056,
+        "w_actuator_net": 3.9105408661575307,
+        "w_damping": -0.8669229918615612,
+        "w_limit_joint": 0.0,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": 0.0,
+        "predicted_delta_e": 3.0436178742959696,
+        "residual": -0.05553520669091361,
+        "residual_fraction_of_w_actuator": -0.014201413203867653
+      },
+      "residual_convergence_order_estimates": [
+        0.9999876536816656,
+        0.9999938268831998
+      ],
+      "interpretation": "order~1 (or higher) => consistent with ordinary integration truncation error, shrinking with dt"
+    },
+    "torso_swing_with_arm_hold": {
+      "0.00025": {
+        "dt": 0.00025,
+        "delta_ke_plus_pe": 1.5162545922422055,
+        "w_actuator_net": 27.567950156403192,
+        "w_damping": -1.0028366697778124,
+        "w_limit_joint": -23.886575180961973,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": -23.886575180961973,
+        "predicted_delta_e": 2.6785383056634053,
+        "residual": -1.1622837134211998,
+        "residual_fraction_of_w_actuator": -0.04216068684204425
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "delta_ke_plus_pe": 1.753775219655438,
+        "w_actuator_net": 27.353756834439185,
+        "w_damping": -1.0037563212354654,
+        "w_limit_joint": -23.889938286744012,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": -23.889938286744012,
+        "predicted_delta_e": 2.4600622264597085,
+        "residual": -0.7062870068042706,
+        "residual_fraction_of_w_actuator": -0.025820475449830512
+      },
+      "6.25e-05": {
+        "dt": 6.25e-05,
+        "delta_ke_plus_pe": 1.7288024880469948,
+        "w_actuator_net": 26.810007202183986,
+        "w_damping": -1.002409125571528,
+        "w_limit_joint": -23.79987337262503,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": -23.79987337262503,
+        "predicted_delta_e": 2.007724703987428,
+        "residual": -0.2789222159404332,
+        "residual_fraction_of_w_actuator": -0.010403660612135596
+      },
+      "residual_convergence_order_estimates": [
+        0.7186358122027358,
+        1.3403917077381546
+      ],
+      "interpretation": "order~1 (or higher) => consistent with ordinary integration truncation error, shrinking with dt"
+    },
+    "simultaneous_swing_and_torso": {
+      "0.00025": {
+        "dt": 0.00025,
+        "delta_ke_plus_pe": -0.31268766410255466,
+        "w_actuator_net": 2.6991595303411633,
+        "w_damping": -2.7211539841355594,
+        "w_limit_joint": 0.0,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": 0.0,
+        "predicted_delta_e": -0.02199445379439613,
+        "residual": -0.29069321030815853,
+        "residual_fraction_of_w_actuator": -0.10769767664359432
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "delta_ke_plus_pe": -0.31268766411079696,
+        "w_actuator_net": 2.5538092759880437,
+        "w_damping": -2.7211463896033434,
+        "w_limit_joint": 0.0,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": 0.0,
+        "predicted_delta_e": -0.16733711361529968,
+        "residual": -0.14535055049549728,
+        "residual_fraction_of_w_actuator": -0.05691519404449754
+      },
+      "6.25e-05": {
+        "dt": 6.25e-05,
+        "delta_ke_plus_pe": -0.31268766411130855,
+        "w_actuator_net": 2.4811323235703844,
+        "w_damping": -2.72114372610036,
+        "w_limit_joint": 0.0,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": 0.0,
+        "predicted_delta_e": -0.24001140252997555,
+        "residual": -0.072676261581333,
+        "residual_fraction_of_w_actuator": -0.029291570179840645
+      },
+      "residual_convergence_order_estimates": [
+        0.9999608394895644,
+        0.9999804201785287
+      ],
+      "interpretation": "order~1 (or higher) => consistent with ordinary integration truncation error, shrinking with dt"
+    },
+    "staggered_swing_and_torso": {
+      "0.00025": {
+        "dt": 0.00025,
+        "delta_ke_plus_pe": -0.33438702318898095,
+        "w_actuator_net": 13.819048182068942,
+        "w_damping": -2.0115428451226816,
+        "w_limit_joint": -12.077987153190085,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": -12.077987153190085,
+        "predicted_delta_e": -0.2704818162438247,
+        "residual": -0.06390520694515622,
+        "residual_fraction_of_w_actuator": -0.004624428984050952
+      },
+      "0.000125": {
+        "dt": 0.000125,
+        "delta_ke_plus_pe": -0.3344183823542721,
+        "w_actuator_net": 13.699815012864354,
+        "w_damping": -2.0113052620572707,
+        "w_limit_joint": -11.794044437351436,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": -11.794044437351436,
+        "predicted_delta_e": -0.1055346865443525,
+        "residual": -0.22888369580991963,
+        "residual_fraction_of_w_actuator": -0.016707064700873263
+      },
+      "6.25e-05": {
+        "dt": 6.25e-05,
+        "delta_ke_plus_pe": -0.3344235508841962,
+        "w_actuator_net": 13.63660757284933,
+        "w_damping": -2.0112645892696674,
+        "w_limit_joint": -11.845458302526934,
+        "w_contact_noball_should_be_zero": 0.0,
+        "w_other_constraint": 0.0,
+        "w_constraint_total": -11.845458302526934,
+        "predicted_delta_e": -0.2201153189472702,
+        "residual": -0.11430823193692596,
+        "residual_fraction_of_w_actuator": -0.008382453724379017
+      },
+      "residual_convergence_order_estimates": [
+        -1.8406093076031957,
+        1.0016853949648679
+      ],
+      "interpretation": "order~0/flat or not computable => NOT consistent with pure truncation error; may indicate a still-unmodeled term"
+    }
+  }
+}

@@ -21,7 +21,7 @@ ID → 결과 요약 → 근거 문서로 찾는다. 실행 명령·수치 자�
 | I-08a-style + I-07c-score + I-07c-swing | 옆선 자세·색상, 거리 점수, 스윙 개선 | 원본 색상 적용, `forward-carry-v1` 추가, carry 5.82→8.48m(+46%) | [검증](validation/20260916-i-08a-style.md) |
 | R-01/R-02/R-03 | 문서·코드·패키징 정리 | 문서 통합(baseball/fly-visual spec), B1 course/reward 코드 분리, pytest 진입점 불일치·lint 7건·wheel 자산 누락 수정 | `docs/implementation/REFACTOR-PLAN.md`, `docs/records/evidence/` |
 | KC-01a | 몸통-배트 협응 최소 역학 모델 | 고정 기반 실제 관성 torso_yaw 추가(B1은 별도 모델로 보존). 잠정 비교(`KC-01a-COMPARISON.md`)는 dt 미수렴으로 후속 정정됨 | [설계](../design/KC-01a-TORSO-BAT-COORDINATION.md), [잠정 비교(정정됨)](KC-01a-COMPARISON.md) |
-| KC-01a-validation | dt 수렴·정착·에너지·타이밍 보완 | 4개 조건 중 1개만 dt 수렴(그마저 유효 타구 실패), `staggered`의 "최고 성적"은 정밀 dt에서 무효로 뒤집힘, 정착 3/4 확인, 에너지 잔차 대부분 관절한계 반력으로 설명 | [검증 결과](KC-01a-VALIDATION.md) |
+| KC-01a-validation | dt 수렴·정착·에너지·타이밍 보완 | 4개 조건 중 1개만 dt 수렴(그마저 유효 타구 실패), `staggered`의 "최고 성적"은 정밀 dt에서 무효로 뒤집힘, 정착 3/4 확인, 에너지 잔차 대부분 관절한계 반력으로 설명. 후속: 발산 원인이 접촉 계산(구동 아님)임을 직접 확인, `simultaneous`/`staggered`의 torso-swing 역회전(상쇄) 발견 → 부호를 맞춘 새 조건이 dt 수렴 통과 | [검증 결과](KC-01a-VALIDATION.md), [방향 계약](../design/KC-01a-DIRECTION-CONTRACT.md) |
 | VISION-01 | 눈 카메라 기반 공 추정 입력 계약 설계 | 입력/금지 채널, clock/지연, 관측 schema, oracle 대비표, 수용 기준 제안 — 코드 없음, 통합은 물리 수렴 후로 보류 | [설계](../design/VISION-01.md) |
 
 완료로 표시됐다가 이후 검토에서 정정된 항목(예: I-07b의 "접촉 9/9"는

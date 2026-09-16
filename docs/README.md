@@ -21,9 +21,9 @@ records/(evidence·validation·이 문서의 STATUS_HISTORY 제외)는 과거 �
 
 | 하려는 일 | 읽을 문서 |
 | --- | --- |
-| KC 검증·시각 설계(완료, 다음 배정 대기) | [작업 명세](tasks/KC-01a-VALIDATION-AND-VISION.md), [검증 결과](records/KC-01a-VALIDATION.md), [VISION-01 설계](design/VISION-01.md) |
+| KC 검증·시각 설계(완료, 다음 배정 대기) | [작업 명세](tasks/KC-01a-VALIDATION-AND-VISION.md), [검증 결과](records/KC-01a-VALIDATION.md), [VISION-01 설계](design/VISION-01.md), [회전 방향 계약](design/KC-01a-DIRECTION-CONTRACT.md) |
 | 야구 환경(구장/투구/배트/타구 판정/보상) 작업 | [야구 규약](design/BASEBALL-SPEC.md) |
-| 몸통-배트 협응(KC-01a) 작업 | [KC-01a 규약](design/KC-01a-TORSO-BAT-COORDINATION.md), [잠정 비교(정정됨)](records/KC-01a-COMPARISON.md), [검증 결과](records/KC-01a-VALIDATION.md) |
+| 몸통-배트 협응(KC-01a) 작업 | [KC-01a 규약](design/KC-01a-TORSO-BAT-COORDINATION.md), [잠정 비교(정정됨)](records/KC-01a-COMPARISON.md), [검증 결과](records/KC-01a-VALIDATION.md), [회전 방향 계약](design/KC-01a-DIRECTION-CONTRACT.md) |
 | 파리 외형(자세/색상/메시) 작업 | [파리 외형 규약](design/FLY-VISUAL-SPEC.md) |
 | 신경회로 회로/수치 모델 작업 | [데이터·수치 모델 계약](design/DATA_MODEL.md) |
 | 신경회로 실험(EXP-001) 작업 | [EXP-001](experiments/EXP-001-associative-learning.md) |

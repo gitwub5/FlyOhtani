@@ -1,0 +1,92 @@
+{
+  "thresholds": {
+    "angle_abs_tol_rad": 0.01,
+    "angle_rel_tol": 0.02
+  },
+  "per_condition": {
+    "arm_swing_with_torso_hold": {
+      "torso": {
+        "max_abs_diff_rad": 2.5174307083375425e-14,
+        "final_abs_diff_rad": 2.5174307083375425e-14,
+        "argmax_control_step": 499,
+        "argmax_time_s": 2.495,
+        "amplitude_rad": 0.0,
+        "tol_rad": 0.01,
+        "converged": true
+      },
+      "swing": {
+        "max_abs_diff_rad": 9.525713551283843e-14,
+        "final_abs_diff_rad": 9.314771176605063e-14,
+        "argmax_control_step": 485,
+        "argmax_time_s": 2.4250000000000003,
+        "amplitude_rad": 0.6619999999999999,
+        "tol_rad": 0.013239999999999998,
+        "converged": true
+      },
+      "condition_converged_driveonly": true
+    },
+    "torso_swing_with_arm_hold": {
+      "torso": {
+        "max_abs_diff_rad": 0.000956819465577019,
+        "final_abs_diff_rad": 7.091846353501907e-06,
+        "argmax_control_step": 376,
+        "argmax_time_s": 1.8800000000000001,
+        "amplitude_rad": 0.496,
+        "tol_rad": 0.01,
+        "converged": true
+      },
+      "swing": {
+        "max_abs_diff_rad": 0.006881688370743211,
+        "final_abs_diff_rad": 0.00014604760154224294,
+        "argmax_control_step": 402,
+        "argmax_time_s": 2.0100000000000002,
+        "amplitude_rad": 0.0,
+        "tol_rad": 0.01,
+        "converged": true
+      },
+      "condition_converged_driveonly": true
+    },
+    "simultaneous_swing_and_torso": {
+      "torso": {
+        "max_abs_diff_rad": 2.270406085358445e-13,
+        "final_abs_diff_rad": 2.270406085358445e-13,
+        "argmax_control_step": 499,
+        "argmax_time_s": 2.495,
+        "amplitude_rad": 0.4,
+        "tol_rad": 0.01,
+        "converged": true
+      },
+      "swing": {
+        "max_abs_diff_rad": 6.532552276894421e-13,
+        "final_abs_diff_rad": 6.532552276894421e-13,
+        "argmax_control_step": 499,
+        "argmax_time_s": 2.495,
+        "amplitude_rad": 1.234,
+        "tol_rad": 0.02468,
+        "converged": true
+      },
+      "condition_converged_driveonly": true
+    },
+    "staggered_swing_and_torso": {
+      "torso": {
+        "max_abs_diff_rad": 2.1228244997173462e-05,
+        "final_abs_diff_rad": 7.418949898863048e-10,
+        "argmax_control_step": 105,
+        "argmax_time_s": 0.525,
+        "amplitude_rad": 0.4,
+        "tol_rad": 0.01,
+        "converged": true
+      },
+      "swing": {
+        "max_abs_diff_rad": 2.6493949301542585e-05,
+        "final_abs_diff_rad": 1.8011152569386013e-09,
+        "argmax_control_step": 105,
+        "argmax_time_s": 0.525,
+        "amplitude_rad": 1.234,
+        "tol_rad": 0.02468,
+        "converged": true
+      },
+      "condition_converged_driveonly": true
+    }
+  }
+}
