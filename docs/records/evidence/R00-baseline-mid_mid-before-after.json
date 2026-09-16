@@ -1,0 +1,225 @@
+{
+  "purpose": "R-00 pre-refactor fixed point (docs/implementation/REFACTOR-PLAN.md R-00.2). Reproduces the before/after mid_mid center-pitch episode metrics cited in the plan's completion-report re-check, with full qpos/qvel snapshots and true per-episode reward-term sums (not last-step values).",
+  "env_versions": {
+    "python": "3.11.5 (v3.11.5:cce6ba91b3, Aug 24 2023, 10:50:31) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "mujoco": "3.13.0",
+    "gymnasium": "1.3.0",
+    "numpy": "2.4.6",
+    "git_head_at_capture": "c812766288a76dfa4a05bbc8354d6d18e91d52a9",
+    "git_dirty": true
+  },
+  "before": {
+    "label": "BEFORE (prep=-1.90, pre-I-07c-swing)",
+    "config": {
+      "prep_swing": -1.9,
+      "prep_tilt": 0.0,
+      "swing_crossing_time_mid_mid": 0.094091,
+      "course": "mid_mid",
+      "seed": 0,
+      "controller": "OracleAimController"
+    },
+    "n_steps": 234,
+    "env_dt": 0.00025,
+    "frame_skip": 20,
+    "end_reason": "batted_ball_landing",
+    "status": "complete",
+    "contact_occurred": true,
+    "first_contact_time_s": 0.45899999999997715,
+    "contact_step_index": 91,
+    "bat_contact_vx": 6.979821520045644,
+    "exit_velocity_xyz": [
+      7.290940342091035,
+      3.924448811941416,
+      2.067631551065398
+    ],
+    "exit_speed": 8.534296091678565,
+    "launch_angle_rad": 0.24470821024855674,
+    "spray_angle_rad": 0.49378801658381144,
+    "gate_crossing_time_s": 1.0954999999999495,
+    "forward_flight_success": true,
+    "scoring_valid": true,
+    "carry_distance_m": 5.818990313834682,
+    "landing_range_from_home_m": 6.204704548218088,
+    "batting_score": 5.818990313834682,
+    "recontact_count": 0,
+    "prolonged_contact": false,
+    "first_landing_xyz": [
+      5.544723567049939,
+      2.7846721702346273,
+      0.03642582415643944
+    ],
+    "real_duration_s": 1.1699999999999744,
+    "last_step_reward_terms_batted_ball_v1": {
+      "forward_flight_success": 10.0,
+      "control_cost": -0.001,
+      "miss": -0.0
+    },
+    "last_step_reward_terms_forward_carry_v1": {
+      "outcome": 0.5818990313834682,
+      "control_cost": -0.001
+    },
+    "episode_return_batted_ball_v1_terms_sum": {
+      "forward_flight_success": 10.0,
+      "control_cost": -0.2331195466306019,
+      "miss": 0.0
+    },
+    "episode_return_batted_ball_v1_total": 9.766880453369398,
+    "episode_return_forward_carry_v1_terms_sum": {
+      "outcome": 0.5818990313834682,
+      "control_cost": -0.2331195466306019
+    },
+    "episode_return_forward_carry_v1_total": 0.34877948475286635,
+    "qpos_at_first_contact": [
+      -1.3635104065416137,
+      -0.007325149753125969,
+      0.40939125343432015,
+      0.0012001460860044096,
+      0.9971800933474276,
+      0.9998298564935284,
+      -0.0014892730899806839,
+      -0.000799074836149881,
+      0.01836849501729883
+    ],
+    "qvel_at_first_contact": [
+      5.297570153827186,
+      -1.2765240245083005,
+      -19.725907279862803,
+      1.8619455942807093,
+      -2.677283143666505,
+      -4.707848018342482,
+      -2.6939568999429313,
+      57.93056386975437
+    ],
+    "qpos_final": [
+      -0.8979999808574475,
+      -0.00020587272350788038,
+      5.544723567049939,
+      2.7846721702346273,
+      0.03642582415643944,
+      0.6844276944258137,
+      -0.08883610326337774,
+      -0.06260271776724854,
+      0.7209353491042712
+    ],
+    "qvel_final": [
+      3.416918822706963e-08,
+      0.060941461459187815,
+      7.254839432674385,
+      3.9086652940045297,
+      -4.740696929012688,
+      -14.125854713166465,
+      -9.480470597722718,
+      125.0621333411877
+    ]
+  },
+  "after": {
+    "label": "AFTER (prep=-1.96, current default)",
+    "config": {
+      "prep_swing": -1.96,
+      "prep_tilt": 0.0,
+      "swing_crossing_time_mid_mid": 0.09425316355759385,
+      "course": "mid_mid",
+      "seed": 0,
+      "controller": "OracleAimController"
+    },
+    "n_steps": 356,
+    "env_dt": 0.00025,
+    "frame_skip": 20,
+    "end_reason": "batted_ball_landing",
+    "status": "complete",
+    "contact_occurred": true,
+    "first_contact_time_s": 0.45899999999997715,
+    "contact_step_index": 91,
+    "bat_contact_vx": 7.400087073197521,
+    "exit_velocity_xyz": [
+      5.517930791046625,
+      3.3908638695860756,
+      5.672558285464065
+    ],
+    "exit_speed": 8.609496820304408,
+    "launch_angle_rad": 0.7193185757636691,
+    "spray_angle_rad": 0.5510256480306072,
+    "gate_crossing_time_s": 1.2985000000000173,
+    "forward_flight_success": true,
+    "scoring_valid": true,
+    "carry_distance_m": 8.479462407260513,
+    "landing_range_from_home_m": 8.852445042433596,
+    "batting_score": 8.479462407260513,
+    "recontact_count": 0,
+    "prolonged_contact": false,
+    "first_landing_xyz": [
+      7.642935213761456,
+      4.466690558741703,
+      0.03628588419593079
+    ],
+    "real_duration_s": 1.7772500000001772,
+    "last_step_reward_terms_batted_ball_v1": {
+      "forward_flight_success": 10.0,
+      "control_cost": -0.00018221381851532661,
+      "miss": -0.0
+    },
+    "last_step_reward_terms_forward_carry_v1": {
+      "outcome": 0.8479462407260514,
+      "control_cost": -0.00018221381851532661
+    },
+    "episode_return_batted_ball_v1_terms_sum": {
+      "forward_flight_success": 10.0,
+      "control_cost": -0.30785077273460326,
+      "miss": 0.0
+    },
+    "episode_return_batted_ball_v1_total": 9.692149227265396,
+    "episode_return_forward_carry_v1_terms_sum": {
+      "outcome": 0.8479462407260514,
+      "control_cost": -0.30785077273460326
+    },
+    "episode_return_forward_carry_v1_total": 0.5400954679914481,
+    "qpos_at_first_contact": [
+      -1.362068733761628,
+      -0.007373566388854645,
+      0.4095194507848591,
+      0.0012236636435209972,
+      0.9971992654988325,
+      0.9998280752705305,
+      -0.0014746178023223838,
+      -0.0010902794492430286,
+      0.018451468610549034
+    ],
+    "qvel_at_first_contact": [
+      5.865532280304472,
+      -1.293199674042474,
+      -19.522000054271718,
+      1.8967279337148328,
+      -2.6415022472881167,
+      -4.666554409487951,
+      -3.7759852949525574,
+      58.141341195722546
+    ],
+    "qpos_final": [
+      -0.8979999743909614,
+      -0.06740844859647817,
+      7.642935213761456,
+      4.466690558741703,
+      0.03628588419593079,
+      0.6246469658127771,
+      -0.1534642484255261,
+      -0.12162208392440248,
+      0.7559583065605969
+    ],
+    "qvel_final": [
+      3.363307933001023e-08,
+      -0.06040470147536622,
+      5.487593980171571,
+      3.3791074505322363,
+      -7.054885704113957,
+      -25.45005805445723,
+      -17.493064212606967,
+      121.36956769951483
+    ]
+  },
+  "delta": {
+    "batting_score": 2.660472093425831,
+    "exit_speed": 0.07520072862584293,
+    "launch_angle_deg": 27.19317085717729
+  }
+}

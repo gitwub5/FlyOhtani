@@ -1,0 +1,9 @@
+scripts/plot_swing_trajectories.py:23:5: RUF059 Unpacked variable `before` is never used
+scripts/plot_swing_trajectories.py:24:5: RUF059 Unpacked variable `after` is never used
+scripts/render_stance_diagnostic.py:114:24: C408 Unnecessary `dict()` call (rewrite as a literal)
+scripts/swing_experiment.py:80:18: RUF059 Unpacked variable `reward` is never used
+tests/test_baseball_b1_env.py:1079:13: RUF059 Unpacked variable `obs` is never used
+tests/test_baseball_b1_env.py:1104:13: RUF059 Unpacked variable `obs` is never used
+tests/test_baseball_b1_env.py:1143:35: RUF059 Unpacked variable `old_new_terms_sum` is never used
+Found 7 errors.
+No fixes available (7 hidden fixes can be enabled with the `--unsafe-fixes` option).
