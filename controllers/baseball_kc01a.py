@@ -149,6 +149,86 @@ TILT_HOLD_GAIN = 50.0
 TORSO_HOLD_GAIN = 50.0
 SWING_HOLD_GAIN = 50.0  # swing has ~zero gravity torque (vertical-axis rotation, same as B1)
 
+# Mirrors envs/assets/baseball_park_kc01a.xml's torso_yaw/bat_hinge
+# jnt_range -- this module has no env/XML dependency by design (same
+# convention scripts/kc01a_calibrate.py already uses for its own
+# TORSO_LIMIT/SWING_LIMIT), so these are hardcoded and must be kept in sync
+# with the XML by hand if the XML ever changes.
+TORSO_RANGE = (-0.6, 0.6)
+SWING_RANGE = (-2.0, 2.0)
+
+
+def validate_same_direction_candidate(
+    prep_torso: float,
+    prep_swing: float,
+    torso_target: float,
+    swing_target: float,
+    min_swing_displacement_rad: float = 0.3,
+    joint_margin_rad: float = 0.02,
+) -> tuple[bool, list[str]]:
+    """Pre-registered validity filter for a same-direction (torso+swing
+    co-rotating) candidate, checked BEFORE any simulation is run (docs/
+    design/KC-01a-DIRECTION-CONTRACT.md section 8 -- added after a
+    "validated" candidate turned out to have torso and swing accelerating
+    in OPPOSITE directions with both follow-through targets outside their
+    own joint ranges, none of which the earlier search or acceptance
+    checks had verified).
+
+    Three independent checks, ALL reported (not just the first failure):
+    1. Direction consistency: torso_target and swing_target must lie on the
+       SAME side of their respective prep angles -- a "same-direction
+       kinetic chain" candidate where the arm's own commanded direction is
+       opposite the torso's is not what this mode is for, regardless of
+       what score it produces.
+    2. Minimum genuine swing displacement: a near-zero (or wrong-signed)
+       swing move is not a real arm swing even if a geometry search happens
+       to find it as the closest-approach solution once torso alone nearly
+       reaches the target.
+    3. Joint-range margin: prep/target/follow-through angles for BOTH axes
+       (follow-through = target + offset*direction, the same formula
+       TorsoBatController.__init__ uses) must stay within
+       [range_lo+margin, range_hi-margin] -- a follow-through target
+       outside the physical range can only ever be "reached" by hitting the
+       hard joint-limit stop, not by the PD brake actually converging to it
+       (docs/records/KC-01a-VALIDATION.md A12's own finding).
+
+    Returns (valid, reasons) -- reasons is empty iff valid is True.
+    """
+    reasons: list[str] = []
+    torso_dir = 1.0 if torso_target > prep_torso else -1.0
+    swing_dir = 1.0 if swing_target > prep_swing else -1.0
+    if torso_dir != swing_dir:
+        reasons.append(
+            f"direction mismatch: torso_dir={torso_dir:+.0f} swing_dir={swing_dir:+.0f} "
+            "(same-direction chain requires both axes to accelerate the same sign)"
+        )
+
+    swing_disp = swing_target - prep_swing
+    if abs(swing_disp) < min_swing_displacement_rad:
+        reasons.append(
+            f"swing displacement too small: {swing_disp:+.4f}rad "
+            f"(< {min_swing_displacement_rad}rad minimum -- not a genuine arm swing)"
+        )
+
+    torso_ft = torso_target + _TORSO_FOLLOW_THROUGH_OFFSET * torso_dir
+    swing_ft = swing_target + _SWING_FOLLOW_THROUGH_OFFSET * swing_dir
+    checks = (
+        ("torso prep", prep_torso, TORSO_RANGE),
+        ("torso target", torso_target, TORSO_RANGE),
+        ("torso follow-through", torso_ft, TORSO_RANGE),
+        ("swing prep", prep_swing, SWING_RANGE),
+        ("swing target", swing_target, SWING_RANGE),
+        ("swing follow-through", swing_ft, SWING_RANGE),
+    )
+    for name, angle, (lo, hi) in checks:
+        if not (lo + joint_margin_rad <= angle <= hi - joint_margin_rad):
+            reasons.append(
+                f"{name}={angle:+.4f}rad outside [{lo + joint_margin_rad:+.4f}, "
+                f"{hi - joint_margin_rad:+.4f}]rad (range {lo}..{hi}, margin {joint_margin_rad}rad)"
+            )
+
+    return (len(reasons) == 0, reasons)
+
 
 class TorsoBatController:
     """mid_mid-only oracle controller (reads the calibrated target/timing
@@ -191,6 +271,14 @@ class TorsoBatController:
         swing_moves = mode in ("arm_only", "simultaneous", "staggered", "torso_lead_handoff")
         torso_dir = 1.0 if torso_target > prep_torso else -1.0
         swing_dir = 1.0 if swing_target > prep_swing else -1.0
+        # Stored (not just local) so act() can compute SIGNED progress along
+        # the intended direction for the handoff condition below -- using
+        # abs(torso_angle - prep_torso) instead would let a torso excursion
+        # in the WRONG direction also satisfy the handoff threshold, which
+        # is not "torso has progressed toward its target" (docs/design/
+        # KC-01a-DIRECTION-CONTRACT.md section 8's fix).
+        self._torso_dir = torso_dir
+        self._swing_dir = swing_dir
         self._torso_axis = _Axis(
             prep_torso,
             torso_target if torso_moves else prep_torso,
@@ -238,15 +326,21 @@ class TorsoBatController:
             self._torso_triggered = True
         if self.mode == "torso_lead_handoff":
             # Motion-triggered, not time-triggered: swing waits for torso to
-            # have actually moved, regardless of how much real time that
-            # takes -- the point of this mode (docs/design/
-            # KC-01a-DIRECTION-CONTRACT.md section 4 follow-up).
+            # have actually PROGRESSED toward its own target, regardless of
+            # how much real time that takes -- the point of this mode
+            # (docs/design/KC-01a-DIRECTION-CONTRACT.md section 4 follow-up).
+            # SIGNED progress along the intended direction (self._torso_dir),
+            # not abs(torso_angle - prep_torso): a torso excursion in the
+            # WRONG direction (e.g. a reaction dip) must NOT count toward
+            # the handoff threshold (section 8's fix -- abs() would have let
+            # it).
             handoff_target_disp = self.handoff_fraction * abs(self.torso_target - self.prep_torso)
+            torso_progress = (torso_angle - self.prep_torso) * self._torso_dir
             if (
                 self._swing_moves
                 and not self._swing_triggered
                 and self._torso_triggered
-                and abs(torso_angle - self.prep_torso) >= handoff_target_disp
+                and torso_progress >= handoff_target_disp
             ):
                 self._swing_triggered = True
         elif (

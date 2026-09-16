@@ -9,7 +9,8 @@ energy-validation, timing-window, noball-dt-isolation,
 contact-only-dt-isolation, constraint-decomposition, same-direction-search,
 same-direction-dt-convergence, same-direction-acceptance,
 torso-lead-analysis, torso-lead-handoff-search,
-torso-lead-handoff-validation}.json` · 재현: `scripts/kc01a_dt_convergence.py`
+torso-lead-handoff-validation, torso-lead-handoff-search-v2,
+torso-lead-handoff-validation-v2}.json` · 재현: `scripts/kc01a_dt_convergence.py`
 → `scripts/kc01a_settle_diagnostics.py` → `scripts/kc01a_energy_validation.py`
 → `scripts/kc01a_timing_window.py` → `scripts/kc01a_noball_dt_isolation.py`
 → `scripts/kc01a_contact_only_dt_isolation.py` →
@@ -18,10 +19,13 @@ torso-lead-handoff-validation}.json` · 재현: `scripts/kc01a_dt_convergence.py
 `scripts/kc01a_same_direction_dt_convergence.py` →
 `scripts/kc01a_same_direction_acceptance.py` →
 `scripts/kc01a_torso_lead_analysis.py` →
-`scripts/kc01a_torso_lead_handoff_search.py` →
-`scripts/kc01a_torso_lead_handoff_validation.py` · 관련: `docs/design/
+`scripts/kc01a_torso_lead_handoff_search.py`(참고, 무효 후보) →
+`scripts/kc01a_torso_lead_handoff_validation.py`(참고, 무효 후보) →
+`scripts/kc01a_torso_lead_handoff_search_v2.py` →
+`scripts/kc01a_torso_lead_handoff_validation_v2.py` · 회귀 테스트:
+`tests/test_baseball_kc01a_controller.py` · 관련: `docs/design/
 KC-01a-DIRECTION-CONTRACT.md`(회전 방향 계약, 새 조건 설계 규칙,
-motion-triggered handoff 모드)
+motion-triggered handoff 모드, 유효성 검사)
 
 ## 현재 판정 (요약)
 
@@ -64,11 +68,20 @@ qvel) 적분 자체는 이미 거의 완전히 수렴해 있다. 사용자가 �
 때문이며, 이 반작용이 raw qvel 기반 "시작 시각" 측정 자체를 오염시킨다(§A10).
 진짜 제어 수준의 선행(트리거 시점 차이)을 크게 늘리는 새 컨트롤러 모드
 (`torso_lead_handoff`, 물리 모션에 연동된 인계)를 추가해 탐색한 결과,
-torso_target=0.5/torso_ct=0.33/handoff_fraction=0.5 조건이 **dt 수렴·정착
-(양 축)·그립 도달성·접촉 침투 모두 통과**했고 production dt 점수(6.78m)도
-지금까지 KC-01a에서 나온 어떤 값보다 높다(§A11-A12) — 잠정적으로 유망하지만,
-공통 에너지 예산 비교를 하지 않았으므로 "협응이 낫다"는 결론은 아직 내리지
-않는다.
+torso_target=0.5/torso_ct=0.33/handoff_fraction=0.5 조건이 dt 수렴·정착
+(양 축)·그립 도달성·접촉 침투를 모두 통과한 것처럼 보였고 production dt
+점수(6.78m)도 지금까지 KC-01a에서 나온 어떤 값보다 높았다(§A11-A12) —
+**이 판정은 이후 철회됐다(§정정, §A15-A18).** 이 후보는 실제로는 몸통(+)과
+팔(−)이 반대 방향으로 가속하는 명령이었고, 팔의 명령 변위는 사실상 0
+(−0.004rad)이었으며, 양 축의 팔로우스루 목표가 모두 자기 관절 범위 밖이라
+"정착"은 능동 제동이 아니라 관절 하드 스톱에 눌린 결과였다 — 유효성 검사
+자체(방향 일치·최소 팔 변위·관절 범위 여유)가 빠져 있었기 때문에 이걸
+걸러내지 못했다. 검사를 고치고(`controllers/baseball_kc01a.py`의
+`validate_same_direction_candidate`, 인계 조건도 절대값 대신 부호 있는
+진행량으로 수정) 재탐색한 결과(torso_target=0.25, §A16-A17) 방향·변위·범위·
+능동 제동 정착·그립은 통과하는 후보를 찾았지만, **이번엔 dt 수렴에
+실패한다** — "유효성 검사를 통과하고, 능동 제동으로 정착하고, 동시에 dt
+수렴까지 하는" 후보는 아직 없다(§A18).
 
 ## A1. 조건명 재정의와 결론 철회
 
@@ -418,7 +431,34 @@ swing 쪽 각속도도 임계값을 넘는다. 원인은 `bat_hinge`가 `torso_y
 **에너지나 운동량이 한 축에서 다른 축으로 전달됐다는 증거가 아니다** — 그런
 흐름 분석은 이번에 수행하지 않았고, 위 비율을 그런 의미로 읽지 않는다.
 
-## A11. Motion-triggered handoff 컨트롤러와 재탐색
+## 정정 (A11-A14) — torso_target=0.5 후보는 무효, 참고 결과로 보존
+
+**아래 A11-A14는 원문 그대로 보존하지만, 그 "검증 통과" 판정은 철회한다.**
+사용자가 지적한 대로 이 후보(torso_target=0.5, swing_target=−1.964)는:
+
+1. **몸통은 양(+) 방향, 팔은 음(−) 방향으로 가속하라는 명령이다**
+   (torso_dir=+1, swing_dir=−1) — §A8에서 정의한 "동방향(same-direction)"
+   조건이 전혀 아니다. swing의 총 명령 변위는 겨우 −0.004rad로, 사실상
+   "팔이 스윙한다"고 부를 수 없는 크기다.
+2. **몸통과 팔의 팔로우스루 목표가 모두 자기 관절 범위 밖이다**: 몸통
+   0.5+0.15=0.65rad(범위 ±0.6), 팔 −1.964−0.4=−2.364rad(범위 ±2.0). 둘 다
+   물리적으로 도달 불가능한 목표이며, A12가 "정착"이라 판정한 것은 이
+   불가능한 목표를 향한 PD 제동이 아니라 몸통이 자기 관절 하드 스톱에
+   눌려서 멈춘 것이었다.
+3. 이 두 가지를 §A11-A12의 탐색/검증 어디에서도 사전에 확인하지 않았다 —
+   "제어 수준 225ms 선행"과 "6.78m 점수"라는 결과만 보고 방향·변위·범위를
+   확인하지 않은 것이 원인이다.
+
+**정정 조치**: `controllers/baseball_kc01a.py`에 `validate_same_direction_
+candidate()`를 추가해 방향 일치·최소 팔 변위·양 축 prep/target/
+follow-through의 관절 범위 여유를 시뮬레이션 전에 검사하도록 했고,
+`torso_lead_handoff`의 인계 조건 자체도 절대 각변위(`abs(torso_angle-prep)`)
+대신 **의도한 방향으로의 부호 있는 진행량**을 쓰도록 고쳤다(반대 방향으로
+움직여도 인계되던 잠재적 결함 수정, `tests/test_baseball_kc01a_controller.py`로
+회귀 테스트 추가). 아래 A11-A14는 **이 결함이 발견되기 전의 기록으로
+보존**하며, 그 결론("검증 통과", "협응 우위 후보")은 A15-A18로 대체한다.
+
+## A11. Motion-triggered handoff 컨트롤러와 재탐색 (원문 보존 — 판정 철회, 위 정정 참고)
 
 `controllers/baseball_kc01a.py`에 새 모드 `"torso_lead_handoff"`를
 추가했다(기존 4개 모드의 동작은 무변경, 테스트 99개 그대로 통과). swing은
@@ -444,7 +484,7 @@ handoff_fraction=0.5: torso 트리거 0.210s, swing 트리거 0.415s).
 handoff_fraction=0.5 → production dt 점수 6.78m, 제어 수준 선행 225ms.**
 이 값이 §A12에서 전체 검증을 통과한 새 후보다.
 
-## A12. 새 후보(`torso_lead_handoff`, torso_target=0.5) 전체 검증
+## A12. 새 후보(`torso_lead_handoff`, torso_target=0.5) 전체 검증 (원문 보존 — 판정 철회)
 
 `scripts/kc01a_torso_lead_handoff_validation.py`, 결과 `docs/records/
 evidence/KC-01a-torso-lead-handoff-validation.json`. §A9와 동일한 항목을
@@ -468,7 +508,7 @@ evidence/KC-01a-torso-lead-handoff-validation.json`. §A9와 동일한 항목을
 하드 스톱에 기댄 것이라면, 향후 관절한계나 gear를 바꾸는 순간 이 결과가
 깨질 수 있다(§최소 수정안 제안).
 
-## A13. 시각 기준선 판정 (A9-A12 종합, 사용자 요청)
+## A13. 시각 기준선 판정 (A9-A12 종합, 사용자 요청) (원문 보존 — 판정 철회, §A18 참고)
 
 **`same_direction_staggered`(§A8-A9, 10ms 명령 선행)는 시각 입력 실험의
 물리 기준선으로 채택하지 않는다** — torso 정착 미충족, production dt
@@ -494,7 +534,7 @@ gear/관절한계/재료를 바꾸지 않는다는 지시를 그대로 지켰다
 관절한계에 기대는 문제의 "최소 수정"이 gear 재조정일 가능성이 높지만, 그
 자체가 새 실험이므로 사용자 승인 후 진행한다.
 
-## A14. 몸통 선행 + 유효 타격의 기구학적 제약 (요약)
+## A14. 몸통 선행 + 유효 타격의 기구학적 제약 (요약) (원문 보존 — §A18에서 재평가)
 
 사용자의 마지막 질문 — "몸통 선행과 유효 타격을 함께 만족하지 못하면
 기구 배치·가동범위·제어의 어떤 제약 때문인지 보고하라" — 에 대한 답: **이번
@@ -516,6 +556,114 @@ gear/관절한계/재료를 바꾸지 않는다는 지시를 그대로 지켰다
   실제로 관여하고 있다는 뜻이며, 향후 gear/관절범위를 조정하면 이 특정
   결과가 재현되지 않을 수 있다.
 
+## A15. 유효성 검사 자체를 수정 (사용자 지시, 이번 갱신)
+
+`controllers/baseball_kc01a.py`에 `validate_same_direction_candidate()`를
+추가했다 — 어떤 (torso_target, swing_target) 조합이든 **시뮬레이션 전에**
+세 가지를 검사한다:
+
+1. **가속 방향 일치**: torso_dir과 swing_dir이 같은 부호인가(다르면
+   "동방향 운동사슬"이 아니다 — A11/A12 후보가 정확히 이 검사에 걸린다).
+2. **최소 팔 스윙 변위**: `|swing_target - prep_swing|`이 최소 기준
+   (0.3rad, 사전 등록)을 넘는가 — 기하 탐색이 "torso 혼자 거의 다 도달해
+   swing은 거의 안 움직여도 됨"으로 퇴화하는 것을 막는다.
+3. **관절 범위 여유**: 양 축의 prep/target/follow-through(=target+offset×dir,
+   컨트롤러가 실제로 쓰는 것과 같은 식) 각도가 모두 자기 관절 범위
+   안쪽에 여유(0.02rad, 사전 등록)를 두고 있는가.
+
+세 검사 모두 독립적으로 보고한다(첫 실패에서 멈추지 않음). A11/A12 후보에
+적용하면 세 가지 모두 실패로 나온다(방향 불일치, swing 변위
+−0.004rad<0.3rad, 양 축 follow-through 범위 밖) — `tests/
+test_baseball_kc01a_controller.py`의 회귀 테스트로 고정했다.
+
+**인계 조건 자체의 결함도 수정**: `torso_lead_handoff`의 swing 트리거가
+`abs(torso_angle - prep_torso) >= handoff_target_disp`(절대값)를 쓰고
+있었다 — 이러면 torso가 **반대 방향**으로 그만큼 움직여도 인계가 발생할 수
+있다(사용자 지적). **의도한 방향으로의 부호 있는 진행량**
+`(torso_angle - prep_torso) * torso_dir >= handoff_target_disp`으로
+고쳤다. `tests/test_baseball_kc01a_controller.py::TestHandoffUsesSignedProgress`가
+이 수정이 실제로 필요했음을 보인다 — 수정 전 코드로는 통과하지 못했을
+합성 시나리오(torso가 반대 방향으로 임계값만큼 움직이는 경우)로 확인했다.
+기존 4개 모드(`arm_only`/`torso_only`/`simultaneous`/`staggered`)의 동작은
+이 변경으로 전혀 바뀌지 않는다(`TestExistingModesUnaffected`, 그리고 기존
+99개 테스트가 여전히 그대로 통과) — **다만 "기존 99개가 통과한다"는 사실
+자체를 새 모드/새 함수의 검증으로 쓰지 않는다**: 새로 추가한 10개 테스트
+(`tests/test_baseball_kc01a_controller.py`)가 새 동작을 검증하는 것이고,
+기존 99개는 그 동작을 건드리지 않았다는 것만 보인다.
+
+## A16. 재탐색 v2 — 사전 필터를 통과한 후보만 검색
+
+`scripts/kc01a_torso_lead_handoff_search_v2.py`, 결과 `docs/records/
+evidence/KC-01a-torso-lead-handoff-search-v2.json`. 기하 탐색 자체도
+수정했다: swing_target을 "최근접점"이 아니라 **방향·최소 변위 제약이 걸린
+범위**(`swing ∈ [prep_swing + 0.3, 2.0]`) 안에서만 찾는다 — 옛 탐색처럼
+torso_target이 커질수록 swing이 필요 없어지다 못해 역방향으로 넘어가는
+경로를 원천 차단한다.
+
+torso_target ∈ {0.1,...,0.4}(0.05 간격) 중 **기하학적으로 도달 가능하고
+사전 필터를 통과하는 것은 0.1~0.3의 5개뿐**이다(0.35 이상은 이 제약 안에서
+공에 도달할 수조차 없다 — 최근접 거리가 접촉 임계값을 넘는다). 이 5개에
+대해 torso_ct×handoff_fraction 그리드(처음 20개 조합)를 돌리자 **유효
+1/100** — 옛 탐색(제약 없음)의 "60개 중 2개, 140개 중 10개"보다 유효 비율이
+훨씬 낮다. 이것이 바로 "동방향 제약을 지키면 도달 가능한 진짜 유효 조합이
+드물어진다"는, 이번 탐색이 드러낸 사실이다. 그 하나(torso=0.3)도 팔 축이
+능동 제동으로 정착하지 못했다.
+
+그리드를 세분화(torso_ct 14개×handoff_fraction 9개, 5개 torso_target =
+630개)하자 **유효 5개**를 찾았다. 이 중 두 축 모두 **능동 제동으로
+정착**(자기 관절한계로부터 0.02rad 이상 떨어진 채로 마지막 0.3초 동안
+유지 — 하드 스톱에 눌린 것이 아님)하는 최고 성적 후보:
+
+**torso_target=0.25, swing_target=−1.644(변위 +0.316rad, torso와 같은
++ 방향), torso_ct=0.16, handoff_fraction=0.1.**
+
+## A17. 새 후보(torso_target=0.25) 전체 재검증 — dt 수렴 실패
+
+`scripts/kc01a_torso_lead_handoff_validation_v2.py`, 결과 `docs/records/
+evidence/KC-01a-torso-lead-handoff-validation-v2.json`.
+
+| 검증 | 결과 |
+| --- | --- |
+| 사전 필터(`validate_same_direction_candidate`) | **통과**(방향 일치, 변위 0.316rad>0.3, 양 축 follow-through 범위 내) |
+| dt 수렴(A2 방법론) | **실패** — production dt 3.327m → 3.720m → 3.812m, **단조 증가하며 수렴하지 않는다** |
+| 접촉 침투(geom쌍) | `ball_geom`↔`bat_geom`, −0.0552~−0.0568m — **"통과"로 표시하지 않는다.** dt에는 안정적이지만(1% 이내), §A9와 같은 이유로 물리적 타당성은 여전히 미해결이다 |
+| 최대 법선력/충격량 | 1796~1857N / 5.82~6.07N·s |
+| 정착 — torso | latch 후 0.475s에 정착, 자기 한계로부터 0.197rad 여유(능동 제동, 하드 스톱 아님) |
+| 정착 — swing | latch 후 0.290s에 정착. 최대 각도가 자기 한계(−2.0)에서 0.035rad — **주의: 이 값은 하드 스톱 근접이 아니라 swing 자체가 prep(−1.96)에서 시작해 한계에서 멀어지는 방향(−1.644)으로만 움직이기 때문에 나오는 값**(전 KC-01a 조건이 공유하는 prep_swing 위치의 특성이지, 이 후보의 새로운 결함이 아니다) |
+| 그립 도달성 | 오차 0(항상 도달) |
+| 제어 수준 선행 | 75ms(torso 트리거 0.305s, swing 트리거 0.380s) |
+| 인계 순간 몸통 각변위/각속도 | 0.032rad / 0.738rad/s |
+| 인계 순간 팔의 몸통 기준 각도/각속도 | −1.9568rad(prep 대비 Δ0.003rad, 거의 안 움직임) / 0.643rad/s(반작용 포함 — 아래 참고) |
+| 지속 변위 기준 "본격 스윙" 개시 | torso 0.360s, swing 0.380s(=인계 순간과 거의 동시 — 0.02s 창·0.03rad 이상 부호 있는 진행이 유지되는 첫 시점) |
+
+**dt 수렴 실패는 이번 검증에서 가장 중요한 결과다.** 방향·변위·관절범위
+사전 필터를 통과하고 두 축 모두 능동 제동으로 정착하는 후보를 찾았지만,
+그 후보는 §A2와 같은 사전 등록 기준으로 timestep 수렴을 통과하지 못한다
+— 유효성 검사를 고쳤다고 해서 dt 수렴까지 저절로 따라오지 않는다는 것을
+보여준다. **이 후보도 "검증된 후보"가 아니라 "유효성 검사는 통과했지만
+dt 미수렴인 후보"로 보고한다.**
+
+**접촉 침투는 여전히 미해결이다.** §A9와 마찬가지로 −0.055~−0.057m는
+dt에 대해 안정적이지만(수치 수렴), 실제 반발계수로 검증된 적 없는 기존
+KC-01a/B1 접촉 모델의 특성을 그대로 물려받은 것이며, 이번 후보가 "정상
+접촉 검증을 통과했다"는 뜻이 아니다.
+
+## A18. 갱신된 최종 판정
+
+- `same_direction_staggered`(§A9): 시각 기준선 채택 안 함(torso 정착 실패,
+  32% 에너지 잔차).
+- `torso_lead_handoff`, torso_target=0.5(§A11-A14): **무효** — 방향
+  불일치, 팔 변위 사실상 0, 양 축 follow-through 범위 밖. 참고 기록으로만
+  보존.
+- `torso_lead_handoff`, torso_target=0.25(§A16-A17): 유효성 검사(방향·
+  변위·범위·능동 제동 정착·그립)는 통과하지만 **dt 수렴에 실패**하고
+  접촉 침투는 미해결이다 — 시각 기준선으로도, "협응 우위" 근거로도 아직
+  쓸 수 없다.
+- **현재 KC-01a에는 "방향·변위·범위가 올바르고, 능동 제동으로 정착하고,
+  동시에 dt 수렴까지 통과하는" 몸통 선행 후보가 없다.** 이것이 이번
+  갱신의 정직한 결론이다 — 추가 탐색(더 넓은 grid, 다른 torso_target
+  구간)과 gear 재보정은 사용자가 다음에 명시적으로 지정한 뒤 진행한다.
+
 ## 산출물
 
 - 4조건×dt 표, 최초 발산 원인: 본 문서 §A2, 원자료
@@ -535,16 +683,24 @@ gear/관절한계/재료를 바꾸지 않는다는 지시를 그대로 지켰다
 - 몸통 선행 메커니즘(명령 vs 실제, 반작용 결합): §A10, `docs/records/
   evidence/KC-01a-torso-lead-{analysis}.json`, `docs/records/evidence/
   KC-01a-torso-lead-timeline.json`
-- Motion-triggered handoff 모드와 탐색: §A11, `controllers/
-  baseball_kc01a.py`(`torso_lead_handoff` 모드), `docs/records/evidence/
-  KC-01a-torso-lead-handoff-search.json`
-- 새 후보 전체 검증: §A12, `docs/records/evidence/
+- Motion-triggered handoff 모드와 탐색(**무효 후보, 참고용**): §A11,
+  `controllers/baseball_kc01a.py`(`torso_lead_handoff` 모드),
+  `docs/records/evidence/KC-01a-torso-lead-handoff-search.json`
+- 새 후보 전체 검증(**무효 후보, 참고용**): §A12, `docs/records/evidence/
   KC-01a-torso-lead-handoff-validation.json`
-- 전후 영상(위쪽+측면, 실시간+8배 슬로모션 라벨)·속도/기여 그래프: §A10-A12,
+- 전후 영상(위쪽+측면, 실시간+8배 슬로모션 라벨)·속도/기여 그래프
+  (**§A11-A12의 무효 후보 기준, 참고용**): §A10-A12,
   `runs/kc01a-torso-lead-before-after/`(gitignored)
+- 유효성 검사 정정과 회귀 테스트: §A15, `controllers/baseball_kc01a.py`
+  (`validate_same_direction_candidate`, 인계 조건의 부호 있는 진행량
+  수정), `tests/test_baseball_kc01a_controller.py`(10개 테스트)
+- 재탐색 v2(사전 필터 적용)와 새 후보 재검증(dt 미수렴 포함): §A16-A17,
+  `scripts/kc01a_torso_lead_handoff_search_v2.py`,
+  `scripts/kc01a_torso_lead_handoff_validation_v2.py`, `docs/records/
+  evidence/KC-01a-torso-lead-handoff-{search-v2,validation-v2}.json`
 - 명령 일정/설정: 각 스크립트(`scripts/kc01a_dt_convergence.py` 등)의
   `CONDITIONS` 딕셔너리가 실제 실행 설정이다(코드가 곧 기록).
-- 기존 B1 회귀 87개 + KC-01a 12개 = 99개, 두 pytest 진입점 일치, 전체 lint
+- 기존 B1 회귀 87개 + KC-01a 22개 = 109개, 두 pytest 진입점 일치, 전체 lint
   클린(매 커밋 확인).
 
 ## 최소 수정안 제안 (A6-A8 근거, 아직 적용하지 않음)
@@ -567,29 +723,34 @@ gear/관절한계/재료를 바꾸지 않는다는 지시를 그대로 지켰다
    재확인됐지만 원인이 아직 없다 — 이 조건 자체를 더 고치기보다 §A8의 동방향
    조건으로 대체하는 것이 우선이므로, 이 조건의 solver 진단은 낮은 우선순위로
    내린다.
-4. **(이번 갱신 추가)** `torso_lead_handoff`(torso_target=0.5, §A11-A12)의
-   torso 정착이 관절한계 하드 스톱에 의존한다(§A12) — gear/관절범위를
-   건드리지 않는 대체 최소 수정안(예: follow-through offset을 관절한계 안쪽
-   값으로 낮춰 하드 스톱에 기대지 않고도 능동 제어로 정착하게 하는 것)을
-   다음 단계에서 검토한다. 이번에는 제안만 하고 적용하지 않았다.
+4. ~~`torso_lead_handoff`(torso_target=0.5, §A11-A12)의 torso 정착이
+   관절한계 하드 스톱에 의존한다~~ — 이 후보 자체가 무효(§정정, §A18)라
+   더 이상 해당 사항 없음.
+5. **(이번 갱신 추가)** `torso_lead_handoff`(torso_target=0.25, §A16-A17)는
+   유효성 검사·능동 제동 정착·그립을 통과하지만 dt 수렴에 실패한다 — 최소
+   수정안은 아직 없다(원인 진단이 먼저 필요, §다음 단계 1).
 
 ## 다음 단계 (이번에 하지 않음)
 
-1. `same_direction_staggered`(§A8-A9)는 시각 기준선으로 채택하지 않기로
-   했으므로(§A13) 더 이상의 수정 우선순위는 낮다.
-2. `torso_lead_handoff`(§A11-A12, torso_target=0.5)에 §A6과 같은 구동-전용/
-   접촉-전용 분리를 적용해 dt 수렴이 진짜 견고한지 재확인한다.
-3. `torso_lead_handoff`의 정착이 관절한계 하드 스톱에 의존하는 문제(§A12)의
-   최소 수정안(follow-through offset 조정 등)을 사용자 승인 후 진행한다.
-4. `torso_swing_with_arm_hold`의 정착 실패·유효 타구 실패에 대한 gear
+1. `torso_lead_handoff`(torso_target=0.25, §A16-A17)의 dt 미수렴 원인을
+   §A6과 같은 방식(구동-전용/접촉-전용 분리)으로 진단한다 — 최소 수정안은
+   원인을 안 뒤에 제안한다.
+2. `same_direction_staggered`(§A8-A9)와 `torso_lead_handoff`(torso_target=
+   0.5, §A11-A14, 무효)는 더 이상 이 계열의 기본 후보가 아니다 — 다음
+   탐색은 §A16의 v2 방법론(사전 필터 통과 + 능동 제동 정착)을 기본으로
+   하고, 필요하면 탐색 범위(torso_target, torso_ct, handoff_fraction 그리드
+   해상도)를 넓힌다.
+3. `torso_swing_with_arm_hold`의 정착 실패·유효 타구 실패에 대한 gear
    재보정은 그것 자체가 새로운 실험이므로 사용자 승인 후 진행한다.
-5. 공통 에너지 예산 비교(A4 후반)는 관심 조건들이 모두 dt 수렴을 통과한
-   뒤 재개한다 — `torso_lead_handoff`의 6.78m을 포함해 어떤 점수도 "협응이
-   낫다"는 근거로 아직 쓰지 않는다(§A13).
-6. VISION-01(`docs/design/VISION-01.md`) 통합 여부는 위 1-3이 마무리된 뒤
-   재검토한다 — `torso_lead_handoff`가 §A9의 `same_direction_staggered`보다
-   더 나은 기준선 후보이지만(§A13), 하드 스톱 의존성 때문에 아직 "확정
-   기준선"으로 채택하지 않는다.
+4. 공통 에너지 예산 비교(A4 후반)는 관심 조건들이 모두 dt 수렴을 통과한
+   뒤 재개한다 — 지금까지 나온 어떤 점수(6.78m 포함, 무효로 판정됨)도
+   "협응이 낫다"는 근거로 쓰지 않는다(§A18).
+5. VISION-01(`docs/design/VISION-01.md`) 통합 여부는 위 1-2가 마무리돼
+   dt 수렴하는 유효 후보가 나온 뒤 재검토한다 — 현재는 어떤 `torso_lead_
+   handoff` 후보도 시각 기준선으로 쓸 만큼 완결되지 않았다(§A18).
+6. 접촉 침투(§A9, §A17 모두 −0.05m대)의 물리적 타당성은 이번에도 검증하지
+   않았다 — 실제 반발계수 데이터나 별도 재료 실험 없이는 "정상"이라고
+   말할 수 없는 채로 남겨둔다.
 
 KC-01b·8코스·변화구·RL·실제 신경회로·시각 제어 구현은 이번 작업에 포함하지
 않았다(사용자 지시).

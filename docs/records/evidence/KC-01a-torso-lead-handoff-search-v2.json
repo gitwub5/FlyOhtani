@@ -1,0 +1,72 @@
+{
+  "geometry_search": {
+    "0.1": {
+      "dist": 0.00035739849974572016,
+      "swing_target": -1.4379999999999997,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "pre_filter_valid": true,
+      "pre_filter_reasons": []
+    },
+    "0.15": {
+      "dist": 0.0002258197596057488,
+      "swing_target": -1.5079999999999998,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "pre_filter_valid": true,
+      "pre_filter_reasons": []
+    },
+    "0.2": {
+      "dist": 1.5776900786723596e-05,
+      "swing_target": -1.5759999999999998,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "pre_filter_valid": true,
+      "pre_filter_reasons": []
+    },
+    "0.25": {
+      "dist": 0.0004560459047082782,
+      "swing_target": -1.644,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "pre_filter_valid": true,
+      "pre_filter_reasons": []
+    },
+    "0.3": {
+      "dist": 0.03553427693583496,
+      "swing_target": -1.66,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": true,
+      "pre_filter_valid": true,
+      "pre_filter_reasons": []
+    },
+    "0.35": {
+      "dist": 0.08315981505589293,
+      "swing_target": -1.66,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": false,
+      "pre_filter_valid": true,
+      "pre_filter_reasons": []
+    },
+    "0.4": {
+      "dist": 0.13100659492232258,
+      "swing_target": -1.66,
+      "tilt_target": 5.377642775528102e-16,
+      "reachable_geometrically": false,
+      "pre_filter_valid": true,
+      "pre_filter_reasons": []
+    }
+  },
+  "feasible_torso_targets": [
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3
+  ],
+  "n_total": 100,
+  "n_valid": 1,
+  "n_valid_and_active_braking_settle": 0,
+  "top_valid_candidates_checked": [],
+  "best": null
+}

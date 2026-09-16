@@ -142,11 +142,40 @@ swing_qvel은 반작용만으로 임계값을 넘을 수 있다** — 이 사슬
 좋아지지도 않았다). 기존 4개 모드(`arm_only`/`torso_only`/`simultaneous`/
 `staggered`)의 동작은 이 추가로 전혀 바뀌지 않는다(코드·테스트로 확인).
 
-가장 좋은 검증된 결과는 torso_target=0.5, torso_ct=0.33,
-handoff_fraction=0.5 — 컨트롤러 트리거 기준 225ms의 진짜 선행,
-production dt 6.78m, dt 수렴·양 축 정착·그립 도달성 모두 통과
-(`docs/records/KC-01a-VALIDATION.md` A11-A12). 단, torso 정착이 자체
-관절한계(±0.6rad)에 눌려서 이뤄진다는 새로운 우려가 남아 있다(같은 문서
-A12/A14) — "몸통 선행 + 유효 타격"은 이번 탐색 범위에서 함께 달성됐지만,
-그 정착 방식이 관절한계 하드 스톱에 의존한다는 점에서 완전히 깨끗한 결과는
-아니다.
+가장 좋았던 것으로 보고했던 결과(torso_target=0.5, torso_ct=0.33,
+handoff_fraction=0.5, 225ms 선행, production dt 6.78m)는 **철회한다**
+(`docs/records/KC-01a-VALIDATION.md`의 "정정" 항목, A11-A14는 참고 기록으로
+보존). 방향(torso +, swing −)이 반대였고, swing의 명령 변위가 사실상 0
+(−0.004rad)이었으며, 양 축 follow-through 목표가 모두 자기 관절 범위
+밖이었다 — "동방향" 조건도, "팔이 스윙하는" 조건도 아니었고, torso 정착은
+관절 하드 스톱에 눌린 결과였다. 탐색·검증 어디에서도 방향/변위/범위를
+사전에 확인하지 않은 것이 원인이다.
+
+## 8. 유효성 검사 정정 (사용자 지시)
+
+위 문제를 막기 위해 `controllers/baseball_kc01a.py`에
+`validate_same_direction_candidate(prep_torso, prep_swing, torso_target,
+swing_target, min_swing_displacement_rad=0.3, joint_margin_rad=0.02)`를
+추가했다 — 어떤 후보든 시뮬레이션 전에 (1) torso/swing 가속 방향 일치,
+(2) 최소 팔 스윙 변위, (3) 양 축 prep/target/follow-through의 관절 범위
+여유를 검사하고, 실패 이유를 전부(첫 번째에서 멈추지 않고) 보고한다.
+
+`torso_lead_handoff`의 인계 조건도 고쳤다: swing의 트리거가 원래
+`abs(torso_angle - prep_torso) >= handoff_target_disp`(절대 각변위)를
+썼는데, 이러면 torso가 **의도한 반대 방향**으로 그만큼 움직여도 인계가
+발생할 수 있었다(사용자 지적, 실제로 이 버그가 발현된 사례는 아직 없었지만
+잠재적 결함이었다). **의도한 방향으로의 부호 있는 진행량**
+`(torso_angle - prep_torso) * torso_dir >= handoff_target_disp`으로
+수정했다. `tests/test_baseball_kc01a_controller.py`에 두 정정 모두의
+회귀 테스트를 추가했다 — 기존 4개 모드의 동작은 무변경(같은 테스트 파일의
+`TestExistingModesUnaffected`, 그리고 기존 99개 테스트가 그대로 통과)이며,
+"기존 테스트가 통과한다"는 사실 자체는 새 모드/새 함수의 검증으로 쓰지
+않는다(새로 추가한 10개 테스트가 새 동작을 검증한다).
+
+이 검사를 적용해 재탐색한 결과(`scripts/kc01a_torso_lead_handoff_search_v2.py`)
+torso_target=0.25/swing_target=−1.644/torso_ct=0.16/handoff_fraction=0.1이
+방향·변위·범위 검사와 양 축 능동 제동 정착·그립 도달성을 모두 통과했지만,
+**timestep 수렴에는 실패한다**(`docs/records/KC-01a-VALIDATION.md` A17) —
+유효성 검사를 고친 것과 dt 수렴은 별개의 문제였다. 접촉 침투(−0.055~
+−0.057m)도 §A9와 같은 이유로 미해결로 남긴다. "방향·변위·범위가 맞고,
+능동 제동으로 정착하고, 동시에 dt 수렴하는" 몸통 선행 후보는 아직 없다.

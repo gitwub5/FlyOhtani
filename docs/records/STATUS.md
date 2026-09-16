@@ -86,9 +86,19 @@
   motion-triggered handoff라는 새 컨트롤러 모드(`torso_lead_handoff`)를
   추가해 재탐색한 결과 torso_target=0.5/torso_ct=0.33/handoff_fraction=0.5
   조건이 225ms의 진짜 제어 수준 선행, dt 수렴, 양 축 정착, 그립 도달성을
-  모두 통과했다(production dt 6.78m, 지금까지 KC-01a 최고치) — 다만 torso
-  정착이 자체 관절한계에 눌려서 이뤄진다는 우려가 남아 있어 "협응 우위"
-  결론이나 시각 기준선 확정 채택은 아직 하지 않는다.
+  모두 통과한 것처럼 보였다(production dt 6.78m) — **이후 철회했다.** 이
+  조건은 실제로 몸통(+)과 팔(−)이 반대 방향으로 가속하는 명령이었고 팔의
+  명령 변위는 사실상 0(−0.004rad), 양 축 팔로우스루 목표가 모두 자기
+  관절 범위 밖이라 "정착"은 관절 하드 스톱에 눌린 결과였다 — 방향/변위/
+  범위를 사전에 검사하지 않은 것이 원인이다. `controllers/baseball_kc01a.py`에
+  `validate_same_direction_candidate`(방향 일치·최소 팔 변위·관절범위 여유
+  사전 검사)를 추가하고 인계 조건도 절대 각변위 대신 부호 있는 진행량으로
+  고친 뒤(회귀 테스트 10개 추가) 재탐색한 새 후보(torso_target=0.25,
+  swing_target=−1.644)는 이 검사와 양 축 능동 제동 정착·그립 도달성을
+  모두 통과하지만, **timestep 수렴에는 실패한다** — 유효성 검사를 고친
+  것과 dt 수렴은 별개였다. 접촉 침투(약 −0.05m, 기존과 같은 수준)는 계속
+  미해결로 남긴다. "협응 우위" 결론이나 시각 기준선 확정 채택은 아직 하지
+  않는다.
 
 ## 알려진 한계 (임의로 고치지 않고 그대로 보고)
 
@@ -116,24 +126,25 @@
 
 ## 테스트·린트
 
-`python -m pytest`/`pytest` 두 진입점 모두 **99 passed**로 일치(B1/B0/ENV-001은
-87개로 무변경, KC-01a 12개 추가). lint 클린. 비editable wheel 설치로 모델 로드까지
+`python -m pytest`/`pytest` 두 진입점 모두 **109 passed**로 일치(B1/B0/ENV-001은
+87개로 무변경, KC-01a 22개 — 기존 12개 + 컨트롤러 유효성/인계 회귀 테스트
+10개 추가). lint 클린. 비editable wheel 설치로 모델 로드까지
 확인(`docs/records/evidence/R03-wheel-install-check.txt`).
 
 ## 다음 작업
 
 [KC-01a 검증 보완과 시각 입력 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
 A절(물리 검증)과 B절(VISION-01 설계), 후속 원인 분리(A6-A8), `same_direction_
-staggered` 수용 검증과 몸통 선행 메커니즘 검증(A9-A14, `docs/records/
+staggered` 수용 검증과 몸통 선행 메커니즘 검증(A9-A18, `docs/records/
 KC-01a-VALIDATION.md`)까지 완료했다. 남은 것: (1) `torso_lead_handoff`
-(torso_target=0.5)에 구동-전용/접촉-전용 분리(A6과 같은 방식)를 적용, (2)
-그 조건의 torso 정착이 관절한계 하드 스톱에 의존하는 문제의 최소 수정안
-(사용자 승인 후), (3) `torso_swing_with_arm_hold`의 gear 재보정은 사용자
-승인 후 진행, (4) 공통 에너지 예산 비교는 관심 조건들이 dt 수렴을 통과한
-뒤 재개 — `torso_lead_handoff`의 6.78m을 포함해 어떤 점수도 아직 "협응이
-낫다"는 근거로 쓰지 않는다, (5) VISION-01의 실제 구현 여부는 위 (1)-(2)가
-마무리된 뒤 결정, (6) VISION-01 §3의 검출 가능성 가설은 렌더 실험으로
-확인 전까지 가설로 유지.
+(torso_target=0.25, 유효성 검사 통과·능동 제동 정착)의 dt 미수렴 원인을
+A6과 같은 방식(구동-전용/접촉-전용 분리)으로 진단, (2)
+`torso_swing_with_arm_hold`의 gear 재보정은 사용자 승인 후 진행, (3) 공통
+에너지 예산 비교는 관심 조건들이 dt 수렴을 통과한 뒤 재개 — 지금까지 나온
+어떤 점수(철회된 6.78m 포함)도 "협응이 낫다"는 근거로 쓰지 않는다, (4)
+VISION-01의 실제 구현 여부는 dt 수렴하는 유효 후보가 나온 뒤 결정, (5)
+VISION-01 §3의 검출 가능성 가설은 렌더 실험으로 확인 전까지 가설로 유지,
+(6) 접촉 침투(약 −0.05m)의 물리적 타당성은 여전히 미해결.
 [구현 작업표](../implementation/WORK_PACKAGES.md)에서 다음 배정을 받는다.
 KC-01b/8코스/RL/시각 제어 구현은 사용자가 명시적으로 지정하기 전에는 시작하지
 않는다.
