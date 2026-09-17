@@ -1,33 +1,46 @@
 # Third-Party Notices
 
-This file lists third-party assets vendored into this repository, separately
-from this project's own code license.
+Third-party assets vendored into this repository, separately from this
+project's own code license (MIT).
 
 ## NeuroMechFly / flygym mesh assets
 
-- **Files**: `envs/assets/mesh_neuromechfly/*.stl` (43 body-segment meshes)
+- **Files**: `flyohtani/assets/mesh_neuromechfly/*.stl` (45 body-segment
+  meshes).
 - **Source**: [flygym](https://github.com/NeLy-EPFL/flygym) (NeuroMechFly v2),
   PyPI package `flygym==1.2.1`, by Sibo Wang-Chen et al. (NeLy lab, EPFL).
   See [neuromechfly.org](https://neuromechfly.org/).
 - **License**: Apache License 2.0. Full text:
-  `envs/assets/mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt`.
-- **What was taken**: only the specific mesh STL files listed in
-  `docs/design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json` (per-file SHA-256
-  hashes included there), plus the license file. No other part of the
-  `flygym` package (Python source, non-mesh assets, other MJCF variants) is
-  vendored.
-- **What was derived**: `envs/assets/fly_visual_assets.xml` and
-  `fly_visual_body.xml` are generated from the package's bundled
-  `neuromechfly_seqik_kinorder_ypr.xml` body/joint hierarchy by
-  `scripts/build_fly_visual_asset.py` (rescaled, re-posed upright, pruned to
-  a static visual-only rig -- see the manifest for the exact transform).
-  `envs/assets/fly_visual_front_legs.xml` and `envs/fly_visual.py` are
-  hand-written, using the package's mesh files and rest-pose segment lengths
-  as reference data.
-- **Use**: purely a visual (non-colliding, massless) overlay for the
-  baseball batter character in `envs/assets/baseball_park_b1.xml` -- see
-  `docs/design/FOLLOWTHROUGH-AND-FLY-MODEL.md` section C (I-08a) and
-  `docs/design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json` for the full
-  provenance record, scaling/pose derivation, and explicit note that this
-  is a research-model appearance used for an anthropomorphized character,
-  not a claim about real fly behavior or anatomy.
+  `flyohtani/assets/mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt`.
+- **What was taken**: only the STL files listed in
+  `flyohtani/assets/mesh_neuromechfly/PROVENANCE.json` (per-file SHA-256
+  hashes and the source wheel's own SHA-256 are recorded there), plus the
+  license file. No other part of the `flygym` package -- Python source,
+  non-mesh assets, other MJCF variants -- is vendored.
+- **Use**: fly body geometry. In the v1 tree these meshes drove a massless,
+  non-colliding visual overlay on an enlarged human-scale batter character;
+  that rig has been removed (see below). Going forward they are the geometry
+  of a real-scale, actually-jointed body (docs/PLAN.md, D22).
+- **Facts cited, not vendored**: the raw MJCF's joint structure, DOF list,
+  position-control defaults, and rest-pose angles were read from the same
+  `flygym==1.2.1` package and are quoted as numbers in
+  `flyohtani/units.py` and `docs/records/PRIOR-FINDINGS.md`. No additional
+  files were copied for that.
+
+### Note on PROVENANCE.json
+
+That manifest was written for the v1 build and still describes derivations
+that no longer exist in this tree -- the K=400 enlargement, the upright
+re-posing, and the generated `fly_visual_*.xml` files. It is kept **as
+written, unedited**, because it is the provenance record for the mesh files
+themselves (counts, hashes, byte-identity check) and editing a provenance
+record to match a later refactor would defeat its purpose. The build
+scripts and generated XMLs it refers to are preserved at the git tag
+`archive/human-scale-v0`.
+
+### Note on sex
+
+These meshes are from NeuroMechFly, an adult **female** *Drosophila*. The
+connectome data this project's neural track targets is MaleCNS (**male**).
+These are explicitly not the same individual or sex, and are kept as
+separate data layers -- see `docs/RESEARCH_SOURCES.md`.

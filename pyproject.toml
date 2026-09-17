@@ -4,20 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fly-ohtani-snn"
-version = "0.1.0"
-description = "Connectome-inspired spiking neural agent for 3D ball interception."
+version = "0.2.0"
+description = "A real-scale Drosophila body, driven by a connectome-derived circuit, learning to hit a pitched ball."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
   { name = "FlyOhtani contributors" }
 ]
+# Only what the code actually imports today. Phases add their own:
+# gymnasium (Phase 5 task env), matplotlib (Phase 6 static figures).
 dependencies = [
-  "gymnasium>=0.29",
   "mujoco>=3.1",
   "numpy>=1.24",
-  "PyYAML>=6.0",
-  "matplotlib>=3.7",
 ]
 
 [project.optional-dependencies]
@@ -25,31 +24,21 @@ dev = [
   "pytest>=7.4",
   "ruff>=0.6",
 ]
-rl = [
-  "stable-baselines3>=2.3",
-  "torch>=2.1",
-]
-snn = [
-  "brian2>=2.6",
-]
 video = [
   "imageio>=2.34",
   "imageio-ffmpeg>=0.5",
 ]
 
 [tool.setuptools]
-packages = ["envs", "envs.baseball", "controllers", "encoders", "train", "analysis", "demos", "vision"]
+packages = ["flyohtani", "flyohtani.sense"]
 
 [tool.setuptools.package-data]
-# R-03 (docs/implementation/REFACTOR-PLAN.md): "assets/*.xml" alone missed
-# everything under envs/assets/mesh_neuromechfly/ (the vendored NeuroMechFly
-# STL meshes and their Apache-2.0 LICENSE file, added for I-08a -- see
-# docs/RESEARCH_SOURCES.md and THIRD_PARTY_NOTICES.md) because it does not
-# match nested paths. "assets/**/*" covers the XMLs, the STL meshes, and
-# the license file in one clean (non-editable) wheel install; verified by
-# actually building and installing a wheel into a temp venv and loading
-# BaseballB1Env's XML from it (docs/records/evidence/R03-wheel-install-check.txt).
-envs = ["assets/**/*"]
+# "assets/*" alone would miss the nested mesh directory. "assets/**/*" covers
+# the vendored NeuroMechFly STLs, their Apache-2.0 LICENSE, and the
+# provenance manifest in one non-editable wheel install -- all three are
+# required for the license/provenance chain to survive installation
+# (THIRD_PARTY_NOTICES.md).
+flyohtani = ["assets/**/*"]
 
 [tool.ruff]
 line-length = 100

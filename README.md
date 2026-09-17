@@ -1,98 +1,58 @@
 # FlyOhtani
 
-실제 초파리 연결망 기반 회로의 새로운 과제 학습과 기억을 연구하는 프로젝트.
-2026-09-16 갱신(R-01 문서 정리, `docs/implementation/REFACTOR-PLAN.md`) —
-아래는 실제 실행 입구다. 연구 배경·결정은 `docs/PLAN.md`, 전체 문서 지도는
-`docs/README.md`를 본다.
+실제 초파리 크기의 몸과 실제 연결망에서 유도한 회로로, 눈에 보이는 공을
+배트로 쳐내는 것을 학습시키는 연구용 시뮬레이션.
 
-## 두 개의 독립 트랙
+```
+눈 카메라 → 망막 인코딩 → [커넥톰 유래 루밍 회로] → 앞다리 운동 명령
+                                  ↑                          ↓
+                            보상 조절 신호 ←──── 타구 결과(접촉/방향/비거리)
+```
 
-**신경회로 트랙(연구 본류)**: 연합학습 → 기억 검증 → 시간 맞추기 → 공
-가로채기 순서로, 실제 초파리 연결망에서 내부 가소성 학습을 검증한다.
-`docs/experiments/EXP-001-associative-learning.md` 규약(1.0)은 확정됐지만
-**구현은 아직 시작하지 않았다** — `encoders/`·`train/`·`analysis/`는 여전히
-초기 toy scaffold다.
+**현재 Phase 0 완료.** 몸·세계·뇌·과제·뷰어는 아직 구현되지 않았다.
+지금 동작하는 것은 시각 감지/추적 계층과 단위 규약뿐이다.
+[계획](docs/PLAN.md) · [현재 상태](docs/records/STATUS.md)
 
-**물리 환경 트랙(ENV-001 → ENV-002)**: MuJoCo 기반 타격 환경. ENV-001(단순
-타격 과제)과 ENV-002 B0(야구장 고정 직구)는 물리 검증까지 끝났고, ENV-002
-B1(야구장 9코스 타격)은 `mid_mid` 코스 한 곳만 실제 전방 타구 성공까지
-검증됐다. 두 트랙은 독립적으로 진행되며(`docs/PLAN.md` D08) 야구 성능이
-신경회로 학습의 증거는 아니다. 현재 상태와 남은 한계는
-`docs/records/STATUS.md`.
+## 이 저장소가 주장하지 않는 것
+
+- 연결망을 넣었다는 이유로 실제 뇌를 재현했다고 주장하지 않는다.
+  실제 연결 데이터 + **가정한** 뉴런 동역학 + **가정한** 가소성이다.
+- 수작업/RL 컨트롤러는 **환경 기준선**이다. 실제 회로의 우위 주장은
+  셔플 배선·고정 회로 대조군을 갖춘 뒤에만 한다.
+- 현재 저장소에 커넥톰 데이터는 **없다**. 반입 시 출처·버전·체크섬·
+  라이선스를 [RESEARCH_SOURCES](docs/RESEARCH_SOURCES.md)에 기록한다.
+
+## 구조
+
+| 경로 | 내용 | 상태 |
+| --- | --- | --- |
+| `flyohtani/units.py` | 단위 규약(mm·g·μN), 원본 모델 실측 상수 | 있음 |
+| `flyohtani/sense/` | 눈 카메라, 공 검출, 시간 추적, 관측 스키마 | 있음(Phase 3에서 재검증) |
+| `flyohtani/assets/` | NeuroMechFly STL 메시 + 라이선스 + provenance | 있음 |
+| `flyohtani/body/` | 앞다리 실제 관절 + 배트 | Phase 1 |
+| `flyohtani/world/` | 축소 구장, 투구 런처, 접촉 | Phase 2 |
+| `flyohtani/brain/` | 커넥톰 로더, LIF 회로, 가소성 | Phase 4 |
+| `flyohtani/task/` | Gym env, 보상 버전 | Phase 5 |
+| `flyohtani/record/`, `viewer/` | 에피소드 번들, 4분할 재생 | Phase 6 |
 
 ## 설치와 실행
 
 ```bash
 python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev,video]"
-
-# 테스트 (두 진입점 모두 87 passed로 일치)
-pytest tests/ -q
-python -m pytest tests/ -q
-
-# lint
-ruff check envs controllers encoders train analysis demos scripts tests
-
-# ENV-002 B1 mid_mid 코스 영상/수치 재생성
-python -m demos.record_baseball_b1_mid_mid_fix
-python -m demos.record_i07c_before_after   # 스윙 개선 전/후 비교
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/pytest          # 20 passed
+.venv/bin/ruff check .
 ```
 
-셸의 기본 `python3`가 이 프로젝트용이 아닐 수 있으므로 버전을 명시해 venv를
-만든다. `human` 창 표시는 아직 구현되지 않았다(`render_mode="rgb_array"` 또는
-`None`만 지원).
+## 이전 버전
 
-## Project Layout
+사람 크기 구장 + 3축 강체 배트 + 인간식 스윙 협응 탐색으로 진행하던 v1
+전체(코드·문서·원자료)는 git 태그 **`archive/human-scale-v0`** 에 보존돼
+있다. 거기서 확정된 사실과 반복하면 안 되는 실패는
+[선행 발견 요약](docs/records/PRIOR-FINDINGS.md)에 압축해 두었다.
 
-```text
-docs/            연구 계획·설계 규약·상태·검증 기록 (docs/README.md가 지도)
-envs/            MuJoCo 환경: fly_batter_env(ENV-001), baseball_env(B0),
-                 baseball_b1_env(B1), baseball/(코스·보상 설정),
-                 fly_visual*(파리 외형), assets/(XML·메시)
-controllers/     scripted/oracle 제어기, toy SNN/MLP 정책
-encoders/        신경회로 트랙용 감각 인코더 (toy scaffold, 미착수)
-train/           PPO/STDP 학습 진입점 (STDP는 미구현, 실행 시 명시적 오류)
-analysis/        결과 분석·수렴 진단 스크립트
-demos/           episode 실행·영상 기록 CLI
-scripts/         파리 외형 자산 생성·스윙 진단 CLI (설치 패키지 아님)
-tests/           pytest 스위트 (87개, envs 전체)
-configs/         legacy toy 설정 (연구 프로토콜로 확정된 값 아님)
-```
+## 라이선스
 
-## 신경회로 트랙 상세
-
-`FlyBatterEnv`는 Gymnasium 호환 MuJoCo 환경이다 (ENV-001, `envs/fly_batter_env.py`).
-
-- Observation: ball position, ball velocity, swing angle, swing velocity, time-to-impact estimate, and previous contact signal.
-- Action: one scalar torque command for the swing hinge.
-- `info["end_reason"]` distinguishes `hit` / `ground_contact` / `passed_no_contact` / `timeout`.
-
-NumPy MLP와 SNN은 toy 추론 코드다. PPO 실행 파일은 SB3의 별도 MLP 정책을
-쓰며, SNN 학습과 Brian2 가소성은 아직 연결되지 않았다. 인터페이스는
-[구조 문서](docs/design/ARCHITECTURE.md)에 따라 구현 단계에서 정비한다.
-
-## 야구 환경 트랙 상세
-
-[BASEBALL-SPEC](docs/design/BASEBALL-SPEC.md): 구장·투구·2축 배트·타구 추적·
-채점·보상의 현행 규칙. [FLY-VISUAL-SPEC](docs/design/FLY-VISUAL-SPEC.md):
-NeuroMechFly 메시 기반 파리 외형(물리와 분리된 시각 레이어). 둘 다 mid_mid
-코스에서 검증됐고 나머지 8코스는 재보정 전이라 사용 금지다.
-
-## Research Sources and Data Licenses
-
-This repository currently contains no FlyWire or Janelia hemibrain
-connectome data (신경회로 트랙). `envs/assets/mesh_neuromechfly/`는 NeuroMechFly
-(flygym==1.2.1, Apache-2.0)에서 가져온 파리 외형 mesh이며 connectome 데이터가
-아니다 — 출처/해시는 `docs/RESEARCH_SOURCES.md`와 `THIRD_PARTY_NOTICES.md`.
-
-- FlyWire public release data is listed by FlyWire as `CC BY-NC 4.0`; cite the FlyWire papers before using derived connectivity data.
-- Janelia FlyEM hemibrain is listed by Janelia as `CC-BY`.
-
-See `docs/RESEARCH_SOURCES.md` before importing external neural connectivity,
-morphology, annotation, or derived data files. Code license and external
-data licenses should be treated separately.
-
-`docs/PLAN.md`와 `docs/design/DATA_MODEL.md`는 현재 EXP-001 기본값
-(MaleCNS v1.0, KC→MBON11 회로, LIF/가소성 식)을 모델링 선택으로 기록하며
-검증된 생물학적 사실이라고 주장하지 않는다.
+프로젝트 코드는 MIT. 반입한 서드파티 자산의 별도 라이선스는
+[THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)에 있다 — NeuroMechFly 메시는
+Apache-2.0이며, 향후 커넥톰 데이터는 원 데이터 라이선스를 그대로 따른다.

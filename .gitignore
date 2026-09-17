@@ -19,7 +19,7 @@ env/
 # OS
 .DS_Store
 
-# Project run outputs and large data (per docs/ARCHITECTURE.md §5, docs/RESEARCH_SOURCES.md)
+# Project run outputs and large data (docs/RESEARCH_SOURCES.md)
 runs/
 data/raw/
 data/derived/
