@@ -38,8 +38,11 @@ class TestScalingRule:
         assert scene.bat_length_mm / scene.fly_height_mm == pytest.approx(
             B.BAT_LENGTH_MM / B.HUMAN_HEIGHT_MM)
 
-    def test_ball_is_a_real_ball_scaled_the_same_way(self, scene):
-        assert scene.ball_radius_mm == pytest.approx(B.BALL_RADIUS_MM * scene.scale)
+    def test_ball_is_a_real_ball_scaled_the_same_way_then_enlarged(self, scene):
+        """D27 scales it; D31 then multiplies it by BALL_SCALE, because
+        VM-01 measured that the scale-true ball is invisible to the eye."""
+        assert scene.ball_radius_mm == pytest.approx(
+            B.BALL_RADIUS_MM * scene.scale * B.BALL_SCALE)
 
     def test_fly_is_still_real_fly_size(self, scene):
         """D21 stands: the equipment shrinks to the fly, not the other way."""
@@ -58,11 +61,18 @@ class TestScalingRule:
             B.WOOD_DENSITY * volume * polygon, rel=0.005)
 
     def test_light_bodies_are_not_inflated_by_boundmass(self, md, scene):
-        """G1 section 5.3: boundmass silently inflates light bodies. The ball
-        and Tarsus1 are both under the source model's 1e-6 at this scale."""
+        """G1 section 5.3: boundmass silently inflates light bodies. Tarsus1
+        is under the source model's 1e-6 floor at this scale, and the D31
+        ball sits just above it; both must come through at their own mass."""
         m, _ = md
         ball = m.body_mass[_id(m, mujoco.mjtObj.mjOBJ_BODY, "ball")]
-        assert ball == pytest.approx(B.BALL_DENSITY * 4 / 3 * math.pi * scene.ball_radius_mm ** 3, rel=1e-6)
+        # D31: 8x the radius at BALL_MASS_SCALE x the mass a SCALE-TRUE ball
+        # would have. Enlarging it without this would have made it 512x
+        # heavier and 77x the bat -- measured, batter_check.
+        true_r = B.BALL_RADIUS_MM * scene.scale
+        # rel=1e-5: the radius goes into the MJCF at 6 significant figures.
+        assert ball == pytest.approx(
+            B.BALL_DENSITY * 4 / 3 * math.pi * true_r ** 3 * B.BALL_MASS_SCALE, rel=1e-5)
         # Tarsus1 really is lighter than the source model's 1e-6 floor; it
         # must come through at its own mass, not the floor.
         tarsus = m.body_mass[_id(m, mujoco.mjtObj.mjOBJ_BODY, "RFTarsus1")]
@@ -143,9 +153,14 @@ class TestEyes:
             # sky above, ground below: a real scene, not the inside of an eye mesh
             assert img[:4].mean() > img[-4:].mean() + 20
 
-    def test_acuity_is_fly_like(self):
-        """~3.8 deg per pixel against a fruit fly's ~5 deg ommatidial spacing."""
-        assert 2.0 < B.EYE_FOVY_DEG / B.EYE_RESOLUTION < 6.0
+    def test_acuity_is_the_one_d31_chose(self):
+        """D28 asked for fly-like (3.75 deg per pixel against a fruit fly's
+        ~5 deg ommatidial spacing). D31 keeps the 32 px but narrows the field
+        to 60 deg, which is FINER than the animal -- a deliberate departure,
+        measured in VM-01, not a drift. The pixel count is what D28 fixed and
+        that is unchanged."""
+        assert B.EYE_RESOLUTION == 32
+        assert B.EYE_FOVY_DEG / B.EYE_RESOLUTION == pytest.approx(1.875)
 
 
 class TestPoses:

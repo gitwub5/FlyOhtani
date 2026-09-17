@@ -104,11 +104,57 @@ STATIC_POSE = {
     "joint_LFTibia": math.radians(110),
 }
 
+BALL_SCALE = 8.0
+"""D31. The ball is 8x baseball-true: radius 0.60 mm instead of 0.075. At the
+moment the swing must start it then subtends about 1 deg, which is what
+VM-01 found the eye needs. It is no longer a baseball at fly scale -- it is a
+sixth of the fly's height -- and that is the price of seeing it."""
+
+BALL_MASS_SCALE = 1.0
+"""Multiplies the ball's mass relative to a scale-true baseball of the SAME
+radius. D31 enlarges the ball 8x, which by itself would make it 512x heavier
+and 77x the bat -- unhittable. Size and mass are therefore separate levers,
+and this one is measured (batter_check) rather than assumed."""
+
+PITCH_DISTANCE_SCALE = 2.0
+PITCH_FLIGHT_S = 0.080
+"""D31. The pitch is specified by how long it takes (80 ms) from a release
+point twice as far out as the scaled mound (69 mm), because VM-01 measured
+both ends of it: the ball needs ~80 ms in the air for the fly to see it and
+still swing, and a flat pitch needs distance >= 10519 * flight^2 (mm, s) or
+gravity turns it into a lob."""
+
+EYE_RATE_HZ = 240
+"""D31. NOT an independent setting: the decision window is
+flight - swing - latency, and VM-01 asks for 8 frames inside it. See
+`min_eye_rate_hz`; 240 Hz is what the 80 ms pitch needs."""
+
+DECISION_LATENCY_S = 0.010
+MIN_DECISION_FRAMES = 8
+
+
+def min_eye_rate_hz(flight_s: float = PITCH_FLIGHT_S,
+                    swing_s: float | None = None) -> float:
+    """The eye rate a pitch of this length requires (D31). A slower pitch
+    needs a slower eye; a faster one needs a faster eye, and VM-01's hold-out
+    failed precisely because this was treated as a free choice."""
+    swing = DEMO_SWING_S if swing_s is None else swing_s
+    window = flight_s - swing - DECISION_LATENCY_S
+    if window <= 0:
+        raise ValueError(f"a {flight_s * 1e3:.0f} ms pitch leaves no time to decide in")
+    return MIN_DECISION_FRAMES / window
+
+
 EYE_RESOLUTION = 32
 """Pixels per side, per eye. At a 120 deg field that is ~3.8 deg per pixel,
 close to a fruit fly's ~5 deg interommatidial angle. "Fly-like enough" (D28),
 not an ommatidia model."""
-EYE_FOVY_DEG = 120.0
+EYE_FOVY_DEG = 60.0
+"""D31. Was 120 deg. At 32 px that is 1.88 deg per pixel, and VM-01 measured
+that the ball is invisible at 3.75: a 60 deg eye sees what a 128 px eye over
+120 deg sees, for a sixteenth of the rendering. Narrower still (30 deg) loses
+the ball entirely -- it drifts to 45 deg off-axis on its way in -- so this is
+the floor until the eyes are re-aimed. The cost is peripheral vision."""
 EYE_DOWN_TILT_DEG = 15.0
 """Eyes look sideways, tilted slightly down toward the strike zone."""
 
@@ -226,9 +272,11 @@ def bat_profile(scale: float) -> list[tuple[float, float]]:
 @dataclass(frozen=True)
 class SceneOptions:
     with_ball: bool = True
-    ball_scale: float = 1.0
-    """Multiplies the ball's scaled radius. 1.0 is baseball-true. A bigger
-    ball is the "large, slow ball first" curriculum lever (VM-01)."""
+    ball_scale: float = BALL_SCALE
+    ball_mass_scale: float = BALL_MASS_SCALE
+    """Multiplies the ball's scaled radius. 1.0 is baseball-true; D31 uses 8,
+    because VM-01 measured that a baseball-true ball subtends 0.25 deg and is
+    simply not visible to this eye."""
     timestep_s: float = TIMESTEP_S
     contact_timeconst_s: float = CONTACT_TIMECONST_S
     eye_resolution: int = EYE_RESOLUTION
@@ -365,6 +413,9 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     # pass 2: the scene.
     bat_len = BAT_LENGTH_MM * scale
     ball_r = BALL_RADIUS_MM * scale * opts.ball_scale
+    # Mass is specified relative to a scale-true baseball of this same radius,
+    # so enlarging the ball does not silently make it 512x heavier.
+    ball_density = BALL_DENSITY * opts.ball_mass_scale / max(opts.ball_scale ** 3, 1e-12)
     rb, rh = BAT_BARREL_RADIUS_MM * scale, BAT_HANDLE_RADIUS_MM * scale
 
     extra = []
@@ -454,7 +505,7 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
         ball = ET.Element("body", {"name": "ball", "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 1.0"})
         ET.SubElement(ball, "freejoint", {"name": "ball"})
         ET.SubElement(ball, "geom", {"name": "ball", "type": "sphere", "size": f"{ball_r:.6g}",
-                                     "density": repr(BALL_DENSITY), "rgba": "0.97 0.97 0.95 1",
+                                     "density": repr(ball_density), "rgba": "0.97 0.97 0.95 1",
                                      "group": str(GROUP_WORLD)})
         world.append(ball)
 

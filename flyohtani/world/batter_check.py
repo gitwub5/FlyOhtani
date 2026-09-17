@@ -58,7 +58,8 @@ def _warnings(d: mujoco.MjData) -> dict[str, int]:
             for i in range(mujoco.mjtWarning.mjNWARNING) if d.warning[i].number}
 
 
-def free_impact(speed: float, phase: float, scene: B.Scene) -> FreeImpact:
+def free_impact(speed: float, phase: float, scene: B.Scene,
+                opts: B.SceneOptions = B.DEFAULT_SCENE) -> FreeImpact:
     """The scene's own bat mesh and ball, detached: a free bat struck
     head-on at its sweet spot, no gravity. Same contact settings as the scene."""
     # plain floats: numpy 2 reprs np.float64 as "np.float64(...)", which is
@@ -66,6 +67,10 @@ def free_impact(speed: float, phase: float, scene: B.Scene) -> FreeImpact:
     s = float(scene.scale)
     rb = float(B.BAT_BARREL_RADIUS_MM * s)
     r_ball = float(scene.ball_radius_mm)
+    # The detached rig must use the SCENE's ball density, not the baseball
+    # constant: D31 sets size and mass separately, and hard-coding the
+    # constant here silently tested a ball the scene does not contain.
+    ball_density = float(B.BALL_DENSITY * opts.ball_mass_scale / max(opts.ball_scale ** 3, 1e-12))
     vs, fs = B._lathe(B.bat_profile(s))
     z_sweet = 730 * s
     xml = f"""<mujoco><compiler boundmass="{B.BOUNDMASS!r}" boundinertia="1e-14"/>
@@ -79,7 +84,7 @@ def free_impact(speed: float, phase: float, scene: B.Scene) -> FreeImpact:
  <geom name="barrel" type="capsule" size="{rb!r}" fromto="0 0 {-(600 * s + rb)!r} 0 0 {-(845 * s - rb)!r}" mass="0"/>
 </body>
 <body name="ball"><freejoint/>
- <geom name="ball" type="sphere" size="{r_ball!r}" density="{B.BALL_DENSITY!r}"/>
+ <geom name="ball" type="sphere" size="{r_ball!r}" density="{ball_density!r}"/>
 </body></worldbody></mujoco>"""
     m = mujoco.MjModel.from_xml_string(xml)
     d = mujoco.MjData(m)
@@ -123,13 +128,20 @@ def in_scene_pitch(speed: float, scene: B.Scene) -> dict:
     qa, va = m.jnt_qposadr[m.body_jntadr[ball]], m.jnt_dofadr[m.body_jntadr[ball]]
     g = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "ball")
     target = d.site_xpos[sweet].copy()
-    start = target + np.array([0.6, 0.0, 0.0])
+    # The ball must START clear of the bat. A fixed 0.6 mm stand-off was fine
+    # for the scale-true 0.075 mm ball, but D31's ball has a 0.603 mm radius
+    # and spawned already overlapping the barrel, which read as 0.076 mm of
+    # penetration before the pitch had even moved. Stand off by the contact
+    # reach plus a fixed run-up instead.
+    reach = float(scene.ball_radius_mm + B.BAT_BARREL_RADIUS_MM * scene.scale)
+    run_up = reach + 0.6
+    start = target + np.array([run_up, 0.0, 0.0])
     d.qpos[qa:qa + 3] = start
     d.qvel[va:va + 3] = (-speed, 0.0, 0.0)
     m.opt.gravity[:] = 0  # K6 isolates the hit; the pitch arc is Phase 2's job
     mujoco.mj_forward(m, d)
     pen, touched = 0.0, False
-    for _ in range(round((0.6 / speed) * 1.5 / B.TIMESTEP_S) + 20000):
+    for _ in range(round((run_up / speed) * 1.5 / B.TIMESTEP_S) + 20000):
         mujoco.mj_step(m, d)
         for i in range(d.ncon):
             c = d.contact[i]
@@ -141,10 +153,11 @@ def in_scene_pitch(speed: float, scene: B.Scene) -> dict:
             "max_penetration_mm": pen, "warnings": _warnings(d)}
 
 
-def run() -> dict:
-    scene = B.build_scene()
+def run(opts: B.SceneOptions = B.DEFAULT_SCENE) -> dict:
+    scene = B.build_scene(opts)
     limit = MAX_PEN_FRACTION * min(scene.ball_radius_mm, B.BAT_BARREL_RADIUS_MM * scene.scale)
-    free = [free_impact(v, (k + 0.5) / N_PHASES, scene) for v in SPEEDS_MM_S for k in range(N_PHASES)]
+    free = [free_impact(v, (k + 0.5) / N_PHASES, scene, opts)
+            for v in SPEEDS_MM_S for k in range(N_PHASES)]
     pitches = [in_scene_pitch(v, scene) for v in SPEEDS_MM_S]
     per_speed = {}
     for v in SPEEDS_MM_S:
@@ -171,6 +184,7 @@ def run() -> dict:
         "checks": checks,
         "settings": {"timestep_s": B.TIMESTEP_S, "timeconst_s": B.CONTACT_TIMECONST_S,
                      "dampratio": B.CONTACT_DAMPRATIO, "scale": scene.scale,
+                     "ball_scale": opts.ball_scale, "ball_mass_scale": opts.ball_mass_scale,
                      "ball_radius_mm": scene.ball_radius_mm,
                      "barrel_radius_mm": B.BAT_BARREL_RADIUS_MM * scene.scale,
                      "penetration_limit_mm": limit},

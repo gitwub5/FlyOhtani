@@ -44,8 +44,16 @@ def froude_speed(scale: float, real_mm_s: float = REAL_FASTBALL_MM_S) -> float:
 
 @dataclass(frozen=True)
 class PitchSpec:
+    flight_s: float = B.PITCH_FLIGHT_S
+    """How long the ball is in the air (D31). Replaces the Froude-scaled
+    fastball, which VM-01 measured to be invisible: 19 ms of flight is
+    shorter than the swing it is supposed to trigger."""
+    distance_scale: float = B.PITCH_DISTANCE_SCALE
+    """Release point along the line to the plate, in units of the scaled
+    mound distance. A longer flight needs a longer one, or the pitch lobs."""
     speed_scale: float = 1.0
-    """Multiplies the Froude-scaled fastball. <1 is the slow-ball curriculum."""
+    """Multiplies the speed the flight time implies -- a curriculum lever
+    that deliberately breaks the flight time, so it also breaks the arc."""
     timing_ms: float = 0.0
     """Positive: the ball arrives this much LATER than the bat. 0 aims for a hit."""
     aim_offset_mm: tuple[float, float, float] = (0.0, 0.0, 0.0)
@@ -146,9 +154,11 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
     r_ball = float(m.geom_size[ids["ball_geom"]][0])
     r_bat = B.BAT_BARREL_RADIUS_MM * s
 
-    speed = froude_speed(s) * spec.speed_scale
-    release = np.array([(B.PITCH_DISTANCE_MM - B.PITCHER_EXTENSION_MM) * s, 0.0, B.RELEASE_HEIGHT_MM * s])
     aim = p_star + np.array([r_ball + r_bat, 0.0, 0.0]) + np.array(spec.aim_offset_mm)
+    full = np.array([(B.PITCH_DISTANCE_MM - B.PITCHER_EXTENSION_MM) * s, 0.0, B.RELEASE_HEIGHT_MM * s])
+    # Along the same line of approach, so distance is a lever on its own.
+    release = aim + spec.distance_scale * (full - aim)
+    speed = (release[0] - aim[0]) / spec.flight_s * spec.speed_scale
     flight = (release[0] - aim[0]) / speed
     g = np.array([0.0, 0.0, -units.GRAVITY])
     v0 = (aim - release - 0.5 * g * flight ** 2) / flight

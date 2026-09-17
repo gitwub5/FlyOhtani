@@ -241,3 +241,16 @@ Python 최소 버전을 3.11로 올렸다(D07과 일치, `typing.Self` 사용).
 | `python -m flyohtani.sense.eye_rate_v2 --fov-grid` (256조합, 69초) | 탐색 **1/128** — 32px/60°가 128px/120°와 같은 일을 1/16 비용으로. 30° 이하는 공이 시야 밖 |
 | 근거 파일 gzip 변환(G2 방식, mtime 0) | 775 KB→53 KB, 3.5 MB→191 KB, 1.3 MB→48 KB |
 | `pytest` | 156 passed · ruff 클린 |
+
+---
+
+## 2026-09-18 · D31 적용 (공 8배 + 시야 60°)
+
+| 단계 | 결과 |
+| --- | --- |
+| 공 질량 배수 1/2/4/8/16로 `batter_check` | 1.0·2.0 PASS, 4.0부터 K2 실패(반발계수 0.086) → **질량 1.0 채택** |
+| 하네스 버그 2건 수정 | `in_scene_pitch`가 공을 0.6 mm에 두어 반지름 0.603 mm 공이 처음부터 겹침(K4 오탐), `free_impact`가 `BALL_DENSITY` 상수를 직접 사용해 질량 레버 무시 |
+| `python -m flyohtani.world.batter_check` (D31 장면) | **PASS** K1~K6. 반발계수 0.414~0.463, 침투 최대 0.0195 mm(한도 0.0337) |
+| 타이밍 창 재측정 | −2 ~ +16 ms 이상에서 접촉(이전 ±4 ms). 페어는 0~+2 ms |
+| 장면 기본값으로 VM-01 기준 재검증 | 80 ms·240 Hz **W1~W6 전부 통과**(연속성 0.91). 60 ms·540 Hz, 110 ms·180 Hz는 실패 |
+| `pytest` | 157 passed · ruff 클린 |
