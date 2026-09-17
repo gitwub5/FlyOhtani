@@ -1,0 +1,17 @@
+{
+  "BallTracker_hold_last": {
+    "n_occluded_scored": 24,
+    "n_normal_scored": 112,
+    "mean_error_px_during_occlusion": 42.15427673009294,
+    "median_error_px_during_occlusion": 36.080359513865034,
+    "mean_error_px_normal": 0.9091851351007668
+  },
+  "KalmanBallTracker_predict": {
+    "n_occluded_scored": 24,
+    "n_normal_scored": 112,
+    "mean_error_px_during_occlusion": 30.262838951665657,
+    "median_error_px_during_occlusion": 23.755824197258406,
+    "mean_error_px_normal": 1.2111313172939937
+  },
+  "comparison_note": "This compares position error DURING an occlusion window specifically -- where a velocity-based prediction should help most (the ball keeps moving; holding the last position does not). Outside occlusion, both trackers see the same per-frame detections and are not expected to differ much."
+}

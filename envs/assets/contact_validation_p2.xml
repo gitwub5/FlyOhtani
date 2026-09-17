@@ -1,0 +1,89 @@
+<mujoco model="contact_validation_p2">
+  <!-- VM-01 P2 (docs/records/VM01-P1-CONTACT.md's own next-step list):
+       separates WHY the P1 fixed-plate experiment gave a negative
+       restitution coefficient. Hypothesis under test: the ball (radius
+       0.0366m) is FATTER than the P1 plate is thick (half-thickness
+       0.01m, i.e. only 0.02m total) -- so the ball's CENTER can end up
+       geometrically past the plate's far face while still overlapping the
+       near face. A box-vs-sphere contact's normal is computed from the
+       nearest point on the box surface; once the ball's center is closer
+       to the BACK face than the front face, that nearest point (and the
+       contact normal) can flip to point the other way, partially
+       cancelling the deceleration that was building up on approach. A
+       target the ball's own diameter cannot geometrically transit (a much
+       thicker block, or a true infinite plane with no "back face" at all)
+       should not exhibit this, if the hypothesis is right.
+
+       Three independent targets, all reproducing envs/assets/
+       baseball_park_kc01a.xml's ball_geom/bat default-class values
+       exactly (same isolation approach as contact_validation_p1.xml, a
+       separate file so P1's own asset/result stays untouched):
+       thin_plate (P1's original, reused for direct comparison),
+       thick_block (half-thickness far exceeds ball radius), and
+       flat_plane (mjcf `plane` geom -- mathematically a half-space, no
+       "far side" exists at all). Free bat reused unchanged from P1 for
+       the oblique-angle test (section below). -->
+  <compiler angle="radian"/>
+  <option timestep="0.00025" gravity="0 0 -9.81" integrator="RK4"/>
+
+  <default>
+    <geom condim="3" friction="0.8 0.02 0.001" solref="0.01 1" solimp="0.9 0.95 0.001"/>
+  </default>
+
+  <asset>
+    <material name="ball_mat" rgba="0.95 0.18 0.18 1"/>
+    <material name="bat_mat" rgba="0.6 0.4 0.15 1"/>
+    <material name="plate_mat" rgba="0.5 0.5 0.55 1"/>
+    <material name="block_mat" rgba="0.4 0.4 0.7 1"/>
+    <material name="plane_mat" rgba="0.4 0.7 0.4 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1"/>
+
+    <!-- Same as contact_validation_p1.xml's fixed_plate: half-thickness
+         0.01m, LESS than the ball's own radius (0.0366m). -->
+    <body name="thin_plate_body" pos="5 0 1">
+      <geom name="thin_plate" type="box" size="0.01 0.5 0.5" material="plate_mat"/>
+    </body>
+
+    <!-- Half-thickness 0.5m -- ~14x the ball's radius, so the ball's
+         center geometrically CANNOT reach the far face while any part of
+         the ball still overlaps the near face. -->
+    <body name="thick_block_body" pos="8 0 1">
+      <geom name="thick_block" type="box" size="0.5 0.5 0.5" material="block_mat"/>
+    </body>
+
+    <!-- A true MuJoCo `plane` geom: an infinite half-space with NO far
+         face by construction (not just "thick" -- topologically
+         different). axisangle rotates the plane's default local +Z normal
+         to point along world -X, so the solid half-space faces the ball
+         approaching from -x (verified empirically in scripts/
+         p2_contact_diagnosis.py, not just by the hand-derived rotation
+         below). This model's <compiler angle="radian"/> means the
+         axisangle's own angle value is RADIANS, not degrees -- an initial
+         "-90" (meant as degrees) rotated by -90 RADIANS instead, giving a
+         normal nowhere near -X (caught by printing data.geom_xmat before
+         trusting it); -pi/2 radians is used below instead. -->
+
+    <body name="flat_plane_body" pos="11 0 1">
+      <geom name="flat_plane" type="plane" size="1 1 0.01" axisangle="0 1 0 -1.5707963267948966" material="plane_mat"/>
+    </body>
+
+    <!-- Free bat: byte-for-byte the same as contact_validation_p1.xml's
+         free_bat (mass 0.9, capsule r=0.025 len=0.85) -- reused here only
+         for the oblique-angle test (ball approaches with both a normal
+         and a tangential-to-the-bat-axis velocity component, unlike P1's
+         purely radial approach). -->
+    <body name="free_bat_body" pos="-5 0 1">
+      <joint name="free_bat_joint" type="free"/>
+      <geom name="free_bat" type="capsule" fromto="-0.425 0 0 0.425 0 0" size="0.025" mass="0.9" material="bat_mat"/>
+    </body>
+
+    <body name="ball" pos="0 0 1">
+      <joint name="ball_free" type="free" damping="0" armature="0"/>
+      <geom name="ball_geom" type="sphere" size="0.0366" mass="0.145" material="ball_mat"
+            solref="0.0002 0.01" solimp="0.9 0.95 0.0001 0.5 2"/>
+    </body>
+  </worldbody>
+</mujoco>

@@ -10,7 +10,7 @@ EXP-001의 확정 데이터 파일·출처·CC BY 4.0·해시 획득 절차는 [
 
 First actual external asset import this project has done: `envs/assets/mesh_neuromechfly/*.stl` (43 files) from PyPI `flygym==1.2.1` (Apache-2.0), used as a purely visual (non-colliding, massless) overlay for the baseball B1 batter character. Full provenance/hashes/derivation: [docs/design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json](design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json) and [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). This is mesh/appearance data only -- **not** connectome/wiring data, and NeuroMechFly's own fly is female while this project's neural-circuit track (below) uses MaleCNS (male); the two are explicitly separate data layers, not the same individual.
 
-## 2026-09-17 VM-01 B1: NeuroMechFly joint/pose data inspected (design-only, not imported into the repo)
+## 2026-09-17 VM-01 B1/B2: NeuroMechFly joint/pose data inspected, unit convention resolved (design-only, not imported into the repo)
 
 `docs/design/VM01-B1-MINIMAL-BODY.md`'s joint-structure/DOF/control-default/
 natural-pose-range facts were read directly from the SAME `flygym==1.2.1`
@@ -21,13 +21,37 @@ documented re-run command) to inspect the RAW (pre-strip) MJCF
 `flygym/preprogrammed.py`, and `flygym/data/pose/{pose_stretch,
 pose_tripod}.yaml`. Nothing from this inspection was vendored into
 `envs/assets/` -- it is cited numbers/facts in a design doc only, no new
-mesh/code files. Found and left UNRESOLVED: the raw MJCF's own
-`mass="..."` attributes sum to ~1.0 (suggesting a body-mass-fraction
-convention), but MuJoCo's own compiled `model.body_mass.sum()` for that
-same file gives ~0.00026 -- a real discrepancy, not yet explained by
-anything read this round. No absolute mass/torque/energy numbers should be
-derived from this package until that is resolved (checked against
-flygym's own paper/documentation, not yet done).
+mesh/code files.
+
+**B1 (2026-09-17) reported as UNRESOLVED**: the raw MJCF's own `mass="..."`
+attributes summed via a naive regex to ~1.0 (suggesting a body-mass-
+fraction convention), while MuJoCo's own compiled `model.body_mass.sum()`
+for the same file gave ~0.00026 -- flagged as an unexplained discrepancy,
+with an explicit refusal to derive absolute mass/torque numbers until
+resolved.
+
+**B2 (2026-09-17, same day) found the "~1.0" was a MEASUREMENT BUG, not a
+real discrepancy**: the naive regex also matched `<statistic
+meanmass="1.0" .../>`, a visualization-only metadata hint, not a body/geom
+mass. Excluding it, the geom-only mass sum is ~0.001 (in the file's native
+unit). Tracing `flygym/fly.py`'s actual loader (`dm_control.mjcf.from_path`,
+no Python-side mass rescaling found) and NeuroMechFly's own official
+documentation resolved the unit convention directly:
+
+> "we use millimeter and gram as base units for length and mass instead of
+> their SI counterparts, meter and kilogram... forces read out from the
+> simulation are in g·mm·s⁻¹ (i.e., micronewton, μN)"
+> — [NeuroMechFly: Advanced model composition](https://neuromechfly.org/tutorials/1b_advanced_model_composition/)
+
+i.e. length=mm, mass=g, force/torque=μN (g·mm·s⁻²), fully consistent with
+the model's own `gravity="0 0 -9810"` (the standard trick for keeping
+positions in mm while accelerations stay in real seconds). The corrected
+~0.001g (~1mg) total body mass matches the commonly-cited order of
+magnitude for adult *Drosophila melanogaster* mass, though no specific
+literature citation for that exact figure has been pinned down yet.
+Per-segment front-leg masses and the original position-control gain/
+force-range are now converted to SI in `docs/design/
+VM01-B1-MINIMAL-BODY.md` section 1.4.
 
 ## 2026-09-16 update
 
