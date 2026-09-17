@@ -18,7 +18,7 @@ import pytest
 from flyohtani.world import g2_contact as g2
 
 CAND = g2.Candidate(1e-6, 0.3, "default")
-DT = CAND.timeconst_s / g2.PRODUCTION_DIVISOR
+DT = CAND.timeconst_s / g2.V1.production_divisor
 
 
 def _bat_transverse_inertia(mass: float) -> float:
@@ -98,14 +98,43 @@ class TestPreRegistrationIsIntact:
     def test_grid(self):
         assert len(g2.all_candidates()) == 40
         assert len(g2.all_configs()) == 65
-        assert g2.DT_DIVISORS == (2, 4, 8, 16)
-        assert g2.PRODUCTION_DIVISOR == 4
         assert max(g2.IMPACT_SPEEDS_MM_S) == 4500.0
 
-    def test_every_timestep_in_the_grid_is_clamp_safe(self):
+    def test_v1_ladder_is_the_one_that_ran(self):
+        """Section 3 of the record, commit ea7dff9."""
+        assert g2.V1.dt_divisors == (2, 4, 8, 16)
+        assert g2.V1.production_divisor == 4
+        assert not g2.V1.use_holdout
+
+    def test_v2_ladder_is_the_one_registered_in_section_9(self):
+        assert g2.V2.dt_divisors == (64, 128, 256, 512)
+        assert g2.V2.production_divisor == 128
+        assert g2.V2.use_holdout
+
+    def test_v2_changes_only_the_ladder(self):
+        """Section 9.1: criteria, candidates and fixed setup are shared, so a
+        v2 pass cannot come from a quietly relaxed threshold."""
+        assert g2.V1.evidence_name != g2.V2.evidence_name
+        # criteria are module-level, not per-protocol -- there is nowhere for
+        # v2 to hold a different threshold.
+        assert not hasattr(g2.V2, "max_penetration_mm")
+
+    def test_holdout_values_are_absent_from_the_main_grid(self):
+        """Section 9.3: hold-out means values nothing has been tuned on."""
+        assert set(g2.HOLDOUT_SPEEDS_MM_S).isdisjoint(g2.IMPACT_SPEEDS_MM_S)
+        assert set(g2.HOLDOUT_ANGLES_DEG).isdisjoint(g2.BAT_IMPACT_ANGLES_DEG)
+        assert set(g2.HOLDOUT_HIT_HEIGHTS_MM).isdisjoint(g2.HIT_HEIGHTS_MM)
+        assert len(g2.holdout_configs()) == 10
+
+    @pytest.mark.parametrize("protocol", [g2.V1, g2.V2])
+    def test_every_timestep_in_the_grid_is_clamp_safe(self, protocol):
         for cand in g2.all_candidates():
-            for k in g2.DT_DIVISORS:
+            for k in protocol.dt_divisors:
                 assert cand.timeconst_s / k <= cand.timeconst_s / 2
+
+    def test_a_protocol_cannot_be_built_with_a_clamping_step(self):
+        with pytest.raises(ValueError, match="clamp"):
+            g2.Protocol("bad", (1, 2), 2, use_holdout=False, evidence_name="x")
 
 
 class TestEvidenceWriter:
@@ -120,13 +149,13 @@ class TestEvidenceWriter:
 
         fake = {"gate": "G2", "verdict": "FAIL", "selected": None,
                 "n_passing_before_cross_check": 0, "n_candidates": 40, "n_configs": 65}
-        monkeypatch.setattr(g2, "evaluate", lambda workers=None: dict(fake))
+        monkeypatch.setattr(g2, "evaluate", lambda protocol=None, workers=None: dict(fake))
         monkeypatch.setattr(g2, "datetime", _FixedDatetime)
 
         outputs = []
         for name in ("a.json.gz", "completely-different-name.json.gz"):
             out = tmp_path / name
-            monkeypatch.setattr(sys, "argv", ["g2", "--out", str(out)])
+            monkeypatch.setattr(sys, "argv", ["g2", "--protocol", "v1", "--out", str(out)])
             g2.main()
             outputs.append(out.read_bytes())
 

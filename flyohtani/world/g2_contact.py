@@ -9,7 +9,13 @@ one thing that makes a solo-run gate trustworthy.
 Isolated contact only: no gravity, no air, no friction, no fly. Two bodies
 meet once. A bat attached to an actuated leg is a later, separate check.
 
-Run:  .venv/bin/python -m flyohtani.world.g2_contact
+Two protocols live here and both stay runnable exactly as registered:
+
+  v1  section 2-5 of the record, commit ea7dff9. Ran and FAILED.
+  v2  section 9, an EXPLORATORY protocol designed after seeing v1: the same
+      criteria and candidates on a finer dt ladder, plus hold-out configs.
+
+Run:  .venv/bin/python -m flyohtani.world.g2_contact --protocol v2
 """
 from __future__ import annotations
 
@@ -22,6 +28,7 @@ import platform
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from functools import partial
 from itertools import product
 from pathlib import Path
 
@@ -51,8 +58,7 @@ SOLIMPS = {
     "default": (0.9, 0.95, 0.001, 0.5, 2.0),
     "stiff": (0.99, 0.999, 0.001, 0.5, 2.0),
 }
-DT_DIVISORS = (2, 4, 8, 16)
-PRODUCTION_DIVISOR = 4
+# Per-protocol dt ladders are defined with the Protocol objects below.
 
 # --- section 4: acceptance criteria -----------------------------------------
 
@@ -68,6 +74,12 @@ CHATTER_TIMECONSTS = 20.0
 
 # The designed contact normal, pointing from target to ball.
 N0 = np.array([-1.0, 0.0, 0.0])
+
+# --- section 9.3: hold-out values, absent from v1 and from the diagnostic ---
+
+HOLDOUT_SPEEDS_MM_S = (750.0, 3000.0)
+HOLDOUT_ANGLES_DEG = (10.0, 28.0)
+HOLDOUT_HIT_HEIGHTS_MM = (0.75,)
 
 
 @dataclass(frozen=True)
@@ -98,6 +110,34 @@ class Candidate:
 
 
 @dataclass(frozen=True)
+class Protocol:
+    name: str
+    dt_divisors: tuple[int, ...]
+    production_divisor: int
+    use_holdout: bool
+    evidence_name: str
+
+    def __post_init__(self) -> None:
+        if self.production_divisor not in self.dt_divisors:
+            raise ValueError("production divisor must be on the ladder")
+        if min(self.dt_divisors) < 2:
+            raise ValueError("dt above timeconst/2 would trigger MuJoCo's silent clamp")
+
+    @property
+    def finest(self) -> int:
+        return max(self.dt_divisors)
+
+    @property
+    def second_finest(self) -> int:
+        return sorted(self.dt_divisors)[-2]
+
+
+V1 = Protocol("v1", (2, 4, 8, 16), 4, use_holdout=False, evidence_name="G2-contact.json.gz")
+V2 = Protocol("v2", (64, 128, 256, 512), 128, use_holdout=True, evidence_name="G2v2-contact.json.gz")
+PROTOCOLS = {p.name: p for p in (V1, V2)}
+
+
+@dataclass(frozen=True)
 class ContactResult:
     config: Config
     candidate: Candidate
@@ -119,6 +159,13 @@ class ContactResult:
 def all_configs() -> list[Config]:
     out = [Config("block", v, 0.0, None, 0.0) for v in IMPACT_SPEEDS_MM_S]
     for m, z, v, a in product(BAT_MASSES_G, HIT_HEIGHTS_MM, IMPACT_SPEEDS_MM_S, BAT_IMPACT_ANGLES_DEG):
+        out.append(Config("bat", v, a, m, z))
+    return out
+
+
+def holdout_configs() -> list[Config]:
+    out = [Config("block", v, 0.0, None, 0.0) for v in HOLDOUT_SPEEDS_MM_S]
+    for m, z, v, a in product(BAT_MASSES_G, HOLDOUT_HIT_HEIGHTS_MM, HOLDOUT_SPEEDS_MM_S, HOLDOUT_ANGLES_DEG):
         out.append(Config("bat", v, a, m, z))
     return out
 
@@ -297,11 +344,11 @@ def _converged(x: ContactResult, ref: ContactResult) -> bool:
             and _close(x.normal_impulse, ref.normal_impulse, None))
 
 
-def judge_config(by_divisor: dict[int, ContactResult]) -> dict[str, bool]:
+def judge_config(by_divisor: dict[int, ContactResult], protocol: Protocol) -> dict[str, bool]:
     """C1-C9 for one (candidate, config), given its runs keyed by dt divisor."""
-    prod = by_divisor[PRODUCTION_DIVISOR]
-    finest = by_divisor[max(DT_DIVISORS)]
-    second = by_divisor[sorted(DT_DIVISORS)[-2]]
+    prod = by_divisor[protocol.production_divisor]
+    finest = by_divisor[protocol.finest]
+    second = by_divisor[protocol.second_finest]
     lo, hi = COR_BAND
     return {
         "C1_penetration": prod.max_penetration_mm <= MAX_PENETRATION_MM,
@@ -316,17 +363,40 @@ def judge_config(by_divisor: dict[int, ContactResult]) -> dict[str, bool]:
     }
 
 
-def _run_candidate(cand: Candidate) -> list[ContactResult]:
+def _run_ladder(cand: Candidate, configs: list[Config], protocol: Protocol) -> list[ContactResult]:
     return [
         run_contact(cfg, cand, cand.timeconst_s / k)
-        for cfg in all_configs()
-        for k in DT_DIVISORS
+        for cfg in configs
+        for k in protocol.dt_divisors
     ]
 
 
-def _rk4_matches(cand: Candidate, euler: dict[Config, ContactResult]) -> tuple[bool, list[str]]:
+def _run_candidate(cand: Candidate, protocol: Protocol) -> list[ContactResult]:
+    return _run_ladder(cand, all_configs(), protocol)
+
+
+def _group(cand: Candidate, runs: list[ContactResult]) -> dict[Config, dict[int, ContactResult]]:
+    grouped: dict[Config, dict[int, ContactResult]] = {}
+    for r in runs:
+        grouped.setdefault(r.config, {})[round(cand.timeconst_s / r.timestep_s)] = r
+    return grouped
+
+
+def _holdout_passes(cand: Candidate, protocol: Protocol) -> tuple[bool, dict[str, list[str]], list[dict]]:
+    runs = _run_ladder(cand, holdout_configs(), protocol)
+    grouped = _group(cand, runs)
+    failures = {}
+    for cfg, by_div in grouped.items():
+        bad = sorted(k for k, ok in judge_config(by_div, protocol).items() if not ok)
+        if bad:
+            failures[cfg.label] = bad
+    return not failures, failures, [asdict(r) for r in runs]
+
+
+def _rk4_matches(cand: Candidate, euler: dict[Config, ContactResult],
+                 protocol: Protocol) -> tuple[bool, list[str]]:
     failures = []
-    dt = cand.timeconst_s / PRODUCTION_DIVISOR
+    dt = cand.timeconst_s / protocol.production_divisor
     for cfg in all_configs():
         rk = run_contact(cfg, cand, dt, integrator="RK4")
         eu = euler[cfg]
@@ -337,21 +407,19 @@ def _rk4_matches(cand: Candidate, euler: dict[Config, ContactResult]) -> tuple[b
     return not failures, failures
 
 
-def evaluate(workers: int | None = None) -> dict:
+def evaluate(protocol: Protocol = V1, workers: int | None = None) -> dict:
     cands = all_candidates()
     configs = all_configs()
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        per_cand = list(pool.map(_run_candidate, cands))
+        per_cand = list(pool.map(partial(_run_candidate, protocol=protocol), cands))
 
     report = []
     passing = []
     for cand, runs in zip(cands, per_cand, strict=True):
-        grouped: dict[Config, dict[int, ContactResult]] = {}
-        for r in runs:
-            grouped.setdefault(r.config, {})[round(cand.timeconst_s / r.timestep_s)] = r
-        verdicts = {cfg: judge_config(grouped[cfg]) for cfg in configs}
+        grouped = _group(cand, runs)
+        verdicts = {cfg: judge_config(grouped[cfg], protocol) for cfg in configs}
         failed = {k for v in verdicts.values() for k, ok in v.items() if not ok}
-        prod = {cfg: grouped[cfg][PRODUCTION_DIVISOR] for cfg in configs}
+        prod = {cfg: grouped[cfg][protocol.production_divisor] for cfg in configs}
         cors = [p.cor for p in prod.values()]
         entry = {
             "candidate": asdict(cand),
@@ -384,34 +452,50 @@ def evaluate(workers: int | None = None) -> dict:
 
     selected = None
     cross_checks = []
+    holdout_checks = []
     for cand, prod, _ in passing:
-        ok, failures = _rk4_matches(cand, prod)
+        ok, failures = _rk4_matches(cand, prod, protocol)
         cross_checks.append({"candidate": asdict(cand), "rk4_matches": ok, "failures": failures})
-        if ok:
-            selected = cand
-            break
+        if not ok:
+            continue
+        if protocol.use_holdout:
+            h_ok, h_failures, h_runs = _holdout_passes(cand, protocol)
+            holdout_checks.append({"candidate": asdict(cand), "passes": h_ok,
+                                   "failures": h_failures, "runs": h_runs})
+            if not h_ok:
+                continue
+        selected = cand
+        break
 
     return {
         "gate": "G2",
+        "protocol": asdict(protocol),
         "verdict": "PASS" if selected else "FAIL",
         "selected": asdict(selected) if selected else None,
-        "selected_production_timestep_s": (selected.timeconst_s / PRODUCTION_DIVISOR) if selected else None,
+        "selected_production_timestep_s": (
+            selected.timeconst_s / protocol.production_divisor if selected else None),
         "n_candidates": len(cands),
         "n_configs": len(configs),
         "n_passing_before_cross_check": len(passing),
         "passing_order": [asdict(c) for c, _, _ in passing],
         "integrator_cross_checks": cross_checks,
+        "holdout_checks": holdout_checks,
+        "n_holdout_configs": len(holdout_configs()) if protocol.use_holdout else 0,
         "candidates": report,
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=EVIDENCE / "G2-contact.json.gz")
+    parser.add_argument("--protocol", choices=sorted(PROTOCOLS), required=True)
+    parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--workers", type=int, default=os.cpu_count())
     args = parser.parse_args()
+    protocol = PROTOCOLS[args.protocol]
+    if args.out is None:
+        args.out = EVIDENCE / protocol.evidence_name
 
-    result = evaluate(args.workers)
+    result = evaluate(protocol, args.workers)
     result.update({
         "date": datetime.now(timezone.utc).date().isoformat(),
         "platform": platform.platform(),
@@ -426,7 +510,7 @@ def main() -> None:
         fh.write(payload)
 
     print(f"wrote {args.out}")
-    print(f"G2: {result['verdict']}  "
+    print(f"G2 {protocol.name}: {result['verdict']}  "
           f"({result['n_passing_before_cross_check']}/{result['n_candidates']} candidates "
           f"pass all {result['n_configs']} configs before the RK4 cross-check)")
     if result["selected"]:
