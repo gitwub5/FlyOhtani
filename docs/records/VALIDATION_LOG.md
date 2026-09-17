@@ -126,3 +126,30 @@ flygym 1.2.1 wheel sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752
 | --- | --- |
 | `.venv/bin/python -m pytest -q` / `.venv/bin/pytest -q` | 66 passed (일치) |
 | `.venv/bin/ruff check .` | All checks passed |
+
+---
+
+## 2026-09-17 · G2 · 파리 스케일 접촉
+
+| 단계 | 커밋 | 결과 |
+| --- | --- | --- |
+| v1 사전 등록 | `ea7dff9` | 기준·격자·선택 규칙, 실행 전 |
+| v1 실행 (25 s, 10 workers) | `ea85352` | **FAIL** 0/40. 전 후보 C3/C4 |
+| 사후 진단 (1 후보, 3 구성, τ/4~τ/512) | `ea85352` | e → 0.42~0.45 수렴. 해상도 부족 |
+| v2 사전 등록 (탐색) | `3266983` | dt 사다리만 변경 + hold-out 10 |
+| 리팩터 후 v1 재실행 | — | 커밋된 10,400런과 **비트 동일** |
+| v2 실행 (6 m 56 s, 10 workers) | 이번 커밋 | **PASS** 4/40 → RK4 통과 → hold-out 통과 |
+
+선택: τ=3e-6 s, ζ=0.3, solimp default, production dt 2.344e-8 s.
+원자료: `evidence/G2-contact.json.gz`(v1), `evidence/G2v2-contact.json.gz`(v2).
+
+계산 경로 검증: 유효질량(블록·배트 중심·배트 편심) 해석해와 9자리 일치,
+운동량 잔차 ~1e-16, gzip 증거 파일 이름 무관 바이트 동일.
+
+비용 측정(이 맥, G2 v2가 전 코어 사용 중이라 느리게 나옴): 물리 2.6 μs/스텝,
+128px 렌더 5.2 ms/프레임, LIF 2.9 μs/스텝.
+
+| 명령 | 결과 |
+| --- | --- |
+| `.venv/bin/python -m pytest -q` / `.venv/bin/pytest -q` | 94 passed |
+| `.venv/bin/ruff check .` | All checks passed |
