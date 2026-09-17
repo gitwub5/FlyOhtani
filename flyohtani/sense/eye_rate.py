@@ -313,8 +313,14 @@ def main() -> None:
                 "deg_per_pixel": round(B.EYE_FOVY_DEG / B.EYE_RESOLUTION, 4)},
         "results": [asdict(c) for c in results],
     }
+    def plain(o):
+        """numpy scalars reach here through MuJoCo's arrays; json refuses them."""
+        if isinstance(o, np.generic):
+            return o.item()
+        raise TypeError(f"not JSON: {type(o).__name__}")
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(payload, indent=1) + "\n")
+    args.out.write_text(json.dumps(payload, indent=1, default=plain) + "\n")
 
     print(f"wrote {args.out}\n")
     print(f"{'dist':>5} {'ball':>5} {'speed':>6} {'rate':>5} {'flight':>8} {'launch':>7} "

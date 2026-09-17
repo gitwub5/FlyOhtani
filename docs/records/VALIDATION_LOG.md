@@ -219,3 +219,18 @@ Python 최소 버전을 3.11로 올렸다(D07과 일치, `typing.Self` 사용).
 | 수정 후 `npm test / build / check:assets` | 4 passed · 빌드 · 해시 검증 |
 | 헤드리스 Chrome 캡처 (`?t=1.6/3.1/4.6/6.1`) | LC4 → LPLC2 → DN 12개 → 전체 순으로 실제 뇌 위치에서 켜짐 |
 | `pytest` 두 진입점 | 139 passed · ruff 클린(`viewer/`는 제외 — 제3자 코드) |
+
+---
+
+## 2026-09-18 · VM-01 눈 프레임률과 투구 가시성
+
+| 단계 | 결과 |
+| --- | --- |
+| 기준·그리드·테스트 선행 커밋(결과 없음) | `193a1e2` |
+| 디버깅 중 발견(그리드 실행 전) | 느린 공이 로브가 됨(0.125배에서 +73°), 접촉 순간 공이 시야 밖(79°) → `DISTANCE_SCALES`·V5·FOV 기록 추가 |
+| `python -m flyohtani.sense.eye_rate` (180조합, 47 s) | **0/180 usable.** V1 160, V2 2, V3 **0**, V4 126, V5 120 |
+| 진단 | 결정 시점(접촉 −45 ms)에 검출 픽셀이 0~1로 깜빡여 크기 변화 없음 — 에일리어싱. fps는 병목이 아님(240 Hz까지 예산 여유) |
+| `pytest tests/test_sense_eye_rate.py` | 9 passed |
+
+전체 보고 [VM-01-EYE-RATE.md](VM-01-EYE-RATE.md), 원자료
+`evidence/VM-01-eye-rate.json`.
