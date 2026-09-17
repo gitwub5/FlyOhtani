@@ -27,7 +27,7 @@ import os
 import platform
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import partial
 from itertools import product
 from pathlib import Path
@@ -497,7 +497,7 @@ def main() -> None:
 
     result = evaluate(protocol, args.workers)
     result.update({
-        "date": datetime.now(timezone.utc).date().isoformat(),
+        "date": datetime.now(UTC).date().isoformat(),
         "platform": platform.platform(),
         "mujoco_version": mujoco.__version__,
     })

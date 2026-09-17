@@ -187,3 +187,19 @@ flygym 1.2.1 wheel sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752
 메시의 legacy 부피), 데모 스윙이 배트로 땅을 긁음(짧은 방향 관절 경로).
 
 비용: 물리 6.0 μs/스텝, 두 눈 렌더 5.7 ms, 0.1 s 에피소드 0.64 s.
+
+---
+
+## 2026-09-17 · 녹화 모듈
+
+| 명령 | 결과 |
+| --- | --- |
+| `python -m flyohtani.record pitch` | 맞힘, 타구 602 mm/s, 발사각 −24°, 비거리 1.96 mm, 페어, 207 프레임 |
+| `... pitch --timing-ms 4` | 헛스윙 |
+| `... pitch --speed-scale 0.5` | 맞힘, 타구 435 mm/s, 발사각 −37°, 비거리 1.00 mm |
+| `... swing` | 관절 최대 215 rad/s, 254 프레임 |
+| 녹화 유무 비교 | 충돌 시각·타구 속도·발사각 동일 (`tests/test_record.py`) |
+| 장면 표시 변경(무한 평면, 평행광) 후 `batter_check` | PASS, 수치 동일 |
+| `pytest` 두 진입점 | 120 passed · ruff 클린 |
+
+Python 최소 버전을 3.11로 올렸다(D07과 일치, `typing.Self` 사용).

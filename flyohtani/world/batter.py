@@ -55,6 +55,9 @@ PLATE_WIDTH_MM = 432.0         # 17 in
 PLATE_SIDE_MM = 216.0          # 8.5 in
 CHALK_WIDTH_MM = 76.0          # 3 in
 PITCH_DISTANCE_MM = 18440.0    # 60 ft 6 in
+PITCHER_EXTENSION_MM = 1700.0  # release point in front of the rubber, typical
+RELEASE_HEIGHT_MM = 1800.0     # typical overhand release height
+FENCE_MM = 121900.0            # 400 ft
 
 WOOD_DENSITY = 6.5e-4          # g/mm^3 (0.65 g/cm^3, ash/maple range)
 BALL_DENSITY = 6.9e-4          # g/mm^3 (~145 g in the ball's volume)
@@ -370,7 +373,7 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     grass = ET.Element("texture", {"name": "grass", "type": "2d", "builtin": "checker",
                                    "rgb1": "0.33 0.52 0.27", "rgb2": "0.30 0.49 0.25", "width": "64", "height": "64"})
     extra += [tex, grass,
-              ET.Element("material", {"name": "grass", "texture": "grass", "texrepeat": "40 40"}),
+              ET.Element("material", {"name": "grass", "texture": "grass", "texrepeat": "0.25 0.25", "texuniform": "true"}),
               ET.Element("material", {"name": "dirt", "rgba": "0.66 0.47 0.31 1"}),
               ET.Element("material", {"name": "chalk", "rgba": "0.96 0.96 0.94 1"}),
               ET.Element("material", {"name": "wood", "rgba": "0.84 0.66 0.42 1", "specular": "0.3", "shininess": "0.4"})]
@@ -386,7 +389,10 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     extra.append(ET.Element("mesh", {"name": "plate", "vertex": " ".join(pvs)}))
 
     world = []
-    ground = ET.Element("geom", {"name": "ground", "type": "plane", "size": "60 60 0.1",
+    # infinite (size 0): a finite plane leaves a gap before the horizon where
+    # the skybox's dark lower half shows through, and a batted ball needs
+    # room anyway (a scaled 400 ft fence is ~250 mm out).
+    ground = ET.Element("geom", {"name": "ground", "type": "plane", "size": "0 0 0.1",
                                  "material": "grass", "group": str(GROUP_WORLD)})
     world.append(ground)
     dirt = ET.Element("geom", {"name": "dirt", "type": "cylinder", "size": f"{4200 * scale} {DIRT_TOP_MM / 2}",
@@ -411,8 +417,10 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
                                          "size": f"{hx:.6g} {hy:.6g} 0.001",
                                          "pos": f"{cx:.6g} {cy:.6g} {DIRT_TOP_MM + 0.001}", "material": "chalk",
                                          "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
+    # directional ("sun"): MuJoCo's default light is a spotlight, whose cone
+    # leaves the far field dark.
     world.append(ET.Element("light", {"pos": "3 -6 12", "dir": "-0.2 0.4 -1", "diffuse": "0.55 0.55 0.52",
-                                      "castshadow": "false"}))
+                                      "directional": "true", "castshadow": "false"}))
 
     fly = _fly_subtree(src_root)
     # feet on the ground, standing in the middle of the box.

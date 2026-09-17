@@ -7,7 +7,7 @@ name = "fly-ohtani-snn"
 version = "0.2.0"
 description = "A real-scale Drosophila body, driven by a connectome-derived circuit, learning to hit a pitched ball."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
   { name = "FlyOhtani contributors" }
@@ -30,7 +30,7 @@ video = [
 ]
 
 [tool.setuptools]
-packages = ["flyohtani", "flyohtani.sense", "flyohtani.body", "flyohtani.brain", "flyohtani.world"]
+packages = ["flyohtani", "flyohtani.sense", "flyohtani.body", "flyohtani.brain", "flyohtani.world", "flyohtani.record"]
 
 [tool.setuptools.package-data]
 # "assets/*" alone would miss the nested mesh directory. "assets/**/*" covers
@@ -42,7 +42,7 @@ flyohtani = ["assets/**/*"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

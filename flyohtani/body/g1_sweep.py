@@ -23,7 +23,7 @@ import argparse
 import json
 import platform
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import mujoco
@@ -203,7 +203,7 @@ def main() -> None:
 
     payload = {
         "gate": "G1",
-        "date": datetime.now(timezone.utc).date().isoformat(),
+        "date": datetime.now(UTC).date().isoformat(),
         "platform": platform.platform(),
         "mujoco_version": mujoco.__version__,
         "protocol": (
