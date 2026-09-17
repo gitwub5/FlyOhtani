@@ -1,83 +1,212 @@
-# FlyOhtani
+<div align="center">
 
-실제 초파리 크기의 몸과 실제 연결망에서 유도한 회로로, 눈에 보이는 공을
-배트로 쳐내는 것을 학습시키는 연구용 시뮬레이션.
+# FlyOhtani 🪰⚾
 
+**실제 크기의 초파리가 타석에 서서, 자기 눈으로 공을 보고, 배트를 휘두른다.**
+
+NeuroMechFly 몸 · MaleCNS 커넥톰 회로 · MuJoCo 물리로 만드는 연구용 시뮬레이션
+
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)
+![MuJoCo 3.13](https://img.shields.io/badge/MuJoCo-3.13-0B7285)
+![Connectome MaleCNS v1.0](https://img.shields.io/badge/connectome-MaleCNS%20v1.0-6741d9)
+![License MIT](https://img.shields.io/badge/license-MIT-2f9e44)
+![Status research prototype](https://img.shields.io/badge/status-research%20prototype-e8590c)
+
+<img src="docs/assets/hit.gif" width="640" alt="키 3.7 mm 초파리가 타석에서 배트를 휘둘러 공을 맞히는 장면. 왼쪽은 3루 쪽 카메라, 오른쪽은 공을 따라가는 카메라.">
+
+<sub>녹화한 안타 한 장면(실제보다 8배 느리게). <b>스윙은 아직 스크립트다</b> — 학습된 동작이 아니다.</sub>
+
+</div>
+
+---
+
+## 무엇을 하려는가
+
+키 3.7 mm짜리 초파리를 사람 타자처럼 타석에 세운다. 공이 날아오면 파리는
+머리 양옆의 작은 눈으로 그것을 보고, 실제 초파리 뇌 연결망에서 떼어 온 회로가
+앞다리에 명령을 내려 배트를 휘두른다. 공을 맞히면, 그리고 내야 안으로 멀리
+보낼수록 보상을 받는다.
+
+최종 목표는 이 과정을 **한 화면에서 보는 것**이다 — 배트 스윙, 파리가 본 화면,
+뇌 속 회로의 구조, 그리고 스파이크.
+
+```mermaid
+flowchart LR
+    A["👁️ 눈 카메라<br/>32×32 흑백 ×2"] --> B["망막 인코딩"]
+    B --> C["LC4 · LPLC2<br/>루밍 검출 뉴런 311개"]
+    C --> D["하강 뉴런 12개<br/>DNp01 Giant Fiber 등"]
+    D --> E["🦵 오른쪽 앞다리<br/>관절 5개 + 배트"]
+    E --> F["⚾ 타구<br/>접촉 · 방향 · 비거리"]
+    F -. "보상" .-> C
 ```
-눈 카메라 → 망막 인코딩 → [커넥톰 유래 루밍 회로] → 앞다리 운동 명령
-                                  ↑                          ↓
-                            보상 조절 신호 ←──── 타구 결과(접촉/방향/비거리)
-```
 
-**현재 Phase 1 진행 중.** 게이트 G1(앞다리 스윙)과 G4(커넥톰 접근)를
-통과했다. 세계·과제·뷰어는 아직 없다.
-[계획](docs/PLAN.md) · [현재 상태](docs/records/STATUS.md)
+회로의 배선(누가 누구에게 시냅스를 몇 개 보내는지)은 실제 데이터다.
+뉴런 동역학과 학습 규칙은 우리가 **가정한** 것이다.
 
-## 이 저장소가 주장하지 않는 것
+지금 무엇이 검증됐고 무엇이 아직 없는지는 [STATUS](docs/records/STATUS.md)에,
+전체 계획과 설계 결정은 [PLAN](docs/PLAN.md)에 있다.
 
-- 연결망을 넣었다는 이유로 실제 뇌를 재현했다고 주장하지 않는다.
-  실제 연결 데이터 + **가정한** 뉴런 동역학 + **가정한** 가소성이다.
-- 수작업/RL 컨트롤러는 **환경 기준선**이다. 실제 회로의 우위 주장은
-  셔플 배선·고정 회로 대조군을 갖춘 뒤에만 한다.
-- 커넥톰 **배선**은 들어와 있지만(MaleCNS v1.0, CC-BY) 그 회로가 루밍에
-  어떻게 반응하는지는 전혀 확인하지 않았다. 배선을 받은 것과 기능을 검증한
-  것은 다르다.
+## 둘러보기
 
-## 구조
+### 타석에 선 파리
 
-| 경로 | 내용 | 상태 |
-| --- | --- | --- |
-| `flyohtani/units.py` | 단위 규약(mm·g·μN), 원본 모델 실측 상수 | 있음 |
-| `flyohtani/sense/` | 눈 카메라, 공 검출, 시간 추적, 관측 스키마 | 있음(Phase 3에서 재검증) |
-| `flyohtani/assets/` | NeuroMechFly STL 메시 + 라이선스 + provenance | 있음 |
-| `flyohtani/body/` | 원본 MJCF에서 빌드한 실제 앞다리 관절 + 배트, G1 스윕 | 있음 |
-| `flyohtani/brain/connectome.py` | MaleCNS 루밍 부분회로(311→12 뉴런) 로더 | 있음 |
-| `flyohtani/world/` | 축소 구장, 투구 런처, 접촉 | Phase 2 |
-| `flyohtani/brain/` (LIF·가소성) | 회로 시뮬레이션, 운동 디코딩 | Phase 4 |
-| `flyohtani/task/` | Gym env, 보상 버전 | Phase 5 |
-| `flyohtani/record/` | 에피소드 영상·사진·결과 | 있음 |
-| `viewer/` + `flyohtani/brain/replay.py` | 3D 뇌 뷰어(템플릿) + 내보내기 | 있음(배선만) |
+<img src="docs/assets/batter-ready.jpg" width="720" alt="오른손 타자 박스 한가운데 직립한 초파리가 앞다리로 배트를 들고 있다.">
 
-## 설치와 실행
+파리 몸은 고정하고 **오른쪽 앞다리만** 실제 관절로 움직인다. 배트·공·홈플레이트·
+타석은 모두 한 축척(파리 키 3.74 mm ÷ 사람 키 1830 mm ≈ 1/490)으로 줄였다.
+배트는 실제 나무 배트의 단면을 회전시켜 만든 길이 1.76 mm짜리다.
+
+<img src="docs/assets/swing-strip.jpg" width="720" alt="준비 자세에서 공을 맞히는 자세까지 스윙을 일곱 장면으로 나눈 연속 사진.">
+
+<sub>35 ms 데모 스윙. 관절 최고 속도 215 rad/s로 채택한 생물학적 상한(300 rad/s) 안에 있다.</sub>
+
+### 파리가 보는 화면
+
+<img src="docs/assets/fly-eyes.png" width="560" alt="32×32 흑백 눈 영상 네 장. 왼쪽 눈에서 공이 멀리서 가까워지는 세 장면과 오른쪽 눈 한 장면.">
+
+머리 양옆에 32×32 흑백 카메라가 하나씩 있다(시야 120°). 옆으로 서 있으니
+**왼쪽 눈이 그대로 투수를 본다.** 왼쪽 세 장은 공이 다가오는 순서, 마지막은
+오른쪽 눈이다. 빨간 원은 설명용이고 파리가 받는 입력에는 없다.
+
+### 뇌 속 회로
+
+<img src="docs/assets/brain-circuit.jpg" width="720" alt="뇌 세포체 지도 위에 회로 뉴런이 단계별로 밝게 표시된 네 장면.">
+
+실제 뇌 세포체 124,289개(파란 점) 위에 우리 회로를 켠 모습. 왼쪽 위부터
+LC4 → LPLC2 → 하강 뉴런 → 전체. **밝기는 시냅스 수이지 신경 활동이 아니다.**
+아직 어떤 뉴런도 시뮬레이션하지 않는다.
+
+### 뷰어
+
+<img src="docs/assets/viewer.jpg" width="720" alt="브라우저 뷰어. 왼쪽에 녹화 영상과 타구 결과, 오른쪽에 3D 뇌 지도와 파리 몸.">
+
+녹화한 에피소드, 뇌 지도, 파리 몸을 한 화면에 띄우는 브라우저 뷰어.
+[fly-connectome-template](https://github.com/cobanov/fly-connectome-template)을
+가져와 수정했다([아래](#뇌-시각화-뷰어) 참고).
+
+## 결과 한눈에
+
+| 검증 | 결과 |
+| --- | --- |
+| **G1** 앞다리 스윙 | 240회 실행 전부 안정. dt 수렴 0.07%, 적분기 3종 편차 0.02%. 힘은 병목이 아니었다 |
+| **LIT-01** 속도 상한 | 실측 보행 최고 98.6 rad/s, 점프 추정 240~516 rad/s → 설계 상한 **300 rad/s** (배트 끝 최대 4.53 m/s) |
+| **G4** 커넥톰 | LC4(126) · LPLC2(185) → 하강 뉴런 12개, 연결 1,343개. LPLC2→Giant Fiber 등 문헌 경로가 데이터에 그대로 있다 |
+| **G2** 접촉 | v1 **실패**(충돌이 3~4 스텝뿐이라 반발계수가 0.33↔0.63으로 흔들림) → v2 통과(반발계수 0.42~0.46) |
+| **타석 충돌 확인** | K1~K6 전부 통과. 반발계수 0.41~0.46, 에너지 생성 없음 |
+| **녹화한 안타** | 투구 1.81 m/s(축척 적용), 타구 602 mm/s, 발사각 −24°, 비거리 1.96 mm(사람 크기로 약 1 m) — **페어 땅볼** |
+| **녹화한 헛스윙** | 스윙이 4 ms만 늦어도 헛친다. 타이밍 창이 매우 좁다 |
+
+실패한 실행도 지우지 않고 남긴다. 근거 파일은
+[docs/records/evidence/](docs/records/evidence/), 실행 기록은
+[VALIDATION_LOG](docs/records/VALIDATION_LOG.md).
+
+## 시작하기
+
+**필요한 것:** Python 3.11+, (뷰어를 쓸 때) Node.js 22.18+. Apple M2 Pro 노트북에서
+개발했고 GPU는 필요 없다. 0.1초짜리 에피소드 하나에 약 0.6초 걸린다.
 
 ```bash
+git clone https://github.com/gitwub5/FlyOhtani.git && cd FlyOhtani
 python3.11 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest          # 54 passed
-.venv/bin/ruff check .
+.venv/bin/pip install -e ".[dev,video]"
+.venv/bin/pytest                      # 139 passed
 ```
 
-## 이전 버전
-
-사람 크기 구장 + 3축 강체 배트 + 인간식 스윙 협응 탐색으로 진행하던 v1
-전체(코드·문서·원자료)는 git 태그 **`archive/human-scale-v0`** 에 보존돼
-있다. 거기서 확정된 사실과 반복하면 안 되는 실패는
-[선행 발견 요약](docs/records/PRIOR-FINDINGS.md)에 압축해 두었다.
-
-## 뇌 시각화 뷰어
-
-`viewer/`의 3D 뇌 뷰어는 fly-connectome-template을 가져와 수정한 것이다.
-녹화한 에피소드와 우리 회로(MaleCNS 루밍 회로 323개 뉴런)를 실제 뇌 세포체 지도
-위에 보여 준다.
+### 에피소드 녹화
 
 ```bash
-.venv/bin/python -m flyohtani.record pitch --out runs/record/hit      # 에피소드 녹화
-.venv/bin/python -m flyohtani.brain.replay --run runs/record/hit      # 뷰어로 내보내기
-cd viewer && npm ci && npm run dev                                    # http://127.0.0.1:5173
+.venv/bin/python -m flyohtani.record pitch --out runs/record/hit                     # 안타
+.venv/bin/python -m flyohtani.record pitch --timing-ms 4 --out runs/record/miss-late # 늦은 스윙
+.venv/bin/python -m flyohtani.record pitch --speed-scale 0.5 --out runs/record/slow  # 느린 공
+.venv/bin/python -m flyohtani.record swing --out runs/record/swing                   # 공 없이 스윙만
 ```
 
-지금 뇌 화면에 켜지는 것은 **배선(시냅스 수)이지 활동이 아니다** — 회로
-시뮬레이션은 아직 없다. 뷰어 화면에도 그렇게 표시된다.
+`runs/record/<이름>/`에 `video.mp4`, 사진 모음 `sheet.png`, 결과 `manifest.json`이 생긴다.
+
+### 뇌 시각화 뷰어
+
+```bash
+.venv/bin/python -m flyohtani.brain.replay --run runs/record/hit   # 뷰어로 내보내기
+cd viewer && npm ci && npm run dev                                 # http://127.0.0.1:5173
+```
 
 Built with [fly-connectome-template](https://github.com/cobanov/fly-connectome-template) by [Mert Cobanov](https://github.com/cobanov).
 
-이 부분은 **Cobanov Template Attribution License 1.0**([viewer/LICENSE](viewer/LICENSE))을
-따르며, 위 표시를 README와 뷰어 화면에서 지워서는 안 된다. 무엇을 바꿨는지는
+`viewer/`는 위 템플릿을 가져와 수정한 것으로, **Cobanov Template Attribution
+License 1.0**([viewer/LICENSE](viewer/LICENSE))을 따른다. 위 표시는 이 README와
+뷰어 화면에서 지우면 안 된다. 바꾼 내용은
 [viewer/MODIFICATIONS.md](viewer/MODIFICATIONS.md), 출처는
-[viewer/PROVENANCE.json](viewer/PROVENANCE.json).
+[viewer/PROVENANCE.json](viewer/PROVENANCE.json)에 있다.
 
-## 라이선스
+## 저장소 구조
 
-프로젝트 코드는 MIT. 단 `viewer/`는 위의 템플릿 라이선스를 따른다. 반입한 서드파티
-자산의 별도 라이선스는 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)에 있다 — NeuroMechFly 메시는
-Apache-2.0이며, 향후 커넥톰 데이터는 원 데이터 라이선스를 그대로 따른다.
+```
+flyohtani/
+├── units.py        단위 규약 (mm · g · μN), 원본 모델 실측 상수
+├── body/           실제 앞다리 + 배트 모델, G1 스윕, 속도 상한
+├── brain/          MaleCNS 루밍 회로 로더, 뷰어용 내보내기
+├── sense/          눈 카메라, 공 검출·추적, 관측 스키마
+├── world/          타석 장면, 접촉 파라미터, G2 · 충돌 확인
+├── record/         에피소드 → 영상 · 사진 · 결과 JSON
+└── assets/         NeuroMechFly 메시·MJCF·보행 데이터, 커넥톰 부분회로 (출처 포함)
+viewer/             3D 뇌 뷰어 (fly-connectome-template 기반)
+tests/              pytest 139개 + 뷰어 파서 테스트
+docs/               계획, 상태, 게이트별 보고서, 근거 파일
+```
+
+## 연구 방식
+
+- **수용 기준을 실행 전에 커밋한다.** 커밋 순서가 사전 등록 역할을 한다.
+  결과가 나쁘다고 기준을 완화하지 않는다.
+- **숫자 하나를 믿기 전에 흔들어 본다.** dt 수렴, 적분기 교차 검증, 민감도 분석.
+- **실패를 지우지 않는다.** G2 v1 실패, 무효 처리한 실행, 틀렸던 주장과 그
+  정정이 모두 기록에 남아 있다.
+- **"이렇게 정했다"와 "이렇게 나왔다"를 구분한다.** 공학적 선택과 측정값을
+  문서에서 섞지 않는다.
+
+### 이 저장소가 주장하지 않는 것
+
+- 연결망을 넣었다고 **실제 뇌를 재현했다고 주장하지 않는다.** 실제 배선 +
+  가정한 뉴런 동역학 + 가정한 가소성이다.
+- 뷰어의 뇌 화면은 **배선**이다. 활동이 아니다.
+- 지금 영상 속 스윙은 **스크립트**다. 학습된 동작이 아니다.
+- 수작업·RL 컨트롤러는 환경 기준선일 뿐이다. 실제 회로가 낫다는 주장은 셔플
+  배선·고정 회로 대조군을 갖춘 뒤에만 한다.
+
+## 문서
+
+| 문서 | 내용 |
+| --- | --- |
+| [PLAN](docs/PLAN.md) | 설계 결정 D01~D30, 단계와 게이트 |
+| [STATUS](docs/records/STATUS.md) | 지금 검증된 것과 막혀 있는 것 |
+| [G1 앞다리 스윙](docs/records/G1-FORELEG-SWING.md) · [LIT-01 속도 상한](docs/records/LIT-01-FLY-LEG-LIMITS.md) | 몸 |
+| [G2 접촉](docs/records/G2-CONTACT.md) · [타석 장면](docs/records/BATTER-SCENE.md) | 세계 |
+| [G4 커넥톰](docs/records/G4-CONNECTOME-ACCESS.md) | 뇌 |
+| [선행 발견](docs/records/PRIOR-FINDINGS.md) | 이전 버전에서 확정된 사실과 반복하면 안 되는 실패 |
+| [문서 색인](docs/README.md) | 전체 목록 |
+
+## 데이터 · 라이선스 · 인용
+
+프로젝트 코드는 [MIT](LICENSE). 단 `viewer/`는 위의 템플릿 라이선스를 따른다.
+반입한 외부 자산은 각자의 라이선스를 따르며, 출처·버전·체크섬은
+[THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)와
+[RESEARCH_SOURCES](docs/RESEARCH_SOURCES.md)에 있다.
+
+| 자산 | 출처 | 라이선스 |
+| --- | --- | --- |
+| 초파리 메시·MJCF·보행 관절각 | NeuroMechFly v2 / flygym 1.2.1 | Apache-2.0 |
+| 루밍 회로 배선 | MaleCNS v1.0 | CC-BY |
+| 뷰어 속 뇌 세포체 지도 · 파리 몸 | MaleCNS v1.0 · Flybody | CC BY 4.0 · Apache-2.0 |
+| 뇌 뷰어 | fly-connectome-template (Mert Cobanov) | Cobanov Template Attribution License 1.0 |
+
+이 작업은 다음 연구에 기대고 있다.
+
+- Wang-Chen, S. et al. (2024). NeuroMechFly v2: simulating embodied sensorimotor control in adult *Drosophila*. *Nature Methods* 21, 2353–2362. [doi:10.1038/s41592-024-02497-y](https://doi.org/10.1038/s41592-024-02497-y)
+- MaleCNS v1.0 connectome ([male-cns.janelia.org](https://male-cns.janelia.org/download/)) — FlyEM (HHMI Janelia), University of Cambridge, MRC LMB, Google Research. 사용 조건은 [G4 보고서](docs/records/G4-CONNECTOME-ACCESS.md)에 정리했다.
+- Card, G. & Dickinson, M. (2008). Performance trade-offs in the flight initiation of *Drosophila*. *J. Exp. Biol.* 211, 341–353. [doi:10.1242/jeb.012682](https://doi.org/10.1242/jeb.012682)
+- Zumstein, N. et al. (2004). Distance and force production during jumping in wild-type and mutant *Drosophila melanogaster*. *J. Exp. Biol.* 207, 3515–3522. [PMID 15339947](https://pubmed.ncbi.nlm.nih.gov/15339947/)
+
+## 이전 버전
+
+사람 크기 구장 + 3축 강체 배트로 진행하던 v1 전체는 git 태그
+**`archive/human-scale-v0`** 에 보존돼 있다. 그 접근으로는 돌아가지 않는다.
