@@ -1,0 +1,113 @@
+{
+  "date": "2026-09-17",
+  "why": "The staged batter (D26) stands on its hind tarsi. v1 only vendored Tarsus1, so the feet -- the segments that actually touch the batter's box -- were missing.",
+  "relation_to_PROVENANCE_json": "PROVENANCE.json is the v1 record for the first 45 meshes and is kept unedited. This file covers only the 24 meshes added later.",
+  "source": {
+    "pypi_package": "flygym",
+    "pypi_version": "1.2.1",
+    "wheel_sha256": "5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d",
+    "wheel_sha256_verified_on_redownload": true,
+    "path_in_wheel": "flygym/data/mesh/",
+    "license": "Apache-2.0",
+    "license_file": "LICENSE-flygym-apache-2.0.txt"
+  },
+  "byte_identity": "every added file compared byte-for-byte against the wheel copy at import; the 45 previously vendored meshes were re-checked against the same wheel and still match",
+  "files": {
+    "LFTarsus2.stl": {
+      "sha256": "996735c15a7e8e0c022babf5500224fa6e23de0e277305279d4b6787d56335d8",
+      "bytes": 89884
+    },
+    "LFTarsus3.stl": {
+      "sha256": "edd3137f00db0d4c8830eaa08d9b9206fefc1f90311200365c37264a6ca3c08e",
+      "bytes": 152584
+    },
+    "LFTarsus4.stl": {
+      "sha256": "8370f6944a607adbc29eb6a2cec06a5da8d67fc060e0abd4a560755e3b5cd6f8",
+      "bytes": 164234
+    },
+    "LFTarsus5.stl": {
+      "sha256": "1e8fc058a866f6a6bb6fb0430229297996e5e0639bede2e8fa169958e871a039",
+      "bytes": 142184
+    },
+    "LMTarsus2.stl": {
+      "sha256": "2dbb000ae11ef58de0023ccbdbfc8f1c5ff7b7517824a58d3e204f3ee00770c4",
+      "bytes": 77884
+    },
+    "LMTarsus3.stl": {
+      "sha256": "8f1814f0054382e037279f04d0bb998e36ccaabd57ec418d35dd6f7e47bd51bb",
+      "bytes": 92884
+    },
+    "LMTarsus4.stl": {
+      "sha256": "0cb0ed43055e24d14fa580ac36cb5ae2bf0c0fa9f353615c146291e0b8d1ba9a",
+      "bytes": 159584
+    },
+    "LMTarsus5.stl": {
+      "sha256": "3e9a76e4c0c4e829705271846f93a3aa056a0e87bc99996519722eeb841c1b70",
+      "bytes": 49384
+    },
+    "LHTarsus2.stl": {
+      "sha256": "da796bc3ad5d355b9e941aeeb6ad96c7fb00dee7421995605dcc81cd6fd7af12",
+      "bytes": 98684
+    },
+    "LHTarsus3.stl": {
+      "sha256": "4864f883168d6397ac96666605504a512187ad8c0befde812e0c570bca2962b1",
+      "bytes": 129584
+    },
+    "LHTarsus4.stl": {
+      "sha256": "925687a8b26ab3695ffc9d57507ec201381a1b104b7b0248fde95467939d9466",
+      "bytes": 130984
+    },
+    "LHTarsus5.stl": {
+      "sha256": "82a1aedb3f34ba510f143fe5fe0a1dfedeb8872edfef147945aa0a0938b1f6fc",
+      "bytes": 147084
+    },
+    "RFTarsus2.stl": {
+      "sha256": "5a916893bb14604ff8600e7607864be6328e04d6db3907882b08b828ee7f1649",
+      "bytes": 89884
+    },
+    "RFTarsus3.stl": {
+      "sha256": "d0288babd00488f735e1caa392bee5da7524edcf063b8eb059b9b152c606be44",
+      "bytes": 152584
+    },
+    "RFTarsus4.stl": {
+      "sha256": "e0343859c3eab8fa79579e5f0c48aa0dafde245ae0c2bf54472d7ca483d07c20",
+      "bytes": 164234
+    },
+    "RFTarsus5.stl": {
+      "sha256": "e4dd5405ec5b22d28c08b6b50e99b9de28ba54768817a49c2f966e80a8eeb30b",
+      "bytes": 142184
+    },
+    "RMTarsus2.stl": {
+      "sha256": "49272c7e82f7c28a09bc79d339d22c15e3585ecd21de88748417bd8409310afb",
+      "bytes": 77884
+    },
+    "RMTarsus3.stl": {
+      "sha256": "b80f1f7d2380e8b85bc7958399ac5d3dd0c0b9c8cfb655cb7517d0086d098c0d",
+      "bytes": 92884
+    },
+    "RMTarsus4.stl": {
+      "sha256": "53b914a75fb54c27a1fc03f4210bc273795de76f336a5429ce89cf31ca927a89",
+      "bytes": 159584
+    },
+    "RMTarsus5.stl": {
+      "sha256": "222297c3ea6c513db2dabb82d4efe831409b2d0f2a32e38500ac9266c7279214",
+      "bytes": 49384
+    },
+    "RHTarsus2.stl": {
+      "sha256": "ffce858b2321c5871ef0109c44e6aa2f17db27ef136dcff998385cad583f4686",
+      "bytes": 98684
+    },
+    "RHTarsus3.stl": {
+      "sha256": "4335fffd3834d9964e86199c056243ba05fff27b58c5de34c91784e838a8ccdd",
+      "bytes": 129584
+    },
+    "RHTarsus4.stl": {
+      "sha256": "1a0d68dddf33caaaf9278f1650b2018690b68453732d0e46e862f5e522889753",
+      "bytes": 130984
+    },
+    "RHTarsus5.stl": {
+      "sha256": "4043963e5561f033e887491dfa4085fa5c43233b48d6796c99fb8c49932fb874",
+      "bytes": 147084
+    }
+  }
+}

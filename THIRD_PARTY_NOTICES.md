@@ -5,15 +5,17 @@ project's own code license (MIT).
 
 ## NeuroMechFly / flygym mesh assets
 
-- **Files**: `flyohtani/assets/mesh_neuromechfly/*.stl` (45 body-segment
-  meshes).
+- **Files**: `flyohtani/assets/mesh_neuromechfly/*.stl` (69 body-segment
+  meshes: 45 vendored for v1, plus 24 Tarsus2-5 meshes added 2026-09-17 so
+  the staged batter can stand on its feet).
 - **Source**: [flygym](https://github.com/NeLy-EPFL/flygym) (NeuroMechFly v2),
   PyPI package `flygym==1.2.1`, by Sibo Wang-Chen et al. (NeLy lab, EPFL).
   See [neuromechfly.org](https://neuromechfly.org/).
 - **License**: Apache License 2.0. Full text:
   `flyohtani/assets/mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt`.
 - **What was taken**: only the STL files listed in
-  `flyohtani/assets/mesh_neuromechfly/PROVENANCE.json` (per-file SHA-256
+  `flyohtani/assets/mesh_neuromechfly/PROVENANCE.json` (the first 45) and
+  `PROVENANCE-tarsus-additions.json` (the 24 added later) (per-file SHA-256
   hashes and the source wheel's own SHA-256 are recorded there), plus the
   license file. No other part of the `flygym` package -- Python source,
   non-mesh assets, other MJCF variants -- is vendored.

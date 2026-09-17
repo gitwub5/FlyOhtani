@@ -8,7 +8,7 @@
 
 필독은 이 파일 + 아래 2개뿐이다:
 
-1. `docs/PLAN.md` — 결정의 단일 기준. 설계 결정(D01~D25), Phase와 게이트
+1. `docs/PLAN.md` — 결정의 단일 기준. 설계 결정(D01~D29), Phase와 게이트
 2. `docs/records/STATUS.md` — 지금 검증된 것과 막혀 있는 것
 
 그 다음, **맡은 작업에 해당할 때만** 읽는다:
@@ -18,6 +18,7 @@
 - 몸·접촉 작업 → `docs/records/G1-FORELEG-SWING.md`
   (앞다리 실측, 잠근 DOF와 그 이유, `boundmass` 함정)
 - 뇌 작업 → `docs/records/G4-CONNECTOME-ACCESS.md`
+- 타석 장면(몸 자세·배트·눈·충돌 설정) → `docs/records/BATTER-SCENE.md`
 - 접촉·dt 작업 → `docs/records/G2-CONTACT.md` (v1 실패와 v2 통과의 무게 차이)
 - 속도·힘 수치를 쓸 때 → `docs/records/LIT-01-FLY-LEG-LIMITS.md`
   (무엇이 측정이고 무엇이 우리가 정한 값인지 구분돼 있다)

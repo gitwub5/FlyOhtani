@@ -28,8 +28,10 @@
 
 ## 반입됨: NeuroMechFly mesh assets
 
-`flyohtani/assets/mesh_neuromechfly/*.stl` (45개) + Apache-2.0 라이선스
-전문. 출처는 PyPI `flygym==1.2.1` (NeLy lab, EPFL).
+`flyohtani/assets/mesh_neuromechfly/*.stl` (69개: v1의 45개 + 2026-09-17 타석
+장면용 Tarsus2-5 24개, `PROVENANCE-tarsus-additions.json`) + Apache-2.0 라이선스
+전문. 추가 반입 시 wheel sha256을 재다운로드로 다시 대조했고, 기존 45개도 같은
+wheel과 여전히 바이트 단위로 일치함을 확인했다. 출처는 PyPI `flygym==1.2.1` (NeLy lab, EPFL).
 파일별 SHA-256, 소스 wheel의 SHA-256, byte-identity 검사 결과는
 `flyohtani/assets/mesh_neuromechfly/PROVENANCE.json`에 있고, 라이선스
 고지는 [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md)에 있다.
