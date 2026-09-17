@@ -14,6 +14,7 @@ Run:  .venv/bin/python -m flyohtani.world.g2_contact
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import math
 import os
@@ -406,7 +407,7 @@ def evaluate(workers: int | None = None) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=EVIDENCE / "G2-contact.json")
+    parser.add_argument("--out", type=Path, default=EVIDENCE / "G2-contact.json.gz")
     parser.add_argument("--workers", type=int, default=os.cpu_count())
     args = parser.parse_args()
 
@@ -417,7 +418,12 @@ def main() -> None:
         "mujoco_version": mujoco.__version__,
     })
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(result, indent=1, default=str) + "\n")
+    # Every run is kept (the raw data behind each verdict), which makes the
+    # file several MB. gzip with mtime=0 and an empty header filename keeps it
+    # small and byte-stable (GzipFile otherwise embeds the output's name).
+    payload = (json.dumps(result, indent=1, default=str) + "\n").encode()
+    with open(args.out, "wb") as raw, gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as fh:
+        fh.write(payload)
 
     print(f"wrote {args.out}")
     print(f"G2: {result['verdict']}  "
