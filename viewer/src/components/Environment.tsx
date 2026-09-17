@@ -37,7 +37,7 @@ export function Environment({ time: _time }: { time: number }) {
   }
   const o = experiment?.outcome;
   return <div className="environment flyohtani-environment">
-    <video src={asset('experiment/video.mp4')} controls muted playsInline loop preload="metadata" aria-label="Recorded FlyOhtani episode" />
+    <video src={asset('experiment/video.mp4')} poster={asset('experiment/poster.png')} controls muted playsInline loop preload="metadata" aria-label="Recorded FlyOhtani episode" />
     {experiment && <dl className="flyohtani-outcome">
       <div><dt>Scenario</dt><dd>{experiment.scenario ?? '—'}{experiment.scripted ? ' · scripted swing' : ''}</dd></div>
       <div><dt>Contact</dt><dd>{o?.contact ? 'hit' : 'miss'}</dd></div>

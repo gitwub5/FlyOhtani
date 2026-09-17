@@ -31,5 +31,7 @@ and notice file are unchanged.
   footer are unchanged. A `?t=<seconds>` query opens the loaded circuit
   paused at that time.
 - `src/style.css`: appended styles for the video and outcome list.
+- The episode video uses `public/experiment/poster.png` (the run's final
+  frame) as its poster, so the result shows before playback.
 - `public/experiment/` (gitignored) is written by
   `python -m flyohtani.brain.replay`, not by hand.

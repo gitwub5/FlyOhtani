@@ -136,5 +136,8 @@ def test_export_bundle_writes_what_the_viewer_reads(tmp_path):
     out = tmp_path / "bundle"
     exp = R.export_bundle(run, out)
     assert {p.name for p in out.iterdir()} == {"video.mp4", "circuit.replay.json", "experiment.json"}
+    (run / "final.png").write_bytes(b"\x89PNG")
+    R.export_bundle(run, out)
+    assert (out / "poster.png").exists()
     assert exp["video_and_brain_are_linked"] is False
     assert exp["replay"]["kind"] == "synthetic"

@@ -163,6 +163,8 @@ def export_bundle(run: Path, out: Path = BUNDLE, replay: dict | None = None,
     run_manifest = json.loads((run / "manifest.json").read_text())
     out.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(run / "video.mp4", out / "video.mp4")
+    if (run / "final.png").exists():
+        shutil.copyfile(run / "final.png", out / "poster.png")
     (out / "circuit.replay.json").write_text(json.dumps(replay, separators=(",", ":")) + "\n")
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True,
