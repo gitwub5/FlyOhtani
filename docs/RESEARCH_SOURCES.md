@@ -23,7 +23,8 @@
 
 1. NeuroMechFly **메시**(Apache-2.0) — 형태 데이터
 2. NeuroMechFly **원본 MJCF**(Apache-2.0) — Phase 1의 앞다리 빌드 소스
-3. MaleCNS **루밍 부분회로**(CC-BY) — 실제 연결망 데이터, G4에서 반입
+3. NeuroMechFly **보행 운동학**(Apache-2.0) — LIT-01의 실측 대상
+4. MaleCNS **루밍 부분회로**(CC-BY) — 실제 연결망 데이터, G4에서 반입
 
 ## 반입됨: NeuroMechFly mesh assets
 
@@ -74,6 +75,45 @@
 
 wheel sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d`은
 v1이 기록한 값과 재다운로드로 대조해 일치를 확인했다.
+
+## 반입됨: 보행 운동학 (LIT-01, 2026-09-17)
+
+`flyohtani/assets/behavior_neuromechfly/walking-joint-angles-210902-pr-fly1.npz`
+(626 KB). 같은 `flygym==1.2.1` wheel의 `flygym/data/behavior/210902_pr_fly1.pkl`을
+**무손실로** npz 변환(값 불변, 정확 일치 확인). Apache-2.0.
+
+테더된 보행 파리 1마리, 2 kHz, 42 다리 DOF, 1초. 원 파일명
+`joint_angles__210902_PR_Fly1.pkl`, time_range (3.0, 4.0) s. 체크섬과 변환
+내역은 `behavior_neuromechfly/PROVENANCE.json`.
+
+인용:
+
+> Wang-Chen, S., Stimpfling, V. A., Lam, T. K. C., Özdil, P. G., Genoud, L.,
+> Hurtak, F. & Ramdya, P. (2024). NeuroMechFly v2: simulating embodied
+> sensorimotor control in adult *Drosophila*. *Nature Methods* **21**(12),
+> 2353–2362. [doi:10.1038/s41592-024-02497-y](https://doi.org/10.1038/s41592-024-02497-y)
+
+## 문헌 인용 — 다리 성능 (LIT-01)
+
+수치를 쓴 논문만 적는다. 검색 요약만 보고 인용하지 않으며, 확인하지 못한
+수치는 [LIT-01](records/LIT-01-FLY-LEG-LIMITS.md) §6에 "사용하지 않음"으로
+남긴다.
+
+> Card, G. & Dickinson, M. (2008). Performance trade-offs in the flight
+> initiation of *Drosophila*. *J. Exp. Biol.* **211**(3), 341–353.
+> [doi:10.1242/jeb.012682](https://doi.org/10.1242/jeb.012682)
+> — 탈출 점프 다리 신전 3.3 ms, 이륙 속도 0.48 ± 0.01 m/s. 원문 직접 확인.
+
+> Zumstein, N. et al. (2004). Distance and force production during jumping in
+> wild-type and mutant *Drosophila melanogaster*. *J. Exp. Biol.* **207**(20),
+> 3515–3522. [PMID 15339947](https://pubmed.ncbi.nlm.nih.gov/15339947/)
+> — 중간다리 최대 점프 힘 101 ± 4.4 μN. 초록 확인.
+
+> Swank, D. M. (2011). Mechanical analysis of *Drosophila* indirect flight and
+> jump muscles. *Methods* **56**(1), 69–77.
+> [doi:10.1016/j.ymeth.2011.10.015](https://doi.org/10.1016/j.ymeth.2011.10.015)
+> — **수치를 쓰지 않았다.** 검색 요약이 이 논문에 있다고 한 "6.1 ML/s"가
+> 원문에는 없다(원문은 6 μm/s). 반례로 기록해 둔다.
 
 ## 반입됨: MaleCNS 루밍 부분회로 (G4, 2026-09-17)
 

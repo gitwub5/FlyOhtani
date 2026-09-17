@@ -18,6 +18,8 @@
 - 몸·접촉 작업 → `docs/records/G1-FORELEG-SWING.md`
   (앞다리 실측, 잠근 DOF와 그 이유, `boundmass` 함정)
 - 뇌 작업 → `docs/records/G4-CONNECTOME-ACCESS.md`
+- 속도·힘 수치를 쓸 때 → `docs/records/LIT-01-FLY-LEG-LIMITS.md`
+  (무엇이 측정이고 무엇이 우리가 정한 값인지 구분돼 있다)
 - 외부 데이터/코드 반입 → `docs/RESEARCH_SOURCES.md`
 
 문서 목록은 `docs/README.md`가 갖는다. 늘리기 전에 기존 문서에 들어갈 자리가

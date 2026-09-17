@@ -93,3 +93,36 @@ flygym 1.2.1 wheel sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752
 비editable wheel 재확인(저장소 밖에서 import): STL 45 + Apache-2.0 라이선스 +
 메시 PROVENANCE + 원본 MJCF + MJCF PROVENANCE + 커넥톰 부분회로가 모두 실리고,
 설치본만으로 부분회로 로드(1,343간선, CC-BY)와 몸체 빌드(nv=nu=5)가 된다.
+
+---
+
+## 2026-09-17 · LIT-01 · 다리 속도·힘 상한
+
+실측(이 저장소가 수행): flygym 배포 관절각 시계열을 미분.
+
+| 대상 | 결과 |
+| --- | --- |
+| 원본 | `flygym/data/behavior/210902_pr_fly1.pkl`, 2 kHz, 42 DOF, 1.00 s |
+| 반입 | npz 무손실 변환(정확 일치 확인), 626 KB |
+| 우리 5 DOF 보행 최대 \|ω\| | **98.6 rad/s** (`joint_RFTibia`), p95 65.2 |
+| 42 DOF 전체 최대 | 231.1 rad/s (`joint_LFTarsus1`) |
+
+문헌(원문/초록 직접 확인): Card & Dickinson 2008 — 탈출 점프 다리 신전
+3.3 ms, 이륙 0.48 ± 0.01 m/s. Zumstein 2004 — 중간다리 최대 점프 힘
+101 ± 4.4 μN.
+
+유도: 점프 관절 각속도 240~516 rad/s(유효 반경 2.00~0.93 mm). **측정 아님.**
+
+채택: 설계 상한 300 rad/s → G1 격자에서 배트 팁 최대 **4,533 mm/s**
+(240런 중 38런 적합, 포화 0.0%).
+
+검증하지 않은 것: 개체 변이, 앞다리의 최대 노력 성능, 근육 힘-속도 곡선.
+사용하지 않은 수치와 그 이유는 [LIT-01](LIT-01-FLY-LEG-LIMITS.md) §6.
+
+비editable wheel 재확인: 설치본만으로 보행 데이터 42 DOF 로드,
+`joint_RFTibia` 98.6 rad/s 재현, 인용문 포함.
+
+| 명령 | 결과 |
+| --- | --- |
+| `.venv/bin/python -m pytest -q` / `.venv/bin/pytest -q` | 66 passed (일치) |
+| `.venv/bin/ruff check .` | All checks passed |

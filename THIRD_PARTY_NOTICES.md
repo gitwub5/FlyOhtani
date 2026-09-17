@@ -54,6 +54,25 @@ scripts and generated XMLs it refers to are preserved at the git tag
   vendored, so it cannot be compiled as-is from this repo. The builder prunes
   those segments. See `mjcf_neuromechfly/PROVENANCE.json`.
 
+## NeuroMechFly / flygym walking kinematics
+
+- **File**: `flyohtani/assets/behavior_neuromechfly/walking-joint-angles-210902-pr-fly1.npz`
+- **Source**: the same `flygym==1.2.1` wheel, path
+  `flygym/data/behavior/210902_pr_fly1.pkl`. A 2 kHz recording of a tethered
+  walking fly, 42 leg DOFs, 1 s.
+- **License**: Apache License 2.0 (same license file as the meshes).
+- **Modification**: converted from pickle to npz, losslessly (verified by
+  exact array comparison) and with rows sorted by joint name. No value was
+  changed. Converted rather than copied so that reading it does not require
+  unpickling. Checksums of both the original pickle and the source wheel are
+  in `behavior_neuromechfly/PROVENANCE.json`.
+- **Use**: `flyohtani/body/limits.py` differentiates it to measure real
+  joint angular velocities (docs/records/LIT-01-FLY-LEG-LIMITS.md).
+- **Please cite**: Wang-Chen, S., Stimpfling, V. A., Lam, T. K. C., Ozdil,
+  P. G., Genoud, L., Hurtak, F. & Ramdya, P. (2024). NeuroMechFly v2:
+  simulating embodied sensorimotor control in adult *Drosophila*. *Nature
+  Methods* 21(12), 2353-2362. https://doi.org/10.1038/s41592-024-02497-y
+
 ## MaleCNS connectome (derived subgraph)
 
 - **File**: `flyohtani/assets/connectome/looming-subgraph-male-cns-v1.0.json`
