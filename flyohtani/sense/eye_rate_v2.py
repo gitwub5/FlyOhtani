@@ -24,7 +24,6 @@ the configuration chosen on the exploratory set is verified against them.
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import platform
 import time
@@ -47,6 +46,7 @@ from flyohtani.sense.eye_rate import (
     PARKED,
     _place_ball,
     _trajectory,
+    _write,
 )
 from flyohtani.world import batter as B
 
@@ -115,6 +115,7 @@ class Frame:
 class Cell:
     distance_scale: float
     eye_resolution: int
+    eye_fovy_deg: float
     ball_scale: float
     flight_target_s: float
     eye_rate_hz: int
@@ -146,6 +147,9 @@ class Cell:
 
 _SCENES: dict[float, B.Scene] = {}
 
+_FOVY_OVERRIDE: float | None = None
+"""Set by `measure_fov` (VM-01 v2b). None leaves the scene's own 120 deg."""
+
 
 def _scene(ball_scale: float) -> B.Scene:
     if ball_scale not in _SCENES:
@@ -166,6 +170,9 @@ def measure(distance_scale: float, eye_resolution: int, ball_scale: float,
     model = scene.model()
     data = mujoco.MjData(model)
     eye = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "eye_L")
+    if _FOVY_OVERRIDE is not None:
+        for side in ("L", "R"):
+            model.cam_fovy[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, f"eye_{side}")] = _FOVY_OVERRIDE
 
     # One pass at an arbitrary speed fixes the geometry, then the speed is set
     # so that the flight lasts exactly as long as asked.
@@ -234,13 +241,14 @@ def measure(distance_scale: float, eye_resolution: int, ball_scale: float,
     w5 = len(seen) >= MIN_DECISION_FRAMES
     w6 = render_s <= MAX_RENDER_OVERHEAD * 0.64
     return Cell(
-        distance_scale=distance_scale, eye_resolution=eye_resolution, ball_scale=ball_scale,
+        distance_scale=distance_scale, eye_resolution=eye_resolution,
+        eye_fovy_deg=round(float(model.cam_fovy[eye]), 3), ball_scale=ball_scale,
         flight_target_s=flight_target_s, eye_rate_hz=eye_rate_hz,
         held_out=flight_target_s in HOLD_OUT_FLIGHTS_S,
         pitch_speed_mm_s=round(speed, 3), launch_angle_deg=round(launch_deg, 3),
         release_distance_mm=round(float(release[0] - aim[0]), 4),
         ball_radius_mm=round(r_ball, 5),
-        deg_per_pixel=round(B.EYE_FOVY_DEG / eye_resolution, 4),
+        deg_per_pixel=round(float(model.cam_fovy[eye]) / eye_resolution, 4),
         flight_s=round(flight, 6), window_frames=len(window), detected_in_window=len(seen),
         continuity=round(continuity, 3), distinct_sizes=len(sizes),
         centroid_travel_px=round(travel, 3),
@@ -259,10 +267,14 @@ def run_grid() -> list[Cell]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=EVIDENCE / "VM-01v2-eye-rate.json")
+    parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--fov-grid", action="store_true",
+                        help="VM-01 v2b: narrow the eye instead of adding pixels")
     args = parser.parse_args()
+    if args.out is None:
+        args.out = EVIDENCE / ("VM-01v2b-acute-zone.json.gz" if args.fov_grid else "VM-01v2-eye-rate.json.gz")
 
-    cells = run_grid()
+    cells = run_fov_grid() if args.fov_grid else run_grid()
     explore = [c for c in cells if not c.held_out]
     hold_out = [c for c in cells if c.held_out]
 
@@ -272,7 +284,7 @@ def main() -> None:
         raise TypeError(f"not JSON: {type(o).__name__}")
 
     payload = {
-        "measurement": "VM-01 v2",
+        "measurement": "VM-01 v2b (acute zone)" if args.fov_grid else "VM-01 v2",
         "date": datetime.now(UTC).date().isoformat(),
         "platform": platform.platform(),
         "mujoco_version": mujoco.__version__,
@@ -290,14 +302,15 @@ def main() -> None:
         "hold_out_rule": f"flight targets {HOLD_OUT_FLIGHTS_S} decide nothing",
         "grid": {"distance_scales": list(DISTANCE_SCALES), "eye_resolutions": list(EYE_RESOLUTIONS),
                  "ball_scales": list(BALL_SCALES), "flight_targets_s": list(FLIGHT_TARGETS_S),
-                 "eye_rates_hz": list(EYE_RATES_HZ)},
+                 "eye_rates_hz": list(EYE_RATES_HZ),
+                 "eye_fovs_deg": list(EYE_FOVS_DEG) if args.fov_grid else [B.EYE_FOVY_DEG]},
         "counts": {"all": len(cells), "exploratory": len(explore), "hold_out": len(hold_out),
                    "usable_exploratory": sum(c.usable for c in explore),
                    "usable_hold_out": sum(c.usable for c in hold_out)},
         "results": [asdict(c) for c in cells],
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(payload, indent=1, default=plain) + "\n")
+    _write(args.out, payload, plain)
     print(f"wrote {args.out}\n")
 
     ok = [c for c in explore if c.usable]
@@ -305,7 +318,7 @@ def main() -> None:
           f"hold-out usable: {sum(c.usable for c in hold_out)} / {len(hold_out)}")
     print("\nleast extreme usable exploratory cells (smallest ball, then coarsest eye):")
     for c in sorted(ok, key=lambda c: (c.ball_scale, c.eye_resolution, c.distance_scale))[:12]:
-        print(f"  ball {c.ball_scale:4.1f}x  eye {c.eye_resolution:4d}px  dist {c.distance_scale:4.1f}x "
+        print(f"  ball {c.ball_scale:4.1f}x  eye {c.eye_resolution:4d}px/{c.eye_fovy_deg:5.1f}deg  dist {c.distance_scale:4.1f}x "
               f"({c.release_distance_mm:6.1f} mm)  flight {c.flight_s * 1e3:5.1f}ms  "
               f"{c.eye_rate_hz:4d}Hz  launch {c.launch_angle_deg:5.1f}d  cont {c.continuity:4.2f}  "
               f"travel {c.centroid_travel_px:5.1f}px  {c.signal_kind}")
@@ -320,6 +333,38 @@ def main() -> None:
             print(f"    ball {c.ball_scale:4.1f}x eye {c.eye_resolution:4d}px dist {c.distance_scale:4.1f}x "
                   f"flight {c.flight_s * 1e3:5.1f}ms {c.eye_rate_hz:4d}Hz  W[{met}]  "
                   f"cont {c.continuity:4.2f} travel {c.centroid_travel_px:5.1f}px sizes {c.distinct_sizes}")
+
+# --------------------------------------------------------------- VM-01 v2b
+# DESIGNED AFTER READING v2, and recorded as such. v2 says every passing
+# configuration needs a 128 px eye, i.e. 0.94 deg per pixel. But acuity is
+# pixels PER DEGREE, and there are two ways to buy it: more pixels over the
+# same 120 deg, or the same 32 pixels over a narrower field. Real flies do the
+# second -- a frontal acute zone -- so it is the more fly-like lever of the
+# two, and it is 16x cheaper to render. v2b measures it: same criteria, same
+# hold-out rule, eye fixed at 32 px, field of view swept instead.
+
+EYE_FOVS_DEG = (120.0, 60.0, 30.0, 15.0)
+"""Half of a 15 deg eye is 0.47 deg per pixel at 32 px -- finer than the
+128 px eye that v2 needed, with 1/16 the pixels. The cost is peripheral
+vision: at 15 deg the fly sees a soda straw's worth of the world."""
+
+
+def measure_fov(distance_scale: float, fovy_deg: float, ball_scale: float,
+                flight_target_s: float, eye_rate_hz: int, eye_resolution: int = 32) -> Cell:
+    """Same measurement as `measure`, with the eye's field of view narrowed on
+    the compiled model instead of its pixel count raised."""
+    global _FOVY_OVERRIDE
+    _FOVY_OVERRIDE = fovy_deg
+    try:
+        return measure(distance_scale, eye_resolution, ball_scale, flight_target_s, eye_rate_hz)
+    finally:
+        _FOVY_OVERRIDE = None
+
+
+def run_fov_grid() -> list[Cell]:
+    return [measure_fov(d, fov, b, f, 240)
+            for d in DISTANCE_SCALES for fov in EYE_FOVS_DEG for b in BALL_SCALES
+            for f in FLIGHT_TARGETS_S]
 
 
 if __name__ == "__main__":

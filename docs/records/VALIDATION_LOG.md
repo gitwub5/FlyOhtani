@@ -234,3 +234,10 @@ Python 최소 버전을 3.11로 올렸다(D07과 일치, `typing.Self` 사용).
 
 전체 보고 [VM-01-EYE-RATE.md](VM-01-EYE-RATE.md), 원자료
 `evidence/VM-01-eye-rate.json`.
+
+| VM-01 v2 사전 등록(기준·hold-out·테스트) | `44969f7` |
+| `python -m flyohtani.sense.eye_rate_v2` (576조합, 2분 46초) | 탐색 **2/288**, hold-out 4/288. 막는 기준 W3 연속성 33/288, W5 프레임 21/288 |
+| hold-out 검증(탐색 우승 조합을 60·110 ms에 그대로) | **FAIL** — 60 ms는 프레임 부족(6<8), 110 ms는 발사각 38°(거리 규칙대로) |
+| `python -m flyohtani.sense.eye_rate_v2 --fov-grid` (256조합, 69초) | 탐색 **1/128** — 32px/60°가 128px/120°와 같은 일을 1/16 비용으로. 30° 이하는 공이 시야 밖 |
+| 근거 파일 gzip 변환(G2 방식, mtime 0) | 775 KB→53 KB, 3.5 MB→191 KB, 1.3 MB→48 KB |
+| `pytest` | 156 passed · ruff 클린 |

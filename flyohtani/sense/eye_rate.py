@@ -25,6 +25,7 @@ rendering must not depend on integrating 21 ms at 1 us.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import math
 import platform
@@ -273,6 +274,17 @@ def measure(speed_scale: float, eye_rate_hz: int, ball_scale: float,
     )
 
 
+def _write(out: Path, payload: dict, default) -> None:
+    """Frame-level records run to megabytes, so evidence is gzipped the way
+    G2's is -- empty header filename and mtime 0, so the bytes are stable."""
+    blob = (json.dumps(payload, indent=1, default=default) + "\n").encode()
+    if out.suffix == ".gz":
+        with open(out, "wb") as raw, gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as fh:
+            fh.write(blob)
+    else:
+        out.write_bytes(blob)
+
+
 def _froude(scale: float, real_mm_s: float = 40_000.0) -> float:
     """Duplicated from record.scenarios.froude_speed, which lives behind the
     recording stack; tests/test_sense_eye_rate.py asserts they agree."""
@@ -287,7 +299,7 @@ def run_grid() -> list[Combination]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=EVIDENCE / "VM-01-eye-rate.json")
+    parser.add_argument("--out", type=Path, default=EVIDENCE / "VM-01-eye-rate.json.gz")
     args = parser.parse_args()
 
     results = run_grid()
@@ -320,7 +332,7 @@ def main() -> None:
         raise TypeError(f"not JSON: {type(o).__name__}")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(payload, indent=1, default=plain) + "\n")
+    _write(args.out, payload, plain)
 
     print(f"wrote {args.out}\n")
     print(f"{'dist':>5} {'ball':>5} {'speed':>6} {'rate':>5} {'flight':>8} {'launch':>7} "
