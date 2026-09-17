@@ -7,25 +7,15 @@
 [STATUS](../records/STATUS.md), 다음 작업 배정은 사용자가 명시적으로 지정한다
 (독립적인 두 트랙 중 무엇을 먼저 할지는 자동으로 정하지 않는다).
 
-## 현재 배정 (2026-09-17)
+## 현재 배정 (2026-09-17 방향 전환)
 
-[KC-01a 검증 보완 + VISION-01 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
-A절(dt 수렴/정착/에너지/타이밍 검증)과 B절(VISION-01 설계), 후속 원인 분리
-(발산 원인을 구동/접촉으로 분리, 관절한계 타이밍·구속종류/적분오차 구분),
-[회전 방향 계약](../design/KC-01a-DIRECTION-CONTRACT.md)과
-`same_direction_staggered`의 수용 검증·몸통 선행 메커니즘 검증과 유효성
-검사 정정(A9-A18, motion-triggered handoff 모드 + `validate_same_direction_
-candidate` 추가)까지 완료했다
-([검증 결과](../records/KC-01a-VALIDATION.md), [VISION-01](../design/VISION-01.md)).
-`staggered_swing_and_torso`의 이전 "최고 성적" 결론은 철회됐다.
-`torso_lead_handoff`(torso_target=0.5, 225ms 선행, 6.78m)도 방향 불일치·
-팔 변위 사실상 0·양 축 관절범위 이탈로 **무효 판정 후 철회**됐다 — 컨트롤러에
-방향/변위/범위 사전 검사를 추가하고 재탐색한 새 후보(torso_target=0.25)는
-그 검사와 양 축 능동 제동 정착·그립 도달성을 통과하지만 timestep 수렴에는
-실패한다. 다음 배정은 사용자가 명시적으로 지정한다 — 그 dt 미수렴 원인
-진단(구동/접촉 분리), `torso_swing_with_arm_hold`의 gear 재보정, 공통
-에너지 예산 비교, VISION-01 구현 여부 결정 중 무엇을 먼저 할지 자동으로
-정하지 않는다.
+[VM-01](../tasks/VISUOMOTOR-PIVOT.md) 완료: **V1 눈 영상·공 추적**(PASS,
+한계 명시) · **P1 독립 충돌 검증**(FAIL, 원인/최소 수정안 보고) · **B1
+최소 파리 몸체 설계**(NOT-RUN — 설계만, 지시된 범위). 전체 보고
+[VM01-REPORT.md](../records/VM01-REPORT.md). KC 추가 탐색/gear 재보정은
+보류 유지. **P1이 FAIL이므로 학습 훈련은 시작하지 않는다** — 다음 배정은
+P1 원인 진단(충돌각 스윕) 또는 B1 미해결 항목(질량/단위 규약) 중 사용자가
+명시적으로 지정한다.
 
 ## 상태 표
 
@@ -52,7 +42,10 @@ candidate` 추가)까지 완료했다
 | KC-01a | 몸통-배트 협응 최소 역학 모델 | 시제품 구현 완료. dt 수렴 검증 완료 — 4개 조건 중 1개만 통과(그마저 유효 타구 실패), 나머지 우위 비교는 무효로 철회 |
 | KC-01a-validation | dt 수렴·정착·에너지·타이밍 보완 + VISION-01 설계 | 완료 — [검증 결과](../records/KC-01a-VALIDATION.md), [VISION-01](../design/VISION-01.md) |
 | KC-01a-direction-contract | 회전 방향 계약 + 동방향(same-direction) 조건 설계 + motion-triggered handoff + 유효성 검사 정정 | 완료 — [계약](../design/KC-01a-DIRECTION-CONTRACT.md), 역회전(상쇄) 발견, `same_direction_staggered`는 정착 미충족으로 기준선 보류, `torso_lead_handoff`(torso_target=0.5, 6.78m)는 방향 불일치·범위 이탈로 무효 철회, 방향/변위/범위 사전 검사 추가 후 재탐색한 새 후보(torso_target=0.25)는 검사·정착·그립 통과하지만 dt 미수렴 |
-| KC-01b | 뒷다리 지지·실제 전신 전달 | **미착수** |
+| KC-01b | 뒷다리 지지·실제 전신 전달 | **미착수**(VM-01 방향 전환으로 보류) |
+| VM-01-V1 | 눈 영상·공 추적(정답 좌표 미사용) | 완료 — PASS(한계 명시), [보고](../records/VM01-REPORT.md) |
+| VM-01-P1 | 독립 충돌 검증(배트·몸통 제어 제거) | 완료 — **FAIL**, [원인·수정안](../records/VM01-P1-CONTACT.md) |
+| VM-01-B1 | 파리 관절 최소 몸체 | 설계만 완료(NOT-RUN, 구현 미착수) — [설계](../design/VM01-B1-MINIMAL-BODY.md) |
 
 완료 항목의 근거·수치·시행착오는 [완료 작업 색인](../records/INDEX.md)에서
 작업 ID로 찾는다.

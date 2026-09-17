@@ -38,7 +38,7 @@ video = [
 ]
 
 [tool.setuptools]
-packages = ["envs", "envs.baseball", "controllers", "encoders", "train", "analysis", "demos"]
+packages = ["envs", "envs.baseball", "controllers", "encoders", "train", "analysis", "demos", "vision"]
 
 [tool.setuptools.package-data]
 # R-03 (docs/implementation/REFACTOR-PLAN.md): "assets/*.xml" alone missed

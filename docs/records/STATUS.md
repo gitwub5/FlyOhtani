@@ -1,12 +1,56 @@
 # 현재 상태
 
-2026-09-17 갱신(KC-01a 몸통-배트 협응 모델). 이 문서는
+2026-09-17 갱신(VM-01 방향 전환: 시각·파리 몸 기반 학습). 이 문서는
 **지금** 무엇이 검증됐고 무엇이 막혀 있는지만 담는다. 시행착오·정정 경위·과거
 수치는 [상태 이력](STATUS_HISTORY.md)에, 실행 명령·원자료는
 [검증 기록 색인](VALIDATION_LOG.md)에 있다. 다음 작업 배정은
 [구현 작업표](../implementation/WORK_PACKAGES.md)를 따른다.
 
-## 두 개의 독립 트랙
+## VM-01 — 시각·파리 몸 기반 학습 전환 (현재 배정, 사용자 승인 2026-09-17)
+
+[작업 명세](../tasks/VISUOMOTOR-PIVOT.md), [전체 보고](VM01-REPORT.md).
+KC-01a 후보 추가 탐색과 gear 재보정은 이 전환으로 **보류**됐다(아래 KC-01a
+절은 그 시점까지의 기록으로 그대로 보존).
+
+- **V1(눈 영상·공 추적) — PASS(한계 명시)**: `envs/assets/
+  fly_visual_body.xml`의 Head body에 실제 카메라(`eye_cam`)를 부착했다
+  (기존 `fly_pov`는 world 고정이라 재사용하지 않음, 위치/방향을
+  `mj_forward` 직후 직접 읽어 검증). 정답 공 좌표를 전혀 읽지 않는 색상
+  기반 고전 검출기(`vision/ball_detector.py`)와 추적기(`vision/
+  tracker.py`)를 구현했고, AST 기반 정적 검사로 정책 경로 모듈이 평가자
+  모듈(`vision.evaluator`)이나 `envs.*`를 import하지 않는다는 것을
+  확인했다. 실측(`docs/records/evidence/VM01-vision-baseline.json`):
+  해상도/FOV 4개 조합 중 320px/FOV60°가 최고 검출률(96.4%), 128px/
+  FOV90°가 최저(17.2%) — `docs/design/VISION-01.md` §3이 가설로 남겼던
+  "서브픽셀 구간은 검출 어려움"을 처음 실측으로 확인했다. 릴리스 지터·
+  가림·동결·지연 진단(`docs/records/evidence/VM01-vision-diagnostics.json`)
+  모두 예상대로 동작(가림 시 검출률 0%, 지터에도 검출률 유지). 한계:
+  그레이스케일 전용 검출은 미검증, 시간적 예측(칼만류) 없음.
+- **P1(독립 충돌 검증) — FAIL**: 배트·몸통 제어를 완전히 제거한 분리
+  실험(`envs/assets/contact_validation_p1.xml`)에서 관통 깊이(0.046~
+  0.048m)와 반발계수(고정 타격면 -0.298, 자유 배트 0.294) 모두 사전
+  등록 기준을 통과하지 못했다(`docs/records/VM01-P1-CONTACT.md`). 가장
+  중요한 발견: 고정 타격면의 음의 반발계수는 dt를 production 대비
+  1/256까지 세분화해도 변하지 않는다 — 이산화 오차가 아니라 이 접촉
+  재료가 정면 충돌에서 실제로 반발하지 않는다는 dt-수렴된 결과다.
+  운동량 보존은 중력 기여를 보정하면 기계정밀도 수준으로 확인됨(초기
+  "12% 위반"은 관측 창에 걸친 중력의 정상적 효과였음). **이 검증이
+  통과할 때까지 학습 개시를 보류한다.**
+- **B1(파리 관절 최소 몸체) — NOT-RUN(설계만, 지시된 범위)**:
+  `docs/design/VM01-B1-MINIMAL-BODY.md`. flygym==1.2.1 원본(스트립 전)
+  MJCF를 직접 받아 확인해, 다리당 7개 능동 자유도(Coxa yaw/pitch/roll,
+  Femur pitch/roll, Tibia pitch, Tarsus1 pitch)와 위치(P) 제어라는
+  사실을 확보했다. 절대 질량/토크 단위는 raw XML 질량 합(≈1.0)과 컴파일된
+  모델의 실제 질량 합(≈0.00026)이 불일치해 **미해결로 명시**했다(임의
+  숫자 없음). 최소안으로 "지지된 몸통 + 앞다리 1개(7DOF) + 도구 부착"을
+  제안하고, 공/도구 크기는 정식 야구공이 아니라 현재 앞다리 도달거리
+  (0.580m)의 10~20%로 줄일 것을 제안했다 — 인간식 직립·고정 스윙 순서는
+  요구하지 않는다.
+- **연구 트랙 구분**: 위 세 작업은 모두 일반 정책(환경 기준선) 트랙이다.
+  `encoders/retina_encoder.py`(정답 좌표 직접 사용하는 초기 스켈레톤)나
+  EXP-001의 실제 MaleCNS 회로 학습과는 독립이며, 이번에 수정하지 않았다.
+
+## 두 개의 독립 트랙(신경회로/물리, KC-01a까지의 기록 — VM-01 전환 이전)
 
 이 프로젝트는 서로 독립적으로 진행되는 두 트랙을 갖는다(`docs/PLAN.md` D08).
 하나가 막혀도 다른 하나는 계속 진행할 수 있다.
@@ -126,25 +170,19 @@
 
 ## 테스트·린트
 
-`python -m pytest`/`pytest` 두 진입점 모두 **109 passed**로 일치(B1/B0/ENV-001은
-87개로 무변경, KC-01a 22개 — 기존 12개 + 컨트롤러 유효성/인계 회귀 테스트
-10개 추가). lint 클린. 비editable wheel 설치로 모델 로드까지
-확인(`docs/records/evidence/R03-wheel-install-check.txt`).
+`python -m pytest`/`pytest` 두 진입점 모두 **125 passed**로 일치(B1/B0/
+ENV-001 87개 + KC-01a 22개 무변경 + VM-01 V1 16개 신규). lint 클린
+(`vision/` 포함). 비editable wheel 설치로 모델 로드까지
+확인(`docs/records/evidence/R03-wheel-install-check.txt`) — `vision`
+패키지 추가로 `pyproject.toml`의 `packages` 목록을 갱신하고 재설치했다.
 
 ## 다음 작업
 
-[KC-01a 검증 보완과 시각 입력 설계](../tasks/KC-01a-VALIDATION-AND-VISION.md)의
-A절(물리 검증)과 B절(VISION-01 설계), 후속 원인 분리(A6-A8), `same_direction_
-staggered` 수용 검증과 몸통 선행 메커니즘 검증(A9-A18, `docs/records/
-KC-01a-VALIDATION.md`)까지 완료했다. 남은 것: (1) `torso_lead_handoff`
-(torso_target=0.25, 유효성 검사 통과·능동 제동 정착)의 dt 미수렴 원인을
-A6과 같은 방식(구동-전용/접촉-전용 분리)으로 진단, (2)
-`torso_swing_with_arm_hold`의 gear 재보정은 사용자 승인 후 진행, (3) 공통
-에너지 예산 비교는 관심 조건들이 dt 수렴을 통과한 뒤 재개 — 지금까지 나온
-어떤 점수(철회된 6.78m 포함)도 "협응이 낫다"는 근거로 쓰지 않는다, (4)
-VISION-01의 실제 구현 여부는 dt 수렴하는 유효 후보가 나온 뒤 결정, (5)
-VISION-01 §3의 검출 가능성 가설은 렌더 실험으로 확인 전까지 가설로 유지,
-(6) 접촉 침투(약 −0.05m)의 물리적 타당성은 여전히 미해결.
-[구현 작업표](../implementation/WORK_PACKAGES.md)에서 다음 배정을 받는다.
-KC-01b/8코스/RL/시각 제어 구현은 사용자가 명시적으로 지정하기 전에는 시작하지
-않는다.
+[VM-01](../tasks/VISUOMOTOR-PIVOT.md)의 V1/P1/B1을 모두 완료해 보고했다
+([전체 보고](VM01-REPORT.md)) — V1 PASS(한계 명시), P1 **FAIL**, B1
+설계만(NOT-RUN). **P1이 FAIL이므로 학습 개시는 계속 보류한다.** 다음은
+사용자가 명시적으로 지정한다: (1) P1 실패 원인 진단(충돌각 스윕,
+`docs/records/VM01-P1-CONTACT.md`의 제안) 및 최소 수정안 적용 여부,
+(2) B1 미해결 항목(질량/단위 규약 확정, 자연 관절범위 통계화) 해결 후
+실제 구현, (3) KC 후보 탐색/gear 재보정은 이 전환으로 계속 보류. 기존
+실패/철회 기록은 그대로 보존한다.

@@ -1,0 +1,59 @@
+<mujoco model="contact_validation_p1">
+  <!-- VM-01 P1 (docs/tasks/VISUOMOTOR-PIVOT.md, docs/design/
+       CONTACT-VALIDATION-P1-SPEC.md): an ISOLATED contact experiment with
+       no torso/swing/bat controller at all -- two independent targets, far
+       enough apart that only one is ever hit per run (the OTHER target's
+       collision is disabled per-run via contype/conaffinity=0 in
+       scripts/p1_contact_isolated.py, not by geometry alone).
+
+       ball_geom and bat_geom reproduce envs/assets/baseball_park_kc01a.xml's
+       OWN production values exactly (same radius/mass/solref/solimp/default
+       class) -- this is a re-creation for isolation, not a new material. -->
+  <compiler angle="radian"/>
+  <option timestep="0.00025" gravity="0 0 -9.81" integrator="RK4"/>
+
+  <default>
+    <geom condim="3" friction="0.8 0.02 0.001" solref="0.01 1" solimp="0.9 0.95 0.001"/>
+  </default>
+
+  <asset>
+    <material name="ball_mat" rgba="0.95 0.18 0.18 1"/>
+    <material name="bat_mat" rgba="0.6 0.4 0.15 1"/>
+    <material name="plate_mat" rgba="0.5 0.5 0.55 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1"/>
+
+    <!-- Target A: a FIXED striking plate, welded to world (no joint) --
+         external support reaction is physically expected here; momentum
+         conservation is NOT required for this target
+         (CONTACT-VALIDATION-P1-SPEC.md section 1 item 1). -->
+    <body name="fixed_plate_body" pos="5 0 1">
+      <geom name="fixed_plate" type="box" size="0.01 0.5 0.5" material="plate_mat"/>
+    </body>
+
+    <!-- Target B: a FREE bat (mass/inertia matching baseball_park_kc01a.xml's
+         bat_geom+bat_tilt_body exactly: capsule radius 0.025, length 0.85,
+         mass 0.9), initially at rest -- the whole ball+bat system here has
+         NO external support, so total momentum must be conserved
+         (section 1 item 2). Placed far from the fixed plate so both can
+         coexist in one model without interfering (each run disables the
+         other's collision). -->
+    <body name="free_bat_body" pos="-5 0 1">
+      <joint name="free_bat_joint" type="free"/>
+      <geom name="free_bat" type="capsule" fromto="-0.425 0 0 0.425 0 0" size="0.025" mass="0.9" material="bat_mat"/>
+    </body>
+
+    <!-- Ball: free joint, reproduces baseball_park_kc01a.xml's ball_geom
+         exactly (radius 0.0366, mass 0.145, solref (0.0002,0.01), solimp
+         (0.9,0.95,0.0001,0.5,2)) -- damping=0/armature=0 for the same
+         reason envs/assets/baseball_park_kc01a.xml's own comment gives
+         (armature default 0.002 would silently reduce effective gravity). -->
+    <body name="ball" pos="0 0 1">
+      <joint name="ball_free" type="free" damping="0" armature="0"/>
+      <geom name="ball_geom" type="sphere" size="0.0366" mass="0.145" material="ball_mat"
+            solref="0.0002 0.01" solimp="0.9 0.95 0.0001 0.5 2"/>
+    </body>
+  </worldbody>
+</mujoco>

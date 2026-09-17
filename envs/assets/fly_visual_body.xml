@@ -85,6 +85,38 @@
 					</body>
 				<body name="Head" pos="0.01147972 0.00000000 0.00027933" quat="0.74024826 -0.00000000 0.00001137 0.67233363">
 					<geom name="Head" type="mesh" contype="0" conaffinity="0" group="2" pos="0 0 0" quat="1 0 0 0" mesh="fly_mesh_Head" material="fly_appearance_head" />
+					<!-- VM-01 V1 (docs/tasks/VISUOMOTOR-PIVOT.md, docs/design/VISION-01.md):
+						 the head-mounted eye camera, as an actual child of the Head body
+						 (not the world-fixed fly_pov camera in envs/assets/
+						 baseball_park_kc01a.xml, which VISION-01 section 3 already flagged
+						 as NOT tracking torso_yaw and NOT at the real Head position). This
+						 element has zero physics footprint (a MuJoCo camera is a pure
+						 render/sensor attachment, not a body/geom/joint) -- adding it here
+						 does not change dynamics, collision, or any existing B1/KC-01a
+						 regression, only what mujoco.Renderer can render with
+						 camera="eye_cam".
+						 pos: midpoint between LEye/REye's own local pos below (x=0.09259664,
+						 z=0.00681725, y=0 -- centered), i.e. between-the-eyes, not inside
+						 the head mesh.
+						 xyaxes: forward(-Z_cam) is Head's own local +X, which independently
+						 matches (docs/design/VISION-01.md section 3) the world +X direction
+						 (toward the pitcher) at torso_yaw=0 -- confirmed via
+						 mujoco.mj_forward + reading cam_xmat directly, not assumed. "up" is
+						 NOT Head's local Z (that axis is NOT world-vertical in this rig's
+						 baked side-lying pose -- a first attempt using local Z as "up"
+						 produced a visibly rolled/sideways render, ground filling half the
+						 frame as a near-vertical wall instead of a horizon). The actual
+						 world +Z (vertical) direction expressed in Head's local frame was
+						 computed directly from data.xmat at reset (torso_yaw=0):
+						 R_head^T @ (0,0,1) = (0.0959, -0.9954, 0.0000) -- THIS vector is
+						 used as "up" below, with local -Z as "right" (the sign that gives
+						 world forward=+X and a right-handed camera frame; local +Z produced
+						 forward=-X, verified empirically by reading data.cam_xmat after
+						 mj_forward, not assumed from hand algebra). Re-verified by rendering
+						 camera="eye_cam": the ground/horizon appears as an upright,
+						 non-rolled horizontal line with the foul line receding correctly
+						 toward it (/tmp/eye_cam_test3.png during development). -->
+					<camera name="eye_cam" pos="0.09259664 0 0.00681725" xyaxes="0 0 -1 0.0959349766 -0.9953876030 0.0000168332" fovy="90"/>
 					<body name="LEye" pos="0.09259664 -0.00000000 0.00681725" quat="1 0 0 0">
 						<geom name="LEye" type="mesh" contype="0" conaffinity="0" group="2" pos="0 0 0" quat="1 0 0 0" mesh="fly_mesh_LEye" material="fly_appearance_eye" />
 					</body>

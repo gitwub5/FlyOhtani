@@ -10,6 +10,25 @@ EXP-001의 확정 데이터 파일·출처·CC BY 4.0·해시 획득 절차는 [
 
 First actual external asset import this project has done: `envs/assets/mesh_neuromechfly/*.stl` (43 files) from PyPI `flygym==1.2.1` (Apache-2.0), used as a purely visual (non-colliding, massless) overlay for the baseball B1 batter character. Full provenance/hashes/derivation: [docs/design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json](design/ENV-002-NEUROMECHFLY-ASSET-MANIFEST.json) and [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). This is mesh/appearance data only -- **not** connectome/wiring data, and NeuroMechFly's own fly is female while this project's neural-circuit track (below) uses MaleCNS (male); the two are explicitly separate data layers, not the same individual.
 
+## 2026-09-17 VM-01 B1: NeuroMechFly joint/pose data inspected (design-only, not imported into the repo)
+
+`docs/design/VM01-B1-MINIMAL-BODY.md`'s joint-structure/DOF/control-default/
+natural-pose-range facts were read directly from the SAME `flygym==1.2.1`
+(Apache-2.0) package already cited above, re-obtained via `pip download
+flygym==1.2.1 --no-deps` (per `scripts/build_fly_visual_asset.py`'s own
+documented re-run command) to inspect the RAW (pre-strip) MJCF
+(`flygym/data/mjcf/neuromechfly_seqik_kinorder_ypr.xml`), `flygym/fly.py`,
+`flygym/preprogrammed.py`, and `flygym/data/pose/{pose_stretch,
+pose_tripod}.yaml`. Nothing from this inspection was vendored into
+`envs/assets/` -- it is cited numbers/facts in a design doc only, no new
+mesh/code files. Found and left UNRESOLVED: the raw MJCF's own
+`mass="..."` attributes sum to ~1.0 (suggesting a body-mass-fraction
+convention), but MuJoCo's own compiled `model.body_mass.sum()` for that
+same file gives ~0.00026 -- a real discrepancy, not yet explained by
+anything read this round. No absolute mass/torque/energy numbers should be
+derived from this package until that is resolved (checked against
+flygym's own paper/documentation, not yet done).
+
 ## 2026-09-16 update
 
 See the [dated review](research/REVIEW.md) for primary sources and evidence limits covering Shiu, FlyVis, NeuroMechFly, Eon, FlyGM, MaleCNS, Stonkfly, DOOMFLY, NeuroCraft Fly, Fly Arena, FLM, and mushroom-body learning papers. No external code or data was imported. (An earlier copy of this review, `archive/RESEARCH_REVIEW_2026-09-16.md`, is preserved for history; `research/REVIEW.md` is the current version.)

@@ -1,5 +1,7 @@
 # VISION-01 — 눈 카메라 기반 공 추정·타격 제어 입력 계약 (설계만)
 
+> **2026-09-17 범위 변경:** [VM-01](../tasks/VISUOMOTOR-PIVOT.md)에 따라 눈 영상/공 추적 구현은 승인됐으며 KC 타격 수렴과 독립 진행한다. 아래의 “설계만/구현 보류”는 이전 작업 범위 기록이다. 타격 폐루프·학습 통합의 물리 검증 조건은 유지한다. VM-01의 가시성 실험/입력/평가 계약이 충돌 시 우선한다.
+
 id: VISION-01 · status: proposed, 미구현 · version: 0.1 · 2026-09-17 ·
 기준: `docs/tasks/KC-01a-VALIDATION-AND-VISION.md` B절 · 관련: `docs/design/
 KC-01a-TORSO-BAT-COORDINATION.md`(물리), `docs/records/KC-01a-VALIDATION.md`
