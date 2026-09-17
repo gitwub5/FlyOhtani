@@ -35,7 +35,8 @@
 | `flyohtani/world/` | 축소 구장, 투구 런처, 접촉 | Phase 2 |
 | `flyohtani/brain/` (LIF·가소성) | 회로 시뮬레이션, 운동 디코딩 | Phase 4 |
 | `flyohtani/task/` | Gym env, 보상 버전 | Phase 5 |
-| `flyohtani/record/`, `viewer/` | 에피소드 번들, 4분할 재생 | Phase 6 |
+| `flyohtani/record/` | 에피소드 영상·사진·결과 | 있음 |
+| `viewer/` + `flyohtani/brain/replay.py` | 3D 뇌 뷰어(템플릿) + 내보내기 | 있음(배선만) |
 
 ## 설치와 실행
 
@@ -56,6 +57,17 @@ python3.11 -m venv .venv
 ## 뇌 시각화 뷰어
 
 `viewer/`의 3D 뇌 뷰어는 fly-connectome-template을 가져와 수정한 것이다.
+녹화한 에피소드와 우리 회로(MaleCNS 루밍 회로 323개 뉴런)를 실제 뇌 세포체 지도
+위에 보여 준다.
+
+```bash
+.venv/bin/python -m flyohtani.record pitch --out runs/record/hit      # 에피소드 녹화
+.venv/bin/python -m flyohtani.brain.replay --run runs/record/hit      # 뷰어로 내보내기
+cd viewer && npm ci && npm run dev                                    # http://127.0.0.1:5173
+```
+
+지금 뇌 화면에 켜지는 것은 **배선(시냅스 수)이지 활동이 아니다** — 회로
+시뮬레이션은 아직 없다. 뷰어 화면에도 그렇게 표시된다.
 
 Built with [fly-connectome-template](https://github.com/cobanov/fly-connectome-template) by [Mert Cobanov](https://github.com/cobanov).
 

@@ -43,6 +43,9 @@ flyohtani = ["assets/**/*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# viewer/ is vendored third-party code (fly-connectome-template); lint fixes there
+# would be modifications the template license requires us to disclose.
+extend-exclude = ["viewer"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

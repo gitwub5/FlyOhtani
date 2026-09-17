@@ -95,6 +95,19 @@ v1이 기록한 값과 재다운로드로 대조해 일치를 확인했다.
 > sensorimotor control in adult *Drosophila*. *Nature Methods* **21**(12),
 > 2353–2362. [doi:10.1038/s41592-024-02497-y](https://doi.org/10.1038/s41592-024-02497-y)
 
+## 반입됨: fly-connectome-template (D30, 2026-09-17)
+
+뇌 시각화 뷰어. https://github.com/cobanov/fly-connectome-template (Mert Cobanov),
+커밋 `38f55332055328d38c29e72474c4ad5b6876101f`. **Cobanov Template Attribution
+License 1.0**(OSI 승인 아님) — 화면·README 제작자 표시와 수정 내역 공개가 조건.
+파일별 해시: `viewer/PROVENANCE.json`.
+
+안에 든 데이터: MaleCNS v1.0 세포체 위치 140,024개(CC BY 4.0; 매니페스트의
+`sourceSha256`이 이 프로젝트가 받은 주석 파일과 **같다** — `2177e246…a3b2`),
+Flybody 메시(Apache-2.0). 우리 회로 뉴런 323개가 전부 이 지도에 있음을 대조했다.
+
+템플릿의 인기에 대해: 반입 시점에 별 51개, 포크 4개, 커밋 2개의 초기 저장소였다.
+
 ## 문헌 인용 — 다리 성능 (LIT-01)
 
 수치를 쓴 논문만 적는다. 검색 요약만 보고 인용하지 않으며, 확인하지 못한

@@ -35,19 +35,29 @@ export function App() {
     const validated = parseReplay(value,atlas.visibleIds);
     setReplay(validated);setTime(0);setPlaying(false);setError('');
   };
+  // FlyOhtani modification: load the exported circuit replay if present.
+  // `?t=<seconds>` opens the loaded circuit paused at that time (deep link / screenshots).
+  const startAt = Number(new URLSearchParams(window.location.search).get('t'));
+  const circuit = async (quiet = false) => {
+    try {const response=await fetch(asset('experiment/circuit.replay.json'));if(!response.ok)throw Error('No FlyOhtani circuit exported yet (python -m flyohtani.brain.replay).');accept(await response.json());
+      if(Number.isFinite(startAt)&&startAt>0){setTime(startAt);setPlaying(false);}else setPlaying(true);}
+    catch(e){if(!quiet)setError(String(e));}
+  };
+  useEffect(()=>{if(atlas)void circuit(true);},[atlas]);
   const example = async () => {
     try {const response=await fetch(asset('examples/model-output.example.json'));if(!response.ok)throw Error('Example unavailable.');accept(await response.json());}
     catch(e){setError(String(e));}
   };
   const frame = replay ? frameAt(replay,time) : null;
   return <>
-    <header><h1>YOUR EXPERIMENT</h1><span>Environment / anatomy / model output</span><a href="https://github.com/cobanov/fly-connectome-template#readme">Template guide ↗</a></header>
+    <header><h1>FLYOHTANI</h1><span>Fly batter · episode / anatomy / circuit</span><a href="https://github.com/cobanov/fly-connectome-template#readme">Template guide ↗</a></header>
     <main>
       <div className="toolbar">
         <span className="status">{playing?'Running':'Paused'} · {time.toFixed(2)} s</span>
         <div className="controls">
           <button onClick={()=>{setTime(0);setPlaying(false);}}>Reset</button>
           <button onClick={()=>{if(time>=duration)setTime(0);setPlaying(!playing);}}>{playing?'Pause':'Play'}</button>
+          <button disabled={!atlas} onClick={()=>void circuit()}>Load FlyOhtani circuit</button>
           <button disabled={!atlas} onClick={()=>void example()}>Load synthetic example</button>
           <button disabled={!atlas} onClick={()=>file.current?.click()}>Load model JSON</button>
           {replay&&<button onClick={()=>{setReplay(null);setTime(0);setPlaying(false);}}>Clear output</button>}
@@ -59,7 +69,7 @@ export function App() {
       </div>
       {error&&<p className="error" role="alert">{error}</p>}
       <div className="workbench">
-        <section className="panel environment-panel"><h2>01 / ENVIRONMENT</h2><Environment time={time}/><div className="panel-bottom">Generic stimulus · no game or reward function bundled</div></section>
+        <section className="panel environment-panel"><h2>01 / ENVIRONMENT</h2><Environment time={time}/><div className="panel-bottom">Recorded with flyohtani.record · scripted swing · not linked to the brain timeline</div></section>
         <section className="panel brain-panel"><h2>02 / BRAIN SOMA ATLAS <span>MaleCNS v1.0</span></h2>
           {atlas?<BrainScene atlas={atlas} frame={frame}/>:<p className="loading" role="status">Loading measured anatomy…</p>}
           <div className="panel-bottom">{atlas?.visibleIds.size.toLocaleString('en-US') ?? '…'} measured somata <a href={asset('data/brain-atlas/NOTICE.md')}>Data notice ↗</a></div>

@@ -203,3 +203,19 @@ flygym 1.2.1 wheel sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752
 | `pytest` 두 진입점 | 120 passed · ruff 클린 |
 
 Python 최소 버전을 3.11로 올렸다(D07과 일치, `typing.Self` 사용).
+
+---
+
+## 2026-09-17 · 뇌 뷰어 (fly-connectome-template, D30)
+
+| 단계 | 결과 |
+| --- | --- |
+| 템플릿 클론, 커밋 `38f5533` | 42개 파일 반입(`.github/` 제외), 바이트 동일 확인 |
+| 원본 그대로 `npm ci / npm test / npm run build / check:assets` | 4 passed · 빌드 성공 · 해시 검증 (Node 24.21, npm 11.19) |
+| 원본 반입 커밋 | `6b7c42d` (README 제작자 표시 동시 추가) |
+| 우리 회로 323개 vs 템플릿 지도 | 323/323 존재·표시 대상, 그룹 일치 |
+| `python -m flyohtani.brain.replay --run runs/record/hit` | 번들 생성, Python 검증 통과 |
+| 템플릿 자체 `parseReplay`로 대조 | 수락(프레임 6, synthetic); 없는 bodyId는 거부 |
+| 수정 후 `npm test / build / check:assets` | 4 passed · 빌드 · 해시 검증 |
+| 헤드리스 Chrome 캡처 (`?t=1.6/3.1/4.6/6.1`) | LC4 → LPLC2 → DN 12개 → 전체 순으로 실제 뇌 위치에서 켜짐 |
+| `pytest` 두 진입점 | 139 passed · ruff 클린(`viewer/`는 제외 — 제3자 코드) |
