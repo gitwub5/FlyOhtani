@@ -24,3 +24,8 @@ runs/
 data/raw/
 data/derived/
 MUJOCO_LOG.TXT
+
+# viewer (fly-connectome-template) build outputs and the exported experiment bundle
+viewer/node_modules/
+viewer/dist/
+viewer/public/experiment/

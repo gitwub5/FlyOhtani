@@ -8,7 +8,7 @@
 
 필독은 이 파일 + 아래 2개뿐이다:
 
-1. `docs/PLAN.md` — 결정의 단일 기준. 설계 결정(D01~D29), Phase와 게이트
+1. `docs/PLAN.md` — 결정의 단일 기준. 설계 결정(D01~D30), Phase와 게이트
 2. `docs/records/STATUS.md` — 지금 검증된 것과 막혀 있는 것
 
 그 다음, **맡은 작업에 해당할 때만** 읽는다:
@@ -51,6 +51,12 @@
   `docs/RESEARCH_SOURCES.md`와 데이터 manifest에 기록한다.
 - 실험과 무관한 폴더 이동·전체 재작성보다 책임 분리와 필요한 변경을
   우선한다.
+
+## viewer/ 라이선스 조건 (D30)
+
+`viewer/`는 fly-connectome-template(Cobanov Template Attribution License 1.0)이다.
+**화면의 제작자 표시(`Attribution.tsx`)와 루트 README의 표시를 지우지 않는다.**
+`viewer/` 안을 수정하면 `viewer/MODIFICATIONS.md`에 적는다.
 
 ## 게이트
 

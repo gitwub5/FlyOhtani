@@ -53,8 +53,19 @@ python3.11 -m venv .venv
 있다. 거기서 확정된 사실과 반복하면 안 되는 실패는
 [선행 발견 요약](docs/records/PRIOR-FINDINGS.md)에 압축해 두었다.
 
+## 뇌 시각화 뷰어
+
+`viewer/`의 3D 뇌 뷰어는 fly-connectome-template을 가져와 수정한 것이다.
+
+Built with [fly-connectome-template](https://github.com/cobanov/fly-connectome-template) by [Mert Cobanov](https://github.com/cobanov).
+
+이 부분은 **Cobanov Template Attribution License 1.0**([viewer/LICENSE](viewer/LICENSE))을
+따르며, 위 표시를 README와 뷰어 화면에서 지워서는 안 된다. 무엇을 바꿨는지는
+[viewer/MODIFICATIONS.md](viewer/MODIFICATIONS.md), 출처는
+[viewer/PROVENANCE.json](viewer/PROVENANCE.json).
+
 ## 라이선스
 
-프로젝트 코드는 MIT. 반입한 서드파티 자산의 별도 라이선스는
-[THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)에 있다 — NeuroMechFly 메시는
+프로젝트 코드는 MIT. 단 `viewer/`는 위의 템플릿 라이선스를 따른다. 반입한 서드파티
+자산의 별도 라이선스는 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)에 있다 — NeuroMechFly 메시는
 Apache-2.0이며, 향후 커넥톰 데이터는 원 데이터 라이선스를 그대로 따른다.

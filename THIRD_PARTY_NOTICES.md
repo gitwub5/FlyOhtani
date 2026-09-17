@@ -40,6 +40,33 @@ record to match a later refactor would defeat its purpose. The build
 scripts and generated XMLs it refers to are preserved at the git tag
 `archive/human-scale-v0`.
 
+## fly-connectome-template (the `viewer/` directory)
+
+- **What**: a browser workbench (React + Three.js) showing MaleCNS v1.0 soma
+  positions and a Flybody mesh, with model output mapped onto neurons by
+  body ID. Used here as the brain-visualization viewer (docs/PLAN.md D30).
+- **Source**: https://github.com/cobanov/fly-connectome-template by Mert
+  Cobanov, commit `38f55332055328d38c29e72474c4ad5b6876101f`, vendored
+  2026-09-17. Per-file hashes at import: `viewer/PROVENANCE.json`.
+- **License**: Cobanov Template Attribution License 1.0 (not OSI-approved;
+  full text `viewer/LICENSE`). Use, modification, distribution and
+  commercial deployment are permitted **on condition that**:
+  - the linked credit "Built with fly-connectome-template by Mert Cobanov"
+    stays readable in the web UI (`viewer/src/components/Attribution.tsx`);
+  - the same linked credit and a license reference stay in this
+    repository's root README;
+  - the license, copyright notice and attribution are preserved in copies;
+  - modifications are identified (`viewer/MODIFICATIONS.md`).
+  These conditions cannot be waived without written permission from the
+  author, and they apply regardless of this repository's MIT license.
+- **Bundled inside it, under their own licenses**: MaleCNS v1.0 soma atlas
+  (CC BY 4.0; built from the same annotation file this project uses,
+  sha256 `2177e246...a3b2`), Flybody mesh (Apache-2.0,
+  `viewer/public/data/flybody/LICENSE`), and react / react-dom / three
+  (`viewer/public/licenses/`).
+- **Excluded when vendoring**: `.git/` and `.github/` (a CI workflow that
+  does not run from a subdirectory).
+
 ## NeuroMechFly / flygym source MJCF
 
 - **File**: `flyohtani/assets/mjcf_neuromechfly/neuromechfly_seqik_kinorder_ypr.xml`
