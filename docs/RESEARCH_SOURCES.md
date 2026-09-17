@@ -17,10 +17,13 @@
 저장소 코드는 자체 라이선스(MIT)를 쓰지만, **커넥톰 데이터와 그 파생
 파일은 원 데이터의 라이선스 조건을 그대로 유지한다.**
 
-## 현재 상태
+## 현재 상태 (2026-09-17 갱신)
 
-**이 저장소에 커넥톰 데이터는 없다.** 반입된 외부 자산은 아래 NeuroMechFly
-메시 하나뿐이며, 그것은 연결망 데이터가 아니라 형태(mesh) 데이터다.
+반입된 외부 자산은 셋이다:
+
+1. NeuroMechFly **메시**(Apache-2.0) — 형태 데이터
+2. NeuroMechFly **원본 MJCF**(Apache-2.0) — Phase 1의 앞다리 빌드 소스
+3. MaleCNS **루밍 부분회로**(CC-BY) — 실제 연결망 데이터, G4에서 반입
 
 ## 반입됨: NeuroMechFly mesh assets
 
@@ -61,17 +64,53 @@
 > 것이며 물리량이 아니다. 질량은 MuJoCo의 컴파일된 `model.body_mass`에서
 > 센다.
 
-## 다음 반입 대상: MaleCNS (커넥톰)
+## 반입됨: 원본 MJCF (Phase 1)
 
-[PLAN](PLAN.md) D19에 따라 첫 대상은 **루밍(looming) 검출 계열 뉴런과 그
-하류 서브그래프**다. 게이트 G4에서 다음을 실제로 확인한 뒤에만 진행한다:
+`flyohtani/assets/mjcf_neuromechfly/neuromechfly_seqik_kinorder_ypr.xml`
+(47,382 B, sha256 `413b3a1d…2e05a`), 같은 `flygym==1.2.1` wheel에서 수정 없이
+복사. Apache-2.0. v1은 이 파일을 매번 wheel에서 읽었으나, Phase 1의 몸체
+빌드를 네트워크 없이 재현 가능하게 하려고 반입했다. 상세:
+`flyohtani/assets/mjcf_neuromechfly/PROVENANCE.json`.
 
-- 해당 뉴런 타입이 MaleCNS v1.0에 **어떤 이름·규모로 실제 존재하는지**
-  (문헌에서 익숙한 타입 이름을 데이터에 있다고 가정하지 않는다)
-- 배포 형식, 버전, 체크섬, 라이선스, 상업적 이용 가능 여부
-- hemibrain 시절 주석을 자동으로 물려받지 않는다
+wheel sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d`은
+v1이 기록한 값과 재다운로드로 대조해 일치를 확인했다.
 
-다운로드: <https://male-cns.janelia.org/download/>
+## 반입됨: MaleCNS 루밍 부분회로 (G4, 2026-09-17)
+
+**이 프로젝트의 첫 실제 연결망 데이터다.** 상세: [G4 보고](records/G4-CONNECTOME-ACCESS.md).
+
+| 항목 | 값 |
+| --- | --- |
+| dataset | MaleCNS **v1.0** |
+| license | **CC-BY** — 상업적 이용 허용, 저작자 표시 필요 |
+| 배포처 | <https://male-cns.janelia.org/download/> |
+| 협력 기관 | FlyEM (HHMI Janelia), Univ. of Cambridge (Dept. of Zoology), MRC LMB, Google Research |
+| 파생 파일 | `flyohtani/assets/connectome/looming-subgraph-male-cns-v1.0.json` (49 KB) |
+
+원본 파일과 체크섬:
+
+| 파일 | 크기 | SHA-256 |
+| --- | --- | --- |
+| `body-annotations-male-cns-v1.0-minconf-0.5.feather` | 14,483,314 | `2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2` |
+| `connectome-weights-male-cns-v1.0-minconf-0.5.feather` | 1,051,241,946 | `e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1` |
+
+원본 두 파일은 **저장소에 넣지 않았다**(1 GB). 파생 부분회로만 반입했고, 그
+파일 자체에 provenance 블록을 넣어 라이선스 표시가 파일과 함께 이동하도록 했다
+— 문서에만 적으면 파일을 복사하는 순간 표시가 끊긴다.
+
+`weight`는 공표된 시냅스 개수 그대로다. 재가중·임계·정규화하지 않았다.
+
+### hemibrain 주석을 물려받지 않는다
+
+MaleCNS의 타입 이름은 MaleCNS 주석 테이블에서 직접 조회해 확인했다(LC4 n=126,
+LPLC2 n=185, DNp01(GF) n=2). 문헌이나 hemibrain에서 익숙한 이름이 이 데이터셋에
+있다고 가정하지 않았다.
+
+### 아직 받지 않은 것
+
+- 신경전달물질 예측(`body-neurotransmitters`, 42 MB) — 흥분/억제 부호에 필요
+- SWC skeleton / 좌표 — 뷰어의 3D 뇌 배치에 필요
+- LC4/LPLC2의 **입력** 경로
 
 ## 후속 비교 후보
 

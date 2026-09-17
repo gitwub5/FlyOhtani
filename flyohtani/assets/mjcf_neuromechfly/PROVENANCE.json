@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-17",
+  "why": "Phase 1 (docs/PLAN.md D22) builds a real-jointed foreleg from this file. v1 only vendored the meshes and read this XML out of a downloaded wheel each time; vendoring it makes the body build reproducible without network access.",
+  "source": {
+    "pypi_package": "flygym",
+    "pypi_version": "1.2.1",
+    "wheel_filename": "flygym-1.2.1-py3-none-any.whl",
+    "wheel_sha256": "5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d",
+    "acquisition": "pip download flygym==1.2.1 --no-deps",
+    "path_in_wheel": "flygym/data/mjcf/neuromechfly_seqik_kinorder_ypr.xml",
+    "license": "Apache-2.0",
+    "license_file": "../mesh_neuromechfly/LICENSE-flygym-apache-2.0.txt",
+    "project": "flygym (NeuroMechFly v2), NeLy lab, EPFL",
+    "homepage": "https://neuromechfly.org/"
+  },
+  "files": {
+    "neuromechfly_seqik_kinorder_ypr.xml": {
+      "sha256": "413b3a1dcb7537d08122e16f256f27ec0d8bb9f52c58670345b6c24c9e72e05a",
+      "bytes": 47382,
+      "modified": "copied byte-for-byte out of the wheel, unmodified"
+    }
+  },
+  "wheel_sha256_verified_on_download": true,
+  "note_mesh_scale": "This MJCF references meshes with scale='1000 1000 1000': the STL files are in metres, the model is in millimetres.",
+  "note_tarsus_meshes": "This MJCF references Tarsus2-5 meshes that are NOT vendored in mesh_neuromechfly/ (v1 only copied Tarsus1). Any builder reading this file must prune those bodies or vendor the missing STLs."
+}

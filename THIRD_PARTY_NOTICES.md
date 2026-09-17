@@ -38,6 +38,41 @@ record to match a later refactor would defeat its purpose. The build
 scripts and generated XMLs it refers to are preserved at the git tag
 `archive/human-scale-v0`.
 
+## NeuroMechFly / flygym source MJCF
+
+- **File**: `flyohtani/assets/mjcf_neuromechfly/neuromechfly_seqik_kinorder_ypr.xml`
+- **Source**: the same `flygym==1.2.1` wheel as the meshes above
+  (sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d`,
+  verified again on re-download), path `flygym/data/mjcf/` inside it.
+- **License**: Apache License 2.0 (same license file as the meshes).
+- **Modification**: none. Copied byte-for-byte; sha256
+  `413b3a1dcb7537d08122e16f256f27ec0d8bb9f52c58670345b6c24c9e72e05a`.
+- **Use**: `flyohtani/body/minimal_body.py` reads it to build the foreleg,
+  keeping the original joint axes, segment positions and masses. The built
+  model is a derived work of an Apache-2.0 file.
+- **Note**: this MJCF references Tarsus2-5 meshes that are deliberately NOT
+  vendored, so it cannot be compiled as-is from this repo. The builder prunes
+  those segments. See `mjcf_neuromechfly/PROVENANCE.json`.
+
+## MaleCNS connectome (derived subgraph)
+
+- **File**: `flyohtani/assets/connectome/looming-subgraph-male-cns-v1.0.json`
+- **Source**: MaleCNS v1.0, <https://male-cns.janelia.org/download/>, a
+  collaboration between FlyEM (HHMI Janelia), the University of Cambridge
+  (Dept. of Zoology), the MRC Laboratory of Molecular Biology, and Google
+  Research.
+- **License**: **CC-BY**. Commercial use is permitted with attribution. This
+  is a DIFFERENT license from the Apache-2.0 code/mesh assets above, and a
+  derived subset keeps it.
+- **What was taken**: 1,343 of the release's 151,856,684 edges -- those from
+  LC4 / LPLC2 to six descending-neuron types -- plus each involved body's
+  type and soma side. No thresholding, reweighting or deduplication.
+  `weight` is the released synapse count.
+- **Source file checksums**: recorded both in
+  `docs/RESEARCH_SOURCES.md` and inside the derived file's own `provenance`
+  block, so the attribution travels with the data rather than only with the
+  repository.
+
 ### Note on sex
 
 These meshes are from NeuroMechFly, an adult **female** *Drosophila*. The

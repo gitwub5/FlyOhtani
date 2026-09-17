@@ -1,12 +1,14 @@
 # 문서 안내
 
-문서는 4개뿐이다. 늘리기 전에 기존 문서에 들어갈 자리가 없는지 먼저 본다.
+문서는 7개다. 늘리기 전에 기존 문서에 들어갈 자리가 없는지 먼저 본다.
 
 | 문서 | 역할 | 언제 읽나 |
 | --- | --- | --- |
 | [PLAN.md](PLAN.md) | **결정의 단일 기준.** 연구 질문, 설계 결정(D01~D24), Phase와 게이트, 리스크 | 항상 먼저 |
 | [records/STATUS.md](records/STATUS.md) | **지금** 무엇이 검증됐고 무엇이 막혀 있는지만 | 작업 시작 전 |
 | [records/PRIOR-FINDINGS.md](records/PRIOR-FINDINGS.md) | v1에서 확정된 사실과 반복하면 안 되는 실패 | 몸·접촉·시각 작업 전 |
+| [records/G1-FORELEG-SWING.md](records/G1-FORELEG-SWING.md) | G1 보고: 앞다리·배트·모델 사실 | 몸·접촉 작업 전 |
+| [records/G4-CONNECTOME-ACCESS.md](records/G4-CONNECTOME-ACCESS.md) | G4 보고: MaleCNS 루밍 회로 | 뇌 작업 전 |
 | [RESEARCH_SOURCES.md](RESEARCH_SOURCES.md) | 외부 데이터·코드의 출처·버전·라이선스 | 외부 자산을 반입할 때 |
 | [records/VALIDATION_LOG.md](records/VALIDATION_LOG.md) | 실행한 명령과 그 결과의 색인 | 결과를 남길 때 |
 

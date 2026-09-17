@@ -106,7 +106,14 @@ ACTIVE_FORELEG_JOINTS: Final = (
 )
 """The 7 position-controlled DOFs per leg in flygym's own `all_leg_dofs`.
 Tarsus2-5 have joints in the raw MJCF but are NOT in the actuated list --
-flygym leaves them as passive springs, and so does this project."""
+flygym leaves them as passive springs, and so does this project.
+
+These are SUFFIXES. flygym builds the real joint name as
+`joint_{side}{position}{dof}`, e.g. `joint_RFCoxa_yaw` for the right
+foreleg. Do not use these bare strings as joint names.
+
+Only five of the seven are driveable with the model's own actuator spec;
+see LOCKED_DOFS in flyohtani/body/minimal_body.py for the measurement."""
 
 # Original position-control defaults, in model units.
 POSITION_CONTROL_KP: Final = 45.0  # uN*mm/rad == 4.5e-8 N*m/rad

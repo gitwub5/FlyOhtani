@@ -44,3 +44,52 @@ v1 시점의 원자료(실행 명령·evidence JSON·영상)는 git 태그
 | Apache-2.0 라이선스 전문 | 포함 |
 | PROVENANCE.json | 포함 |
 | `flyohtani.units` import | 정상 |
+
+---
+
+## 2026-09-17 · G1 · 앞다리 스윙 측정
+
+| 명령 | 결과 |
+| --- | --- |
+| `.venv/bin/python -m flyohtani.body.g1_sweep` | 240런, 발산 0, 최대 16,820 mm/s |
+| dt 수렴 (1e-4 → 1.5625e-6) | 가장 미세한 두 dt 차이 **0.07%** |
+| 적분기 교차검증 (Euler/implicitfast/RK4 @ 1.5625e-6) | 편차 **0.02%** |
+| `boundmass` 민감도 (1e-6 vs 1e-9) | 16,820 vs 18,215 mm/s (**8.3%**) |
+
+원자료: `evidence/G1-swing-sweep.json` · 보고: [G1](G1-FORELEG-SWING.md)
+
+원본 모델 대조(수정하지 않은 flygym MJCF를 그대로 컴파일, 스크래치 공간):
+앞다리 7개 능동 DOF의 대각 관성 측정 — `Coxa_roll` 2.914e-08,
+`Femur_roll` 1.784e-08 vs 나머지 1.0e-06 ~ 2.8e-05 g·mm². 이 대조는 저장소가
+의도적으로 반입하지 않은 Tarsus2-5 메시를 필요로 하므로 **오프라인 테스트로
+재현되지 않는다** — 테스트는 같은 결론을 우리 빌드에서 재측정한다.
+
+**이번에 검증하지 않은 것**: 접촉 물리, 렌더 기반 검출, 회로 시뮬레이션.
+
+## 2026-09-17 · G4 · 커넥톰 접근
+
+| 단계 | 결과 |
+| --- | --- |
+| MaleCNS v1.0 주석 다운로드 (14.5 MB) | http 200, sha256 `2177e246…a3b2` |
+| MaleCNS v1.0 연결 가중치 다운로드 (1.05 GB) | http 200, sha256 `e35da783…afc1` |
+| 주석 조회 | 211,577 뉴런. LC4 n=126, LPLC2 n=185, DNp01(GF) n=2 실재 확인 |
+| 부분회로 추출 | 151,856,684 간선 중 1,343개 선택 (311→12 뉴런, 39,549 시냅스) |
+| 파생 파일 | `flyohtani/assets/connectome/looming-subgraph-male-cns-v1.0.json` (49 KB) |
+
+보고: [G4](G4-CONNECTOME-ACCESS.md) · 재추출:
+`flyohtani.brain.connectome.extract_looming_subgraph()`
+
+## 2026-09-17 · Phase 1 · 회귀
+
+| 명령 | 결과 |
+| --- | --- |
+| `.venv/bin/python -m pytest -q` | 54 passed |
+| `.venv/bin/pytest -q` | 54 passed (두 진입점 일치) |
+| `.venv/bin/ruff check .` | All checks passed |
+
+flygym 1.2.1 wheel sha256 `5db9bb89b7f57e2fda8d716fd8205b0ba7ac9a46e7c194ea6e752e38964f390d`
+— v1이 기록한 값과 일치함을 재다운로드로 확인(provenance 체인 검증).
+
+비editable wheel 재확인(저장소 밖에서 import): STL 45 + Apache-2.0 라이선스 +
+메시 PROVENANCE + 원본 MJCF + MJCF PROVENANCE + 커넥톰 부분회로가 모두 실리고,
+설치본만으로 부분회로 로드(1,343간선, CC-BY)와 몸체 빌드(nv=nu=5)가 된다.

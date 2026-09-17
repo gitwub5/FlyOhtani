@@ -9,8 +9,8 @@
                             보상 조절 신호 ←──── 타구 결과(접촉/방향/비거리)
 ```
 
-**현재 Phase 0 완료.** 몸·세계·뇌·과제·뷰어는 아직 구현되지 않았다.
-지금 동작하는 것은 시각 감지/추적 계층과 단위 규약뿐이다.
+**현재 Phase 1 진행 중.** 게이트 G1(앞다리 스윙)과 G4(커넥톰 접근)를
+통과했다. 세계·과제·뷰어는 아직 없다.
 [계획](docs/PLAN.md) · [현재 상태](docs/records/STATUS.md)
 
 ## 이 저장소가 주장하지 않는 것
@@ -19,8 +19,9 @@
   실제 연결 데이터 + **가정한** 뉴런 동역학 + **가정한** 가소성이다.
 - 수작업/RL 컨트롤러는 **환경 기준선**이다. 실제 회로의 우위 주장은
   셔플 배선·고정 회로 대조군을 갖춘 뒤에만 한다.
-- 현재 저장소에 커넥톰 데이터는 **없다**. 반입 시 출처·버전·체크섬·
-  라이선스를 [RESEARCH_SOURCES](docs/RESEARCH_SOURCES.md)에 기록한다.
+- 커넥톰 **배선**은 들어와 있지만(MaleCNS v1.0, CC-BY) 그 회로가 루밍에
+  어떻게 반응하는지는 전혀 확인하지 않았다. 배선을 받은 것과 기능을 검증한
+  것은 다르다.
 
 ## 구조
 
@@ -29,9 +30,10 @@
 | `flyohtani/units.py` | 단위 규약(mm·g·μN), 원본 모델 실측 상수 | 있음 |
 | `flyohtani/sense/` | 눈 카메라, 공 검출, 시간 추적, 관측 스키마 | 있음(Phase 3에서 재검증) |
 | `flyohtani/assets/` | NeuroMechFly STL 메시 + 라이선스 + provenance | 있음 |
-| `flyohtani/body/` | 앞다리 실제 관절 + 배트 | Phase 1 |
+| `flyohtani/body/` | 원본 MJCF에서 빌드한 실제 앞다리 관절 + 배트, G1 스윕 | 있음 |
+| `flyohtani/brain/connectome.py` | MaleCNS 루밍 부분회로(311→12 뉴런) 로더 | 있음 |
 | `flyohtani/world/` | 축소 구장, 투구 런처, 접촉 | Phase 2 |
-| `flyohtani/brain/` | 커넥톰 로더, LIF 회로, 가소성 | Phase 4 |
+| `flyohtani/brain/` (LIF·가소성) | 회로 시뮬레이션, 운동 디코딩 | Phase 4 |
 | `flyohtani/task/` | Gym env, 보상 버전 | Phase 5 |
 | `flyohtani/record/`, `viewer/` | 에피소드 번들, 4분할 재생 | Phase 6 |
 
@@ -40,7 +42,7 @@
 ```bash
 python3.11 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest          # 20 passed
+.venv/bin/pytest          # 54 passed
 .venv/bin/ruff check .
 ```
 
