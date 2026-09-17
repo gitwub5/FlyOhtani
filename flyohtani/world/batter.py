@@ -109,6 +109,11 @@ EYE_FOVY_DEG = 120.0
 EYE_DOWN_TILT_DEG = 15.0
 """Eyes look sideways, tilted slightly down toward the strike zone."""
 
+DIRT_TOP_MM = 0.01
+"""The infield dirt, plate and chalk sit on a 0.01 mm layer over the grass
+plane. Thinner layers z-fight with the plane in any view from more than a few
+mm away. Visual only: the ball still collides with the plane at z = 0."""
+
 GROUP_WORLD, GROUP_FLY, GROUP_ACTIVE, GROUP_HEAD = 0, 1, 2, 4
 
 _COLOURS = {
@@ -376,7 +381,7 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     w, side = PLATE_WIDTH_MM * scale / 2, PLATE_SIDE_MM * scale
     plate = [(-w, 0), (w, 0), (w, side), (0, 2 * side), (-w, side)]
     pvs = []
-    for zz in (0.0, 0.004):
+    for zz in (0.0, 0.002):
         pvs += [f"{-b:.6g} {a:.6g} {zz}" for a, b in plate]
     extra.append(ET.Element("mesh", {"name": "plate", "vertex": " ".join(pvs)}))
 
@@ -384,12 +389,12 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     ground = ET.Element("geom", {"name": "ground", "type": "plane", "size": "60 60 0.1",
                                  "material": "grass", "group": str(GROUP_WORLD)})
     world.append(ground)
-    dirt = ET.Element("geom", {"name": "dirt", "type": "cylinder", "size": f"{4200 * scale} 0.0005",
-                               "pos": "0 0 0.0005", "material": "dirt", "contype": "0", "conaffinity": "0",
+    dirt = ET.Element("geom", {"name": "dirt", "type": "cylinder", "size": f"{4200 * scale} {DIRT_TOP_MM / 2}",
+                               "pos": f"0 0 {DIRT_TOP_MM / 2}", "material": "dirt", "contype": "0", "conaffinity": "0",
                                "group": str(GROUP_WORLD)})
     world.append(dirt)
     world.append(ET.Element("geom", {"name": "plate", "type": "mesh", "mesh": "plate", "material": "chalk",
-                                     "pos": "0 0 0.001", "contype": "0", "conaffinity": "0",
+                                     "pos": f"0 0 {DIRT_TOP_MM}", "contype": "0", "conaffinity": "0",
                                      "group": str(GROUP_WORLD)}))
     # right-handed batter's box: third-base side of the plate (+y).
     box_y0 = w + BOX_GAP_MM * scale
@@ -403,8 +408,8 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
              ((box_cx + box_x, box_cy), (cw, (box_y1 - box_y0) / 2 + cw))]
     for i, ((cx, cy), (hx, hy)) in enumerate(lines):
         world.append(ET.Element("geom", {"name": f"box_line{i}", "type": "box",
-                                         "size": f"{hx:.6g} {hy:.6g} 0.0008",
-                                         "pos": f"{cx:.6g} {cy:.6g} 0.0016", "material": "chalk",
+                                         "size": f"{hx:.6g} {hy:.6g} 0.001",
+                                         "pos": f"{cx:.6g} {cy:.6g} {DIRT_TOP_MM + 0.001}", "material": "chalk",
                                          "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
     world.append(ET.Element("light", {"pos": "3 -6 12", "dir": "-0.2 0.4 -1", "diffuse": "0.55 0.55 0.52",
                                       "castshadow": "false"}))
@@ -413,7 +418,7 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     # feet on the ground, standing in the middle of the box.
     # the source model's thorax sits ~1.3 mm off the root once upright; place
     # the root so the THORAX is centred in the box.
-    fly.set("pos", f"{box_cx - thorax_xy[0]:.6g} {box_cy - thorax_xy[1]:.6g} {-foot_z + 0.002:.6g}")
+    fly.set("pos", f"{box_cx - thorax_xy[0]:.6g} {box_cy - thorax_xy[1]:.6g} {-foot_z + DIRT_TOP_MM + 0.002:.6g}")
     tarsus = next(b for b in fly.iter("body") if b.get("name") == "RFTarsus1")
     ox, oy, oz = _tip_offset(src_root)
     bat = ET.SubElement(tarsus, "body", {"name": "bat", "pos": f"{ox} {oy} {oz}"})

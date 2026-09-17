@@ -87,7 +87,7 @@ class TestStage:
             mid = m.geom_dataid[g]
             v = m.mesh_vert[m.mesh_vertadr[mid]:m.mesh_vertadr[mid] + m.mesh_vertnum[mid]]
             lows.append((d.geom_xpos[g] + v @ d.geom_xmat[g].reshape(3, 3).T)[:, 2].min())
-        assert 0.0 < min(lows) < 0.01
+        assert B.DIRT_TOP_MM < min(lows) < B.DIRT_TOP_MM + 0.01  # standing on the dirt, not floating
 
     def test_fly_stands_inside_the_right_handed_box(self, md, scene):
         m, d = md

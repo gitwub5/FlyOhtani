@@ -76,7 +76,7 @@
   {
    "speed_mm_s": 1000.0,
    "touched": true,
-   "ball_vx_after": 210.3636516691687,
+   "ball_vx_after": 210.36365166916863,
    "leaves_bat": true,
    "max_penetration_mm": 0.00622689255979407,
    "warnings": {}
@@ -84,7 +84,7 @@
   {
    "speed_mm_s": 2000.0,
    "touched": true,
-   "ball_vx_after": 435.9611887029949,
+   "ball_vx_after": 435.961188702995,
    "leaves_bat": true,
    "max_penetration_mm": 0.012691112315017336,
    "warnings": {}
@@ -92,7 +92,7 @@
   {
    "speed_mm_s": 3000.0,
    "touched": true,
-   "ball_vx_after": 663.1110410379599,
+   "ball_vx_after": 663.1110410379598,
    "leaves_bat": true,
    "max_penetration_mm": 0.01916644826400539,
    "warnings": {}
