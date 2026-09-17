@@ -12,6 +12,8 @@ NeuroMechFly 몸 · MaleCNS 커넥톰 회로 · MuJoCo 물리로 만드는 연�
 ![License MIT](https://img.shields.io/badge/license-MIT-2f9e44)
 ![Status research prototype](https://img.shields.io/badge/status-research%20prototype-e8590c)
 
+한국어 · [English](README.en.md)
+
 <img src="docs/assets/hit.gif" width="640" alt="키 3.7 mm 초파리가 타석에서 배트를 휘둘러 공을 맞히는 장면. 왼쪽은 3루 쪽 카메라, 오른쪽은 공을 따라가는 카메라.">
 
 <sub>녹화한 안타 한 장면(실제보다 8배 느리게). <b>스윙은 아직 스크립트다</b> — 학습된 동작이 아니다.</sub>
@@ -209,4 +211,4 @@ docs/               계획, 상태, 게이트별 보고서, 근거 파일
 ## 이전 버전
 
 사람 크기 구장 + 3축 강체 배트로 진행하던 v1 전체는 git 태그
-**`archive/human-scale-v0`** 에 보존돼 있다. 그 접근으로는 돌아가지 않는다.
+**`archive/human-scale-v0`** 에 보존돼 있다.
