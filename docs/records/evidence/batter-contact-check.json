@@ -1,0 +1,463 @@
+{
+ "check": "batter-contact",
+ "verdict": "PASS",
+ "checks": {
+  "K1_no_energy_created": true,
+  "K2_cor_band": true,
+  "K3_phase_spread": true,
+  "K4_penetration": true,
+  "K5_no_warnings": true,
+  "K6_in_scene": true
+ },
+ "settings": {
+  "timestep_s": 1e-06,
+  "timeconst_s": 3.2e-05,
+  "dampratio": 0.3,
+  "scale": 0.00204218704998833,
+  "ball_radius_mm": 0.07535670214456937,
+  "barrel_radius_mm": 0.06739217264961489,
+  "penetration_limit_mm": 0.033696086324807445
+ },
+ "per_speed": {
+  "500.0": {
+   "cor_min": 0.4379342894618126,
+   "cor_max": 0.4624910996039201,
+   "cor_spread": 0.024556810142107477,
+   "ke_ratio_max": 0.34976759883115943,
+   "penetration_max_mm": 0.0032499821110457544,
+   "contact_steps": [
+    30,
+    31
+   ]
+  },
+  "1000.0": {
+   "cor_min": 0.4368423811277638,
+   "cor_max": 0.4612264687568258,
+   "cor_spread": 0.024384087629062023,
+   "ke_ratio_max": 0.3490104856665724,
+   "penetration_max_mm": 0.006484939670700587,
+   "contact_steps": [
+    30,
+    31
+   ]
+  },
+  "2000.0": {
+   "cor_min": 0.4289522265630884,
+   "cor_max": 0.4528148917405539,
+   "cor_spread": 0.023862665177465492,
+   "ke_ratio_max": 0.34916173997568795,
+   "penetration_max_mm": 0.012969720624936412,
+   "contact_steps": [
+    30,
+    31
+   ]
+  },
+  "3000.0": {
+   "cor_min": 0.41195471410354156,
+   "cor_max": 0.4349036186087296,
+   "cor_spread": 0.02294890450518805,
+   "ke_ratio_max": 0.34936261684914166,
+   "penetration_max_mm": 0.0194547233807789,
+   "contact_steps": [
+    30,
+    31
+   ]
+  }
+ },
+ "in_scene": [
+  {
+   "speed_mm_s": 500.0,
+   "touched": true,
+   "ball_vx_after": 108.39047695224122,
+   "leaves_bat": true,
+   "max_penetration_mm": 0.003168443353677733,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "touched": true,
+   "ball_vx_after": 210.3636516691687,
+   "leaves_bat": true,
+   "max_penetration_mm": 0.00622689255979407,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "touched": true,
+   "ball_vx_after": 435.9611887029949,
+   "leaves_bat": true,
+   "max_penetration_mm": 0.012691112315017336,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "touched": true,
+   "ball_vx_after": 663.1110410379599,
+   "leaves_bat": true,
+   "max_penetration_mm": 0.01916644826400539,
+   "warnings": {}
+  }
+ ],
+ "free_impacts": [
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.05,
+   "cor": 0.4379342894618126,
+   "ke_ratio": 0.3316733770319317,
+   "max_penetration_mm": 0.0030765331609228924,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.15,
+   "cor": 0.4406754620135663,
+   "ke_ratio": 0.3336440597424256,
+   "max_penetration_mm": 0.003095894424513121,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.25,
+   "cor": 0.44342607634226194,
+   "ke_ratio": 0.335633932559166,
+   "max_penetration_mm": 0.0031153221817078885,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.35,
+   "cor": 0.44617145558330074,
+   "ke_ratio": 0.3376324063864772,
+   "max_penetration_mm": 0.003134713028272604,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.45,
+   "cor": 0.4489097015823503,
+   "ke_ratio": 0.3396380159525939,
+   "max_penetration_mm": 0.003154053589783948,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.55,
+   "cor": 0.4516407521813601,
+   "ke_ratio": 0.34165061916986744,
+   "max_penetration_mm": 0.00317334342697477,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.65,
+   "cor": 0.4543645313953539,
+   "ke_ratio": 0.34367006280644385,
+   "max_penetration_mm": 0.003192582003124153,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.75,
+   "cor": 0.45708094112637143,
+   "ke_ratio": 0.3456961759864275,
+   "max_penetration_mm": 0.003211768625665787,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.85,
+   "cor": 0.45978985289717034,
+   "ke_ratio": 0.3477287634865008,
+   "max_penetration_mm": 0.0032309023879341786,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 500.0,
+   "phase": 0.95,
+   "cor": 0.4624910996039201,
+   "ke_ratio": 0.34976759883115943,
+   "max_penetration_mm": 0.0032499821110457544,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.05,
+   "cor": 0.4368423811277638,
+   "ke_ratio": 0.3310234835995646,
+   "max_penetration_mm": 0.0061394635320976415,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.15,
+   "cor": 0.43970232335863796,
+   "ke_ratio": 0.3330820583754341,
+   "max_penetration_mm": 0.006179975458039846,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.25,
+   "cor": 0.44249570687401807,
+   "ke_ratio": 0.3351058240578257,
+   "max_penetration_mm": 0.006219547355020935,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.35,
+   "cor": 0.4452162395277345,
+   "ke_ratio": 0.33708925647764365,
+   "max_penetration_mm": 0.00625809021187769,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.45,
+   "cor": 0.44785788404805976,
+   "ke_ratio": 0.3390269302767135,
+   "max_penetration_mm": 0.006295518613404397,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.55,
+   "cor": 0.45043167097071,
+   "ke_ratio": 0.3409259716019886,
+   "max_penetration_mm": 0.006331988438624217,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.65,
+   "cor": 0.45303930929508246,
+   "ke_ratio": 0.34286119677213917,
+   "max_penetration_mm": 0.006368937594382271,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.75,
+   "cor": 0.4557035488509579,
+   "ke_ratio": 0.3448500761428963,
+   "max_penetration_mm": 0.0064066877579554565,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.85,
+   "cor": 0.4584305327269536,
+   "ke_ratio": 0.3468979870988626,
+   "max_penetration_mm": 0.0064453258386963225,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 1000.0,
+   "phase": 0.95,
+   "cor": 0.4612264687568258,
+   "ke_ratio": 0.3490104856665724,
+   "max_penetration_mm": 0.006484939670700587,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.05,
+   "cor": 0.4289522265630884,
+   "ke_ratio": 0.3311470588813339,
+   "max_penetration_mm": 0.012278387062479676,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.15,
+   "cor": 0.43157129192629956,
+   "ke_ratio": 0.33307517674501175,
+   "max_penetration_mm": 0.012354230095862659,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.25,
+   "cor": 0.4339282967521283,
+   "ke_ratio": 0.33482087226534596,
+   "max_penetration_mm": 0.012422511496754121,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.35,
+   "cor": 0.43625373713495613,
+   "ke_ratio": 0.33655282663697017,
+   "max_penetration_mm": 0.012489888371214994,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.45,
+   "cor": 0.4388092333782453,
+   "ke_ratio": 0.33846697748310317,
+   "max_penetration_mm": 0.012563920059175629,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.55,
+   "cor": 0.44158486181442813,
+   "ke_ratio": 0.34055893526384096,
+   "max_penetration_mm": 0.012644322099751512,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.65,
+   "cor": 0.4443929169449899,
+   "ke_ratio": 0.3426891578228576,
+   "max_penetration_mm": 0.012725671673735159,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.75,
+   "cor": 0.4472006075326598,
+   "ke_ratio": 0.34483303265948917,
+   "max_penetration_mm": 0.012807021285988943,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.85,
+   "cor": 0.45000793274249806,
+   "ke_ratio": 0.346990559975966,
+   "max_penetration_mm": 0.012888370936420271,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 2000.0,
+   "phase": 0.95,
+   "cor": 0.4528148917405539,
+   "ke_ratio": 0.34916173997568795,
+   "max_penetration_mm": 0.012969720624936412,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.05,
+   "cor": 0.41195471410354156,
+   "ke_ratio": 0.3313023457718222,
+   "max_penetration_mm": 0.018416137016885187,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.15,
+   "cor": 0.4141831892243651,
+   "ke_ratio": 0.3330112582779736,
+   "max_penetration_mm": 0.018516927228252336,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.25,
+   "cor": 0.4162149154780818,
+   "ke_ratio": 0.3345781431259361,
+   "max_penetration_mm": 0.018608874890103724,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.35,
+   "cor": 0.41872848835272647,
+   "ke_ratio": 0.3365269086139956,
+   "max_penetration_mm": 0.01872256330055752,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.45,
+   "cor": 0.4214262987894093,
+   "ke_ratio": 0.3386320076984083,
+   "max_penetration_mm": 0.018844589801704614,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.55,
+   "cor": 0.4241233284156653,
+   "ke_ratio": 0.34075078059018815,
+   "max_penetration_mm": 0.018966616374823955,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.65,
+   "cor": 0.42681957621666544,
+   "ke_ratio": 0.34288322761845486,
+   "max_penetration_mm": 0.019088643019603307,
+   "contact_steps": 31,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.75,
+   "cor": 0.42951504118349415,
+   "ke_ratio": 0.34502934911469796,
+   "max_penetration_mm": 0.019210669735730407,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.85,
+   "cor": 0.43220972231318394,
+   "ke_ratio": 0.3471891454128217,
+   "max_penetration_mm": 0.019332696522892975,
+   "contact_steps": 30,
+   "warnings": {}
+  },
+  {
+   "speed_mm_s": 3000.0,
+   "phase": 0.95,
+   "cor": 0.4349036186087296,
+   "ke_ratio": 0.34936261684914166,
+   "max_penetration_mm": 0.0194547233807789,
+   "contact_steps": 30,
+   "warnings": {}
+  }
+ ]
+}

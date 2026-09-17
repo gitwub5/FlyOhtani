@@ -61,8 +61,11 @@ def _warnings(d: mujoco.MjData) -> dict[str, int]:
 def free_impact(speed: float, phase: float, scene: B.Scene) -> FreeImpact:
     """The scene's own bat mesh and ball, detached: a free bat struck
     head-on at its sweet spot, no gravity. Same contact settings as the scene."""
-    s = scene.scale
-    rb = B.BAT_BARREL_RADIUS_MM * s
+    # plain floats: numpy 2 reprs np.float64 as "np.float64(...)", which is
+    # not valid MJCF.
+    s = float(scene.scale)
+    rb = float(B.BAT_BARREL_RADIUS_MM * s)
+    r_ball = float(scene.ball_radius_mm)
     vs, fs = B._lathe(B.bat_profile(s))
     z_sweet = 730 * s
     xml = f"""<mujoco><compiler boundmass="{B.BOUNDMASS!r}" boundinertia="1e-14"/>
@@ -76,13 +79,13 @@ def free_impact(speed: float, phase: float, scene: B.Scene) -> FreeImpact:
  <geom name="barrel" type="capsule" size="{rb!r}" fromto="0 0 {-(600 * s + rb)!r} 0 0 {-(845 * s - rb)!r}" mass="0"/>
 </body>
 <body name="ball"><freejoint/>
- <geom name="ball" type="sphere" size="{scene.ball_radius_mm!r}" density="{B.BALL_DENSITY!r}"/>
+ <geom name="ball" type="sphere" size="{r_ball!r}" density="{B.BALL_DENSITY!r}"/>
 </body></worldbody></mujoco>"""
     m = mujoco.MjModel.from_xml_string(xml)
     d = mujoco.MjData(m)
     bq, bv = m.jnt_qposadr[1], m.jnt_dofadr[1]
     step = speed * B.TIMESTEP_S
-    reach = rb + scene.ball_radius_mm
+    reach = rb + r_ball
     d.qpos[bq:bq + 3] = (-reach - 3 * step + phase * step, 0.0, -z_sweet)
     d.qvel[bv] = speed
     mujoco.mj_forward(m, d)
@@ -97,10 +100,15 @@ def free_impact(speed: float, phase: float, scene: B.Scene) -> FreeImpact:
             pen = max(pen, -min(d.contact[i].dist for i in range(d.ncon)))
     mujoco.mj_fullM(m, d, full)
     ke1 = 0.5 * d.qvel @ full @ d.qvel
-    # relative normal speed at the struck point (bat also spins a little)
-    site_v = d.qvel[0:3] + np.cross(d.xmat[1].reshape(3, 3) @ d.qvel[3:6],
-                                    np.array([-rb, 0, -z_sweet]))
-    cor = -(d.qvel[bv] - site_v[0]) / speed
+    # Relative speed, along the original contact normal (+x), between the ball
+    # and the MATERIAL point of the bat that was struck. The bat has rotated
+    # by the time this is read, so the lever arm must be rotated with it --
+    # the first run of this check left it in the body frame, and the error
+    # grew with impact speed (recorded in BATTER-SCENE.md).
+    rot = d.xmat[1].reshape(3, 3)
+    lever = rot @ np.array([-rb, 0.0, -z_sweet])
+    point_v = d.qvel[0:3] + np.cross(rot @ d.qvel[3:6], lever)
+    cor = -(d.qvel[bv] - point_v[0]) / speed
     return FreeImpact(speed, phase, float(cor), float(ke1 / ke0), float(pen), steps, _warnings(d))
 
 
