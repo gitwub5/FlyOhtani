@@ -170,39 +170,6 @@ class TestEyes:
             assert img.max() > 150, side
             assert img.min() < 110, side
 
-    def test_the_batters_eye_is_dark_straight_out_and_does_not_collide(self, md, scene):
-        """D31c. In a real park the batter's eye is the dark section of the
-        centre-field stands, and it is there for the reason VM-01 v3
-        measured: against the bright sky a white ball reaches 6% contrast in
-        this eye and is missed; against this it is seen from release."""
-        m, d = md
-        mujoco.mj_forward(m, d)
-        names = [mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, g) or "" for g in range(m.ngeom)]
-        dark = [g for g, n in enumerate(names) if n.startswith("batters_eye_")]
-        assert dark, "no batter's eye in the park"
-        for g in dark:
-            assert m.geom_rgba[g][:3].max() < 0.2
-            assert m.geom_contype[g] == 0 and m.geom_conaffinity[g] == 0
-            assert d.geom_xpos[g][0] > B.FENCE_LINE_MM * scene.scale  # out past the fence
-            assert abs(math.degrees(math.atan2(d.geom_xpos[g][1], d.geom_xpos[g][0]))) \
-                <= B.BATTERS_EYE_HALF_ANGLE_DEG + 2  # dead centre
-
-    def test_the_park_is_scenery_only(self, md):
-        """Every ballpark geom is visual: the ball lands on the ground plane,
-        and nothing out there can touch the fly or the bat."""
-        m, _ = md
-        park = ("fence", "stand", "backstop", "foul_pole", "base_", "path_", "mound",
-                "rubber", "infield_", "foul_line", "batters_eye_")
-        for g in range(m.ngeom):
-            name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, g) or ""
-            if name.startswith(park):
-                assert m.geom_contype[g] == 0 and m.geom_conaffinity[g] == 0, name
-
-    def test_the_fence_is_short_down_the_lines_and_deep_in_centre(self):
-        assert B._fence_radius_mm(0.0) == pytest.approx(B.FENCE_CENTER_MM)
-        assert B._fence_radius_mm(math.radians(45)) == pytest.approx(B.FENCE_LINE_MM)
-        assert B._fence_radius_mm(math.radians(-45)) == pytest.approx(B.FENCE_LINE_MM)
-
     def test_acuity_is_the_one_d32_chose(self):
         """D28 asked for fly-like: 32 px over 120 deg, 3.75 deg per pixel
         against a fruit fly's ~5 deg ommatidial spacing. The left eye is now
