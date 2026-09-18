@@ -24,12 +24,12 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 
-from flyohtani.flyshohei.pitch import PITCH_DISTANCE_MM
 from flyohtani.world.batter import (
     CHALK_WIDTH_MM,
     DIRT_TOP_MM,
     GROUP_WORLD,
 )
+from flyshohei.pitch import PITCH_DISTANCE_MM
 
 # ---------------------------------------------------------------- the park
 # Real-ballpark millimetres, scaled by `scale` like every other dimension

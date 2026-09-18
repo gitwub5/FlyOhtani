@@ -2,7 +2,7 @@
 
 Nothing here knows about the batter, the scene or MuJoCo -- a pitch is a
 release point, a flight time and the parabola between them. That is what
-keeps this module importable from `world.batter` without a cycle.
+keeps this module importable from `flyohtani.world.batter` without a cycle.
 
 A pitch in this simulation is determined by exactly two numbers: **how long
 the ball is in the air** and **where it is released from**. Speed and launch
@@ -37,7 +37,7 @@ D32 put the release at 122 mm because the fly needed time to watch, and the
 arithmetic said a pitch long enough to watch had to be thrown from far enough
 back to stay flat. That arithmetic used the wrong deadline: it assumed the
 whole swing had to finish before contact, when contact happens 24.6 ms into
-it (see `world.batter.SWING_TO_CONTACT_S`). With the corrected deadline a
+it (see `flyohtani.world.batter.SWING_TO_CONTACT_S`). With the corrected deadline a
 52 ms pitch from the real mound clears every constraint, so the release goes
 back where a pitcher's hand is."""
 
@@ -48,7 +48,7 @@ class Pitch:
 
     `flight_s` is the whole pitch: lengthen it and the ball is slower, the
     arc deeper, and the eye rate the fly needs is lower
-    (`world.batter.min_eye_rate_hz` -- VM-01's hold-out failed precisely
+    (`flyohtani.world.batter.min_eye_rate_hz` -- VM-01's hold-out failed precisely
     because flight time and eye rate were treated as independent).
 
     `distance_scale` moves the release point along the line from the plate:
@@ -92,10 +92,10 @@ ARSENAL: dict[str, Pitch] = {p.name: p for p in (STANDARD,)}
 
 - **구속·비행 시간만 다른 공**(체인지업, 슬로볼)은 지금 바로 된다. `Pitch`를
   하나 더 만들면 끝이다. 대신 **눈 프레임률이 따라 움직인다**
-  (`world.batter.min_eye_rate_hz`), 그리고 느린 공은 더 높이 던져 올려야
+  (`flyohtani.world.batter.min_eye_rate_hz`), 그리고 느린 공은 더 높이 던져 올려야
   해서 궤적이 휜다(D32가 측정한 것).
 - **휘는 공**(커브·슬라이더)은 숫자를 하나 더 넣어서 되지 않는다. 지금 공에는
-  항력도 스핀도 없어서(`world.swing.batted_ball`의 포물선이 정확한 이유가
+  항력도 스핀도 없어서(`flyohtani.world.swing.batted_ball`의 포물선이 정확한 이유가
   그것이다) 마그누스 힘을 먼저 모델에 넣어야 한다. 그 전에는 "커브"라고 이름만
   붙이는 셈이 된다.
 """

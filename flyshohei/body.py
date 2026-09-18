@@ -4,7 +4,7 @@
 가장 먼저 묻는 것("공이 어디서 오는가")에 답한다. 릴리스 지점이 공중의 맨
 점이던 동안에는 그 질문에 답이 없었다.
 
-`pitch`와 달리 이 모듈은 `world.batter`의 몸 복사 기계를 쓴다. 그래서 의존
+`pitch`와 달리 이 모듈은 `flyohtani.world.batter`의 몸 복사 기계를 쓴다. 그래서 의존
 방향이 반대이고, 장면을 만드는 쪽에서 **늦게** 임포트해야 한다.
 """
 from __future__ import annotations
@@ -12,10 +12,10 @@ from __future__ import annotations
 import math
 import xml.etree.ElementTree as ET
 
-from flyohtani.flyshohei.pitch import PITCH_DISTANCE_MM
 from flyohtani.world import batter as B
 from flyohtani.world.batter import DIRT_TOP_MM
 from flyohtani.world.park import MOUND_HEIGHT_MM
+from flyshohei.pitch import PITCH_DISTANCE_MM
 
 PITCHER_POSE = {
     **B.STATIC_POSE,

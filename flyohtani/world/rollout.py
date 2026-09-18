@@ -37,10 +37,10 @@ import mujoco
 import numpy as np
 
 from flyohtani import units
-from flyohtani.flyshohei import pitch as P
 from flyohtani.world import batter as B
 from flyohtani.world import swing as S
 from flyohtani.world.swing import ballistic, bat_geom_ids, swing_table
+from flyshohei import pitch as P
 
 COARSE_DT_S = B.TIMESTEP_S
 """Phase B away from contact. This is the contact timestep -- i.e. phase B is

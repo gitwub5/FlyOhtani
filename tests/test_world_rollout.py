@@ -12,10 +12,10 @@ from __future__ import annotations
 
 import pytest
 
-from flyohtani.flyshohei import pitch as P
 from flyohtani.record import scenarios as S
 from flyohtani.world import batter as B
 from flyohtani.world import rollout as R
+from flyshohei import pitch as P
 
 # timing x aim-height pairs: a chopper, a line drive, and misses either side.
 CASES = [(t, dz) for t in (-3.0, 0.0, 3.0) for dz in (0.0, 0.05)]

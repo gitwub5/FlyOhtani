@@ -38,8 +38,8 @@ import mujoco
 import numpy as np
 
 from flyohtani import units
-from flyohtani.flyshohei import pitch as P
 from flyohtani.world import batter as B
+from flyshohei import pitch as P
 
 EVIDENCE = Path(__file__).resolve().parent.parent.parent / "docs" / "records" / "evidence"
 

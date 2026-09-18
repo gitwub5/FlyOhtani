@@ -39,7 +39,7 @@ from flyohtani.body.minimal_body import (
     _find_body,
     _tip_offset,
 )
-from flyohtani.flyshohei import pitch as P
+from flyshohei import pitch as P
 
 # --- real baseball, in mm (CHOSEN: a typical adult wood bat and MLB rules) --
 
@@ -534,8 +534,8 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     # Imported here, not at the top: park.py reads this module's dimensions,
     # so a module-level import either way is circular. The park is only ever
     # needed while a scene is being built.
-    from flyohtani.flyshohei.body import pitcher_subtree
     from flyohtani.world.park import ballpark_geoms
+    from flyshohei.body import pitcher_subtree
 
     if opts.ballpark:
         world += ballpark_geoms(scale)

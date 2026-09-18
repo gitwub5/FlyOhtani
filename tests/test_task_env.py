@@ -14,11 +14,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from flyohtani.flyshohei import pitch as P
 from flyohtani.task import env as E
 from flyohtani.task.observation import FORBIDDEN_FIELD_NAMES, BatObservation
 from flyohtani.world import batter as B
 from flyohtani.world import rollout as R
+from flyshohei import pitch as P
 
 REPO = Path(__file__).resolve().parent.parent
 

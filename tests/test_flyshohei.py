@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 from flyohtani import units
-from flyohtani.flyshohei import pitch as P
 from flyohtani.world import batter as B
+from flyshohei import pitch as P
 
 
 class TestArsenal:

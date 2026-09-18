@@ -33,13 +33,13 @@ from dataclasses import dataclass, field
 import mujoco
 import numpy as np
 
-from flyohtani.flyshohei import pitch as P
 from flyohtani.task import rewards
 from flyohtani.task.observation import BatObservation
 from flyohtani.task.outcome import Outcome
 from flyohtani.world import batter as B
 from flyohtani.world import rollout as R
 from flyohtani.world import swing as S
+from flyshohei import pitch as P
 
 
 @dataclass(frozen=True)

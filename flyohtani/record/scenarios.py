@@ -23,10 +23,10 @@ import mujoco
 import numpy as np
 
 from flyohtani import units
-from flyohtani.flyshohei import pitch as P
 from flyohtani.record.video import Recorder, View, free_camera
 from flyohtani.task.observation import BatObservation
 from flyohtani.world import batter as B
+from flyshohei import pitch as P
 
 REPO = Path(__file__).resolve().parent.parent.parent
 RUNS = REPO / "runs" / "record"
