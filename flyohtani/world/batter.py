@@ -164,19 +164,21 @@ it (see SWING_TO_CONTACT_S). With the corrected deadline a 50 ms pitch from
 the real mound clears every constraint, so the release goes back where a
 pitcher's hand is."""
 
-PITCH_SPEED_MM_S = 684.0
-"""What the mound distance and the flight time imply: 34.2 mm in 50 ms.
+PITCH_SPEED_MM_S = 658.0
+"""What the mound distance and the flight time imply: 34.2 mm in 52 ms.
 
-This is 36% of a Froude-scaled Kershaw fastball (1879 mm/s), and that is the
+This is 35% of a Froude-scaled Kershaw fastball (1879 mm/s), and that is the
 price of the pitch coming from the mound: the fly needs 50 ms to see and
 swing, and 34 mm in 50 ms is not a fastball. It is a changeup, thrown at a
 +16 degree angle. D32's flat 1879 mm/s needed the pitcher to stand where no
 pitcher stands."""
 
-PITCH_FLIGHT_S = 0.050
-"""D35. How long the ball is in the air: contact comes 23.2 ms into the
-swing, plus 10 ms of decision latency, plus eight frames at 480 Hz (17 ms) --
-just over 50 ms, and the eye rate rule wants 476 Hz against the 480 in use.
+PITCH_FLIGHT_S = 0.052
+"""D35. How long the ball is in the air: contact comes 24.6 ms into the
+swing, plus 10 ms of decision latency, plus eight frames at 480 Hz (17 ms).
+50 ms was enough for the old swing; the one that actually drives the ball
+takes longer to reach contact, so the flight is 52 ms and the eye-rate rule
+asks for 459 against the 480 in use.
 
 Gravity still sets the arc: over 50 ms the ball falls 12.3 mm, which from
 34.2 mm away is a +16 degree release. Flatter than the +21 of the earlier
@@ -191,7 +193,7 @@ flight - swing - latency, and VM-01 asks for 8 frames inside it. See
 DECISION_LATENCY_S = 0.010
 MIN_DECISION_FRAMES = 8
 
-SWING_TO_CONTACT_S = 0.0232
+SWING_TO_CONTACT_S = 0.0246
 """Swing start -> the sweet spot passing the strike point, measured (and
 regression-tested against `world.rollout.dry_swing`).
 
@@ -874,10 +876,29 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
                  bat_length_mm=bat_len, ball_radius_mm=ball_r)
 
 
-READY_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, (-135.0, -151.9, 128.8, -36.2, -4.4)), strict=True))
-"""Bat up and back over the shoulder. CHOSEN: found by a random search that
-asked for a grip above the thorax and a bat direction of about
-(-0.35, 0.35, 1) -- back, away from the plate, up. Achieved (-0.31, 0.31, 0.90)."""
+READY_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, (-255.19, 87.79, 74.02, -19.58, -113.13)), strict=True))
+"""Where the fly waits. FOUND by `world.poses.find_ready_pose`, scored on
+what the swing out of it does at the moment of contact rather than on how it
+looks standing still.
+
+The pose it replaced was chosen for its appearance -- bat up and back over
+the shoulder -- and the swing out of it met the ball moving DOWNWARD at -18
+degrees, chasing a pitch that already falls at -23. Everything solid went
+into the dirt: launch angles of -30 to -78 and carries under 2 mm.
+
+This one meets the ball moving forward and slightly up (+7 to +11.5 degrees
+across the three zones) at 539-557 mm/s, against 390 before, with the speed
+pointed at the ball instead of across it: the velocity at contact went from
+(251, 273, -121) to about (538, 1, 95). Measured consequence, same contact
+poses and same pitch: carry 0.30 mm -> 66 mm in the middle zone.
+
+ONE pose for all three zones, deliberately. The fly does not know where the
+pitch is going until it sees it, so a stance per zone would put the answer in
+the body before the question was asked. The search scores the WORST zone.
+
+Peak joint speed is 298-299 rad/s -- LIT-01's ceiling is 300, and the search
+stops exactly there, which is worth saying plainly: this swing is limited by
+the animal, not by the search."""
 
 CONTACT_POSE_ANGLES_DEG = (5.4, 99.1, 15.2, -77.7, -34.3)
 CONTACT_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, CONTACT_POSE_ANGLES_DEG), strict=True))
@@ -918,10 +939,15 @@ joints reaching for one point is redundant, so the search is pulled toward
 the middle pose. What comes out differs mostly in one joint (the tibia, by
 about 13 degrees), which is what "swing higher" should look like."""
 
-DEMO_SWING_S = 0.038
+DEMO_SWING_S = 0.040
 DEMO_SWING_FOLLOW = 0.6
-"""Demo swing (D32): 38 ms with a 0.6 follow-through, the fastest CONTACT the
-foreleg reaches inside LIT-01's 300 rad/s ceiling.
+"""Demo swing: 40 ms with a 0.6 follow-through.
+
+38 ms was the fastest the commanded swing could be inside LIT-01's 300 rad/s
+ceiling -- 299 rad/s -- but that left nothing for the COLLISION, which adds
+joint speed of its own: a recorded episode came out at 301.9. 40 ms brings
+the command to 283-285 and the impact fits underneath. The bat gives up 5%
+of its speed for it (512-526 mm/s against 539-557).
 
 The point is where the peak lands. The old 27 ms / 0.1 swing peaked at
 590 mm/s in mid-swing and was already SLOWING at the contact point, arriving

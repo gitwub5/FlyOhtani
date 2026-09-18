@@ -239,11 +239,22 @@ class TestPoses:
         s = d.site_xpos[_id(m, mujoco.mjtObj.mjOBJ_SITE, "bat_sweet")].copy()
         return (t - g) / np.linalg.norm(t - g), s
 
-    def test_ready_pose_holds_the_bat_up_and_back(self, md):
-        m, d = md
-        u, _ = self._bat(m, d, B.READY_POSE)
-        assert u[2] > 0.8   # up
-        assert u[0] < 0     # toward the catcher
+    def test_the_swing_out_of_the_ready_pose_meets_the_ball_going_forward(self, md, scene):
+        """What the ready pose is FOR. It used to be scored on how it looked
+        standing still -- bat up and over the shoulder -- and the swing out
+        of it met the ball moving down at -18 degrees, chasing a pitch that
+        already falls at -23. Every solid hit went into the dirt. It is now
+        scored on the velocity at contact, so that is what is checked."""
+        from flyohtani.world.poses import swing_velocity_at_contact
+        for zone in B.STRIKE_ZONES:
+            v, peak_q, clearance = swing_velocity_at_contact(
+                B.CONTACT_POSES[zone], B.READY_POSE, scene=scene)
+            attack = math.degrees(math.atan2(v[2], math.hypot(v[0], v[1])))
+            assert v[0] > 0, zone                       # back toward the pitcher
+            assert 0.0 < attack < 20.0, (zone, attack)  # slightly up, not a chop
+            assert np.linalg.norm(v) > 450.0, zone
+            assert peak_q < MAX_JOINT_SPEED_RAD_S, zone
+            assert clearance > 0.25, zone
 
     def test_contact_pose_puts_the_sweet_spot_over_the_plate(self, md, scene):
         m, d = md

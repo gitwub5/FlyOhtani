@@ -119,13 +119,22 @@ def evaluate(genome: Genome, pitches: list[PitchSpec], reward_name: str,
     return Score(total / n, contact / n, zone / n, fair / n, n)
 
 
+BASELINE_FRAMES = range(6, 26)
+"""Every frame a blind policy could pick. Fixed as a RANGE, not a guess:
+three hand-picked frames (18, 20, 22) scored zero once the pitch got shorter
+and the connecting frame moved to 13, which made the search look better than
+it was. A baseline has to be the best a blind policy can do, not the best of
+three arbitrary ones."""
+
+
 def baseline_scores(pitches: list[PitchSpec], reward_name: str,
                     env: BattingEnv | None = None) -> dict[str, Score]:
-    """Policies that cannot see, for the search to be measured against."""
+    """Policies that cannot see, for the search to be measured against. Every
+    frame is tried and the best one is what the search has to beat."""
     env = env or BattingEnv()
     reward_fn = rewards.get(reward_name)
     out = {}
-    for frame in (18, 20, 22):
+    for frame in BASELINE_FRAMES:
         total = contact = zone = fair = 0.0
         policy = FixedFramePolicy(frame)
         for pitch in pitches:
@@ -136,6 +145,9 @@ def baseline_scores(pitches: list[PitchSpec], reward_name: str,
             fair += bool(o.fair)
         n = len(pitches)
         out[f"fixed-frame-{frame}"] = Score(total / n, contact / n, zone / n, fair / n, n)
+    best = max(out, key=lambda k: out[k].reward)
+    out["best-blind"] = out[best]
+    out["best-blind-frame"] = Score(float(best.rsplit("-", 1)[1]), 0.0, 0.0, 0.0, 0)
     return out
 
 

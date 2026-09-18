@@ -141,9 +141,10 @@ def dry_swing(scene: B.Scene) -> tuple[float, np.ndarray]:
 
 
 def _default_views() -> list[View]:
-    """Re-framed for D31c's ballpark: the old angles were chosen against an
-    empty field and now stare into the backstop."""
-    return [View("1루 쪽 카메라", free_camera((1.0, -1.5, 1.4), 10.0, 300, -8)),
+    """Framed so that both flies are in shot (D35). The first camera used to
+    sit on top of the batter, from before there was anything else to see;
+    with a pitcher on the mound the pitch is worth watching leave a hand."""
+    return [View("중계 카메라 (투수 → 타자)", free_camera((14.0, -4.0, 2.0), 40.0, 320, -7)),
             View("타구를 보는 카메라", free_camera((14.0, 6.0, 2.0), 62.0, 235, -14))]
 
 

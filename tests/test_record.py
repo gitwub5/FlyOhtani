@@ -43,15 +43,17 @@ def test_an_early_pitch_is_a_miss_and_has_no_carry():
     assert out.landing_xy_mm is not None and out.landing_xy_mm[0] < 0  # past the plate, catcher side
 
 
-def test_the_timing_window_is_narrow():
-    """D32's fastball crosses at 1888 mm/s, so the scripted swing connects
-    only within about a millisecond: measured, 0 and +1 ms connect, -3 and
-    +3 ms miss entirely."""
-    on_time, _ = S.run_pitch(S.PitchSpec(timing_ms=0.0), record=False)
+def test_the_timing_window_is_narrow_and_asymmetric():
+    """Measured with the D36 swing: the ball is hit from -1 to +3 ms, but
+    only 0 and +1 ms are fair. Being early misses entirely, being late
+    pulls the ball foul -- which is what a real timing window looks like,
+    and why `fair` is what the reward pays for rather than contact."""
     early, _ = S.run_pitch(S.PitchSpec(timing_ms=-3.0), record=False)
+    on_time, _ = S.run_pitch(S.PitchSpec(timing_ms=0.0), record=False)
     late, _ = S.run_pitch(S.PitchSpec(timing_ms=3.0), record=False)
+    assert not early.contact
     assert on_time.contact and on_time.fair
-    assert not early.contact and not late.contact
+    assert late.contact and not late.fair
 
 
 def test_recording_does_not_change_the_physics(tmp_path, unrecorded):
