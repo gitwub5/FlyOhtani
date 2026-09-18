@@ -8,21 +8,48 @@
 
 필독은 이 파일 + 아래 2개뿐이다:
 
-1. `docs/PLAN.md` — 결정의 단일 기준. 설계 결정(D01~D30), Phase와 게이트
-2. `docs/records/STATUS.md` — 지금 검증된 것과 막혀 있는 것
+1. `docs/PLAN.md` — 결정의 단일 기준. 설계 결정(D01~D36), Phase와 게이트
+2. `docs/records/STATUS.md` — 지금 성립하는 값, 게이트, 알려진 한계, 다음 작업
 
 그 다음, **맡은 작업에 해당할 때만** 읽는다:
 
-- 몸·접촉·시각 작업 → `docs/records/PRIOR-FINDINGS.md`
-  (v1에서 확정된 사실과 반복하면 안 되는 실패)
+- 뇌·정책 작업 → `docs/records/BRAIN-CIRCUIT.md`
+  (망막→LIF→트리거, 그리고 셔플 대조군이 통과한 사실과 그 진단)
+- 학습·보상 작업 → `docs/records/LEARNING-01.md`
+  (무엇을 학습하고 무엇을 기준선으로 삼는가, 희소 보상)
+- 구종·구속을 건드릴 때 → `flyohtani/flyshohei/pitch.py`의 `ARSENAL` 주석
+  (무엇이 지금 되고, 휘는 공에 무엇이 더 필요한지 적혀 있다)
+- 눈·투구·커리큘럼 작업 → `docs/records/VM-01-EYE-RATE.md`
+  (보이는가에 대한 세 번의 측정과 거기서 나온 설계 법칙)
 - 몸·접촉 작업 → `docs/records/G1-FORELEG-SWING.md`
   (앞다리 실측, 잠근 DOF와 그 이유, `boundmass` 함정)
-- 뇌 작업 → `docs/records/G4-CONNECTOME-ACCESS.md`
 - 타석 장면(몸 자세·배트·눈·충돌 설정) → `docs/records/BATTER-SCENE.md`
+  (머리말에 D31 이후 바뀐 값이 정리돼 있다)
 - 접촉·dt 작업 → `docs/records/G2-CONTACT.md` (v1 실패와 v2 통과의 무게 차이)
 - 속도·힘 수치를 쓸 때 → `docs/records/LIT-01-FLY-LEG-LIMITS.md`
   (무엇이 측정이고 무엇이 우리가 정한 값인지 구분돼 있다)
+- v1에서 넘어온 사실 → `docs/records/PRIOR-FINDINGS.md`
 - 외부 데이터/코드 반입 → `docs/RESEARCH_SOURCES.md`
+
+## 코드 지도
+
+| 패키지 | 무엇 |
+| --- | --- |
+| `flyshohei/` | **던지는 쪽.** `pitch`(구종·구속·릴리스 기하), `body`(마운드 위 투수 파리) |
+| `world/` | **치는 쪽.** `batter`(장면), `park`(구장 장식), `swing`(스윙·타구 물리), `rollout`(빠른 에피소드), `poses`(자세 탐색), `contact` |
+| `brain/` | `connectome`(배선), `retina`(인코딩), `circuit`(LIF), `replay`(뷰어) |
+| `task/` | `env`, `observation`(정책 계약), `outcome`(정답), `rewards`, `pitches`, `policy`, `learn` |
+| `record/` | 영상·사진. 정책을 넘기면 정책이 스윙 시점을 정한다 |
+| `studies/` | 일회성 측정(G1·G2·batter_check·VM-01). **라이브러리가 쓰지 않는다** |
+| `sense/` | v1의 고전 CV 파이프라인. 지금 경로는 쓰지 않는다(금지 필드 목록만 재사용) |
+
+`flyshohei/pitch.py`는 `units` 말고 아무것도 임포트하지 않는다(leaf). 그래서
+`world/batter.py`가 그것을 임포트한다 — **반대 방향으로 쓰면 순환이 된다.**
+투수 파리의 몸(`flyshohei/body.py`)만 방향이 반대라 장면 조립 중에 늦게
+임포트한다.
+
+**스윙·접촉·타구 계산은 `world/swing.py` 하나뿐이다.** 예전에 세 곳에 복사돼
+있었고 실제로 어긋나 버그가 났다 — 새 경로를 만들지 말고 그것을 부른다.
 
 문서 목록은 `docs/README.md`가 갖는다. 늘리기 전에 기존 문서에 들어갈 자리가
 없는지 본다.
@@ -67,10 +94,14 @@ Phase는 게이트를 통과해야 다음으로 넘어간다. 기준은 **실행
 | --- | --- | --- |
 | G1 | 파리 앞다리가 배트를 실제로 휘두를 수 있는가 | **PASS(조건부)** — 속도 수치는 과제 설계에 쓸 수 없다 |
 | G2 | 접촉이 사전 등록 수용치를 통과하는가 | v1 **FAIL** → v2 **PASS(탐색)**. 타석 장면은 D29의 짧은 확인(K1~K6) **PASS**로 대체 |
-| G3 | 학습을 시작해도 되는 상태인가 (누출·exploit·예산) | 미실행 |
+| G3 | 학습을 시작해도 되는 상태인가 (누출·exploit·예산) | **미실행** — 학습은 이미 돌았으므로 **이 게이트가 밀렸다는 사실 자체를 기록**한다 |
 | G4 | MaleCNS 루밍 서브그래프를 실제로 받을 수 있는가 | **PASS** |
+| VM-01 | 파리가 투구를 볼 수 있는가 | v1·v2 FAIL → 공 2배 + 조준한 20° 눈으로 성립 |
 
-**학습 개시 조건:** 타석 장면 충돌 확인(K1~K6) PASS — 완료. 남은 것은 G3(누출·exploit·예산)이다. 충돌 설정이나 공·배트 치수를 바꾸면 `batter_check`를 다시 돌린다.
+**충돌 설정이나 공·배트 치수를 바꾸면 `python -m flyohtani.studies.batter_check`를
+다시 돌린다.** 스윙 자세를 바꾸면 접촉까지 걸리는 시간(`SWING_TO_CONTACT_S`)이
+움직이고, 그러면 비행 시간과 필요한 눈 프레임률이 함께 움직인다 — 회귀 테스트가
+잡지만, 왜 움직였는지는 직접 적어야 한다.
 
 ## 다음 작업
 
