@@ -1,4 +1,16 @@
-"""VisionObservation, the ONLY object the policy-facing code path is
+"""VisionObservation, v1's policy-facing contract.
+
+NOT the live one. The current task hands a policy `flyohtani/task/
+observation.py` (an eye image plus foreleg proprioception, because the
+design is eye -> retina -> circuit, not detector -> tracker -> estimate).
+This module and the classical-CV pipeline around it are kept because they
+are what v1's detection and tracking tests exercise, and because
+`_FORBIDDEN_FIELD_NAMES` below is imported by the live contract -- one list,
+not two.
+
+The original docstring follows.
+
+VisionObservation, the ONLY object the v1 policy-facing code path is
 allowed to see (the leak contract, docs/records/PRIOR-FINDINGS.md section
 6). This is a frozen dataclass with a fixed, explicit field list -- there
 is no `**kwargs`, no dict passthrough, and no field named after
