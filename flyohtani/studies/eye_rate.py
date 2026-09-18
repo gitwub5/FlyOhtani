@@ -38,6 +38,7 @@ import mujoco
 import numpy as np
 
 from flyohtani import units
+from flyohtani.flyshohei import pitch as P
 from flyohtani.world import batter as B
 
 EVIDENCE = Path(__file__).resolve().parent.parent.parent / "docs" / "records" / "evidence"
@@ -175,8 +176,8 @@ def _trajectory(scene: B.Scene, model: mujoco.MjModel, data: mujoco.MjData,
     B.set_arm(model, data, B.READY_POSE)
 
     s = scene.scale
-    full = np.array([(B.PITCH_DISTANCE_MM - B.PITCHER_EXTENSION_MM) * s, 0.0,
-                     B.RELEASE_HEIGHT_MM * s])
+    full = np.array([(P.PITCH_DISTANCE_MM - P.PITCHER_EXTENSION_MM) * s, 0.0,
+                     P.RELEASE_HEIGHT_MM * s])
     # Moving the release point along the line to the plate keeps the approach
     # direction identical, so distance is a clean lever on its own.
     release = aim + distance_scale * (full - aim)

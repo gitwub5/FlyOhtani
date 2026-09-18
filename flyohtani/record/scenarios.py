@@ -23,6 +23,7 @@ import mujoco
 import numpy as np
 
 from flyohtani import units
+from flyohtani.flyshohei import pitch as P
 from flyohtani.record.video import Recorder, View, free_camera
 from flyohtani.task.observation import BatObservation
 from flyohtani.world import batter as B
@@ -45,12 +46,12 @@ def froude_speed(scale: float, real_mm_s: float = REAL_FASTBALL_MM_S) -> float:
 
 @dataclass(frozen=True)
 class PitchSpec:
-    flight_s: float = B.PITCH_FLIGHT_S
+    flight_s: float = P.STANDARD.flight_s
     """How long the ball is in the air (D32): the swing, plus the decision
     latency, plus the frames the fly needs to see it in."""
     distance_scale: float | None = None
     """Release point along the line to the plate, in units of the scaled
-    mound distance. None derives it from `B.PITCH_SPEED_MM_S` and the flight
+    mound distance. None derives it from the standard pitch and the flight
     time -- a Kershaw-class fastball thrown from far enough back to stay
     flat."""
     speed_scale: float = 1.0
@@ -174,8 +175,8 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
     nominal = p_star + np.array([r_ball + r_bat, 0.0, 0.0])
     aim = nominal + np.array([0.0, 0.0, B.ZONE_OFFSET_MM[zone]]) + np.array(spec.aim_offset_mm)
     # release_reference: the pitcher's hand does not move when aiming at a
-    # different zone (world.batter.pitch_geometry has the bug this fixes).
-    release, _, _ = B.pitch_geometry(aim, s, spec.distance_scale, spec.flight_s,
+    # different zone (flyshohei.pitch.geometry has the bug this fixes).
+    release, _, _ = P.geometry(aim, s, spec.distance_scale, spec.flight_s,
                                      release_reference=nominal)
     speed = (release[0] - aim[0]) / spec.flight_s * spec.speed_scale
     flight = (release[0] - aim[0]) / speed

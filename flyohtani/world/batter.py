@@ -39,6 +39,7 @@ from flyohtani.body.minimal_body import (
     _find_body,
     _tip_offset,
 )
+from flyohtani.flyshohei import pitch as P
 
 # --- real baseball, in mm (CHOSEN: a typical adult wood bat and MLB rules) --
 
@@ -54,9 +55,6 @@ BOX_GAP_MM = 152.0             # 6 in from the plate's edge
 PLATE_WIDTH_MM = 432.0         # 17 in
 PLATE_SIDE_MM = 216.0          # 8.5 in
 CHALK_WIDTH_MM = 76.0          # 3 in
-PITCH_DISTANCE_MM = 18440.0    # 60 ft 6 in
-PITCHER_EXTENSION_MM = 1700.0  # release point in front of the rubber, typical
-RELEASE_HEIGHT_MM = 1800.0     # typical overhand release height
 FENCE_MM = 121900.0            # 400 ft
 
 WOOD_DENSITY = 6.5e-4          # g/mm^3 (0.65 g/cm^3, ash/maple range)
@@ -117,39 +115,6 @@ radius. D31 enlarges the ball 8x, which by itself would make it 512x heavier
 and 77x the bat -- unhittable. Size and mass are therefore separate levers,
 and this one is measured (batter_check) rather than assumed."""
 
-PITCH_FROM_MOUND = True
-"""D35. The ball leaves the pitcher's hand, on the rubber, 34.2 mm away --
-not from a point in the air 122 mm out.
-
-D32 put the release at 122 mm because the fly needed time to watch, and the
-arithmetic said a pitch long enough to watch had to be thrown from far enough
-back to stay flat. That arithmetic used the wrong deadline: it assumed the
-whole swing had to finish before contact, when contact happens 23.2 ms into
-it (see SWING_TO_CONTACT_S). With the corrected deadline a 50 ms pitch from
-the real mound clears every constraint, so the release goes back where a
-pitcher's hand is."""
-
-PITCH_SPEED_MM_S = 658.0
-"""What the mound distance and the flight time imply: 34.2 mm in 52 ms.
-
-This is 35% of a Froude-scaled Kershaw fastball (1879 mm/s), and that is the
-price of the pitch coming from the mound: the fly needs 50 ms to see and
-swing, and 34 mm in 50 ms is not a fastball. It is a changeup, thrown at a
-+16 degree angle. D32's flat 1879 mm/s needed the pitcher to stand where no
-pitcher stands."""
-
-PITCH_FLIGHT_S = 0.052
-"""D35. How long the ball is in the air: contact comes 24.6 ms into the
-swing, plus 10 ms of decision latency, plus eight frames at 480 Hz (17 ms).
-50 ms was enough for the old swing; the one that actually drives the ball
-takes longer to reach contact, so the flight is 52 ms and the eye-rate rule
-asks for 459 against the 480 in use.
-
-Gravity still sets the arc: over 50 ms the ball falls 12.3 mm, which from
-34.2 mm away is a +16 degree release. Flatter than the +21 of the earlier
-slow pitch, steeper than D32's +5.6 -- that is what it costs to have the ball
-come from the rubber instead of from 122 mm out."""
-
 EYE_RATE_HZ = 480
 """D31b. NOT an independent setting: the decision window is
 flight - swing - latency, and VM-01 asks for 8 frames inside it. See
@@ -172,7 +137,7 @@ measured under the old deadline therefore stands, but stands CONSERVATIVE:
 the frames it counted are the early, dimmest ones."""
 
 
-def min_eye_rate_hz(flight_s: float = PITCH_FLIGHT_S,
+def min_eye_rate_hz(flight_s: float = P.STANDARD.flight_s,
                     swing_to_contact_s: float | None = None) -> float:
     """The eye rate a pitch of this length requires (D31, corrected). A
     slower pitch needs a slower eye; a faster one needs a faster eye, and
@@ -422,44 +387,12 @@ def _eye_cameras(model_probe: mujoco.MjModel, data_probe: mujoco.MjData,
     return out
 
 
-def pitch_geometry(strike: np.ndarray, scale: float, distance_scale: float | None = None,
-                   flight_s: float | None = None,
-                   release_reference: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray, float]:
-    """Release point, launch velocity and flight time for the nominal pitch:
-    a ball thrown down the same line of approach as a real pitch, arriving at
-    `strike` after `flight_s`.
-
-    `release_reference` is where the release point is computed FROM, and it
-    defaults to `strike` only for a single-zone pitch. With strike zones it
-    must be passed, and must not depend on the zone -- the release point is
-    the pitcher's hand, and a pitcher does not move when aiming higher.
-
-    That was a real bug: deriving the release from the strike point meant
-    aiming 0.45 mm higher dropped the hand 1.16 mm (the line pivots, and the
-    release is 3.6 times farther out than the plate). A high pitch then
-    appeared LOWER in the eye than a low one, which is the opposite of the
-    thing the fly is supposed to read."""
-    flight = PITCH_FLIGHT_S if flight_s is None else flight_s
-    full = np.array([(PITCH_DISTANCE_MM - PITCHER_EXTENSION_MM) * scale, 0.0,
-                     RELEASE_HEIGHT_MM * scale])
-    # Without an explicit distance, the release point is wherever a fastball
-    # at PITCH_SPEED_MM_S has to start to arrive after `flight` (D32).
-    origin = strike if release_reference is None else np.asarray(release_reference, dtype=float)
-    # Default: the pitcher's own release point (D35). A distance_scale is
-    # still honoured, for measurements that need the ball farther out.
-    dscale = 1.0 if distance_scale is None else distance_scale
-    release = origin + dscale * (full - origin)
-    g = np.array([0.0, 0.0, -units.GRAVITY])
-    v0 = (strike - release - 0.5 * g * flight ** 2) / flight
-    return release, v0, flight
-
-
 def decision_point(strike: np.ndarray, scale: float, swing_s: float | None = None) -> np.ndarray:
     """Where the ball is at the last instant a swing can still start. The
     eyes are aimed here (D31b): it is the middle of what the fly has to see,
     and aiming at the strike point instead would put the useful part of the
     flight at the edge of a narrow field."""
-    release, v0, flight = pitch_geometry(strike, scale)
+    release, v0, flight = P.geometry(strike, scale)
     swing = DEMO_SWING_S if swing_s is None else swing_s
     t = max(flight - swing - DECISION_LATENCY_S, 0.0)
     g = np.array([0.0, 0.0, -units.GRAVITY])
@@ -601,7 +534,8 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     # Imported here, not at the top: park.py reads this module's dimensions,
     # so a module-level import either way is circular. The park is only ever
     # needed while a scene is being built.
-    from flyohtani.world.park import ballpark_geoms, pitcher_subtree
+    from flyohtani.flyshohei.body import pitcher_subtree
+    from flyohtani.world.park import ballpark_geoms
 
     if opts.ballpark:
         world += ballpark_geoms(scale)
@@ -642,7 +576,7 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
     world.append(fly)
 
     if opts.with_ball:
-        ball = ET.Element("body", {"name": "ball", "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 1.0"})
+        ball = ET.Element("body", {"name": "ball", "pos": f"{P.PITCH_DISTANCE_MM * scale:.6g} 0 1.0"})
         ET.SubElement(ball, "freejoint", {"name": "ball"})
         ET.SubElement(ball, "geom", {"name": "ball", "type": "sphere", "size": f"{ball_r:.6g}",
                                      "density": repr(ball_density), "rgba": "0.97 0.97 0.95 1",

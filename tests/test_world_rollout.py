@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import pytest
 
+from flyohtani.flyshohei import pitch as P
 from flyohtani.record import scenarios as S
 from flyohtani.world import batter as B
 from flyohtani.world import rollout as R
@@ -73,6 +74,6 @@ def test_the_swing_to_contact_constant_is_still_true():
 
 def test_the_eye_rate_rule_uses_the_corrected_deadline():
     need = B.min_eye_rate_hz()
-    window = B.PITCH_FLIGHT_S - B.SWING_TO_CONTACT_S - B.DECISION_LATENCY_S
+    window = P.STANDARD.flight_s - B.SWING_TO_CONTACT_S - B.DECISION_LATENCY_S
     assert need == pytest.approx(B.MIN_DECISION_FRAMES / window)
     assert need < B.EYE_RATE_HZ, "the eye is faster than the rule requires"

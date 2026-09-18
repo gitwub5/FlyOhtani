@@ -61,24 +61,3 @@ def test_the_fence_is_short_down_the_lines_and_deep_in_centre():
     assert P._fence_radius_mm(0.0) == pytest.approx(P.FENCE_CENTER_MM)
     assert P._fence_radius_mm(math.radians(45)) == pytest.approx(P.FENCE_LINE_MM)
     assert P._fence_radius_mm(math.radians(-45)) == pytest.approx(P.FENCE_LINE_MM)
-
-
-def test_the_pitcher_is_on_the_rubber_and_cannot_touch_anything(md, scene):
-    """D35. It throws nothing -- the launcher does -- but a viewer's first
-    question is where the ball comes from, and before this there was no
-    answer."""
-    model, data = md
-    body = _id(model, mujoco.mjtObj.mjOBJ_BODY, "Pitcher")
-    assert body >= 0
-    assert data.xpos[body][0] == pytest.approx(B.PITCH_DISTANCE_MM * scene.scale, rel=1e-6)
-    for g in range(model.ngeom):
-        name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, g) or ""
-        if name.startswith("P_"):
-            assert model.geom_contype[g] == 0 and model.geom_conaffinity[g] == 0, name
-
-
-def test_the_pitcher_stands_on_the_mound_rather_than_in_it(md):
-    model, data = md
-    batter_head = data.xpos[_id(model, mujoco.mjtObj.mjOBJ_BODY, "Head")][2]
-    pitcher_head = data.xpos[_id(model, mujoco.mjtObj.mjOBJ_BODY, "P_Head")][2]
-    assert pitcher_head > batter_head, "the pitcher is sunk into the mound"

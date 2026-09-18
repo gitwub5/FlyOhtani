@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from flyohtani.flyshohei import pitch as P
 from flyohtani.task import env as E
 from flyohtani.task.observation import FORBIDDEN_FIELD_NAMES, BatObservation
 from flyohtani.world import batter as B
@@ -41,7 +42,7 @@ def _matching_rollout(env: E.BattingEnv, frame: int) -> R.Rollout:
     r_ball = float(m.geom_size[__import__("mujoco").mj_name2id(
         m, __import__("mujoco").mjtObj.mjOBJ_GEOM, "ball")][0])
     strike = p_star + np.array([r_ball + B.BAT_BARREL_RADIUS_MM * env.scene.scale, 0.0, 0.0])
-    _, _, flight = B.pitch_geometry(strike, env.scene.scale)
+    _, _, flight = P.geometry(strike, env.scene.scale)
     return R.run((flight - t_star - _trigger_time_s(env, frame)) * 1e3)
 
 

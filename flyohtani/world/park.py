@@ -10,6 +10,9 @@ a white ball reaches 6% contrast in this eye and is missed in two frames out
 of nine; against this it is seen from the release point on. A real ballpark
 has one for the same reason.
 
+The pitcher standing on the mound is not here: it is a fly, and it
+lives in `flyshohei.body`.
+
 Dimensions are real-ballpark millimetres, scaled by the D27 rule like
 everything else. Split out of batter.py, which was doing six jobs.
 """
@@ -21,12 +24,11 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 
-from flyohtani.world import batter as B
+from flyohtani.flyshohei.pitch import PITCH_DISTANCE_MM
 from flyohtani.world.batter import (
     CHALK_WIDTH_MM,
     DIRT_TOP_MM,
     GROUP_WORLD,
-    PITCH_DISTANCE_MM,
 )
 
 # ---------------------------------------------------------------- the park
@@ -186,47 +188,3 @@ def ballpark_geoms(scale: float) -> list[ET.Element]:
                                  BACKSTOP_MM + 2_000.0 + STANDS_DEPTH_MM, t0, t1,
                                  STANDS_HEIGHT_MM[1], scale, "0.28 0.29 0.32 1"))
     return out
-
-
-PITCHER_POSE = {
-    **B.STATIC_POSE,
-    # right foreleg up and back: the arm the ball leaves from
-    "joint_RFCoxa": math.radians(-150), "joint_RFFemur": math.radians(-40),
-    "joint_RFTibia": math.radians(70), "joint_RFTarsus1": math.radians(-20),
-    "joint_LFCoxa": math.radians(-40), "joint_LFFemur": math.radians(-80),
-    "joint_LFTibia": math.radians(95),
-}
-"""The pitcher's pose: the same static-copy machinery as the batter's own
-non-driven legs, with the throwing arm raised. Visual only -- nothing about
-this fly is simulated, and the ball's release point comes from the pitch
-geometry, not from its hand."""
-
-
-def pitcher_subtree(src_root: ET.Element, scale: float, foot_z: float = 0.0) -> ET.Element:
-    """A second fly, standing on the rubber, facing home plate.
-
-    It throws nothing: the ball is launched by `pitch_geometry`. What it does
-    is answer the question a viewer asks first -- where is the ball coming
-    from -- which had no answer while the release point was a bare point in
-    the air."""
-    facing = B._qmul(B._quat_axis_angle([0.0, 0.0, 1.0], math.pi), B.STANCE_QUAT)
-    # `foot_z` is where the probe found this fly's feet, so subtracting it
-    # stands the pitcher ON the mound instead of sinking it into one.
-    body = ET.Element("body", {
-        "name": "Pitcher",
-        "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 "
-               f"{MOUND_HEIGHT_MM * scale - foot_z + DIRT_TOP_MM:.6g}",
-        "quat": B._qstr(facing)})
-    thorax_src = B._find_body(src_root, "Thorax")
-    thorax = ET.SubElement(body, "body", {"name": "P_Thorax", "pos": thorax_src.get("pos")})
-    for g in thorax_src.findall("geom"):
-        geom = B._copy_geom(g, collide=False)
-        geom.set("group", str(B.GROUP_FLY))
-        geom.set("rgba", B._CHITIN)
-        if geom.get("name"):
-            geom.set("name", "P_" + geom.get("name"))
-        thorax.append(geom)
-    for child in thorax_src.findall("body"):
-        thorax.append(B._static_copy(child, group=B.GROUP_FLY, skip=set(),
-                                   pose=PITCHER_POSE, prefix="P_"))
-    return body

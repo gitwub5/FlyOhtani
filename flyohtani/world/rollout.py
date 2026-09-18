@@ -37,6 +37,7 @@ import mujoco
 import numpy as np
 
 from flyohtani import units
+from flyohtani.flyshohei import pitch as P
 from flyohtani.world import batter as B
 from flyohtani.world import swing as S
 from flyohtani.world.swing import ballistic, bat_geom_ids, swing_table
@@ -177,7 +178,7 @@ def run(spec_timing_ms: float = 0.0, aim_offset_mm: tuple[float, float, float] =
     t_star, p_star = dry_swing(scene, swing_dur, follow)
     strike = p_star + np.array([r_ball + r_bat, 0.0, 0.0]) + np.array(aim_offset_mm)
     B.set_arm(m, d, B.READY_POSE)
-    release, v0, flight = B.pitch_geometry(strike, scene.scale, distance_scale, flight_s)
+    release, v0, flight = P.geometry(strike, scene.scale, distance_scale, flight_s)
 
     # phase A: no contact is possible, so the ball is a projectile and the
     # arm is holding still. The clock starts where the swing does, with the

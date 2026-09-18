@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 import mujoco
 import numpy as np
 
+from flyohtani.flyshohei import pitch as P
 from flyohtani.task import rewards
 from flyohtani.task.observation import BatObservation
 from flyohtani.task.outcome import Outcome
@@ -121,8 +122,8 @@ class BattingEnv:
         self._strike = strike
         # The release point comes from the NOMINAL strike point, so it is the
         # same hand position whatever zone is being aimed at (see
-        # pitch_geometry's docstring -- this was a bug).
-        self._release, self._v0, self._flight = B.pitch_geometry(
+        # flyshohei.pitch.geometry's docstring -- this was a bug).
+        self._release, self._v0, self._flight = P.geometry(
             strike, self.scene.scale, self.pitch.distance_scale, self.pitch.flight_s,
             release_reference=nominal)
         # timing_ms > 0 delays the release, so the ball arrives later.
