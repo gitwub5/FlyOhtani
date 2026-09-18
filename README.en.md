@@ -49,7 +49,7 @@ dynamics and the learning rule are **assumptions we made**.
 **The whole path runs.** The fly sees the ball only through its eye, the
 circuit decides when and where to swing, and a search tunes that decision. On
 30 pitches it has never seen, it beats the best policy that cannot see — on
-all three seeds tried (see [results](#results-so-far)).
+all three seeds tried (see [results](#results)).
 
 What is verified today and what does not exist yet is in
 [STATUS](docs/records/STATUS.md) (Korean); the full plan and the design decisions
@@ -85,8 +85,8 @@ is still scale-true, so it is a big, very light ball.
 <img src="docs/assets/fly-eyes.png" width="560" alt="Four 32×32 grayscale eye images: three left-eye frames as the ball approaches, and one right-eye frame.">
 
 One 32×32 grayscale camera on each side of the head. The fly stands sideways,
-so the left eye is the one facing the pitcher: it is **a 30° acute zone**
-(0.94° per pixel) **aimed down the pitch**, while **the right eye keeps a 120°
+so the left eye is the one facing the pitcher: it is **a 20° acute zone**
+(0.63° per pixel) **aimed down the pitch**, while **the right eye keeps a 120°
 wide field**. Each pixel integrates light over its own solid angle rather than
 point-sampling, the way an ommatidium does. The first three frames are the
 left eye taken from a real pitch: **at release, at the moment the swing must
@@ -114,36 +114,60 @@ on one screen. Built by modifying
 [fly-connectome-template](https://github.com/cobanov/fly-connectome-template)
 (see [below](#brain-visualization-viewer)).
 
-## Results so far
+## Results
 
-| Check | Result |
-| --- | --- |
-| **G1** foreleg swing | All 240 runs stable. dt convergence 0.07%, spread across three integrators 0.02%. Actuation was never the bottleneck |
-| **LIT-01** speed ceiling | Measured walking peak 98.6 rad/s; jump estimate 240–516 rad/s → design ceiling **300 rad/s** (bat tip up to 4.53 m/s) |
-| **G4** connectome | LC4 (126) · LPLC2 (185) → 12 descending neurons, 1,343 connections. Known looming–escape pathways (LPLC2 → Giant Fiber, …) are present in the data |
-| **G2** contact | v1 **FAILED** (contact lasted only 3–4 steps, so the restitution coefficient swung 0.33 ↔ 0.63) → v2 passed (restitution 0.42–0.46) |
-| **VM-01** vision | A scale-true ball is **not visible**: 0.25° across against a 3.75° pixel. 180 + 576 + 256 combinations measured; the answer is a 2× ball and an aimed 30° eye. The eye's frame rate was never the bottleneck |
-| Batter-scene contact check | K1–K6 all pass. Restitution 0.41–0.46, no energy created |
-| **VM-01** pitch | A slow pitch is lofted by gravity (+21° launch). It takes a **Kershaw-class fastball** (93 mph Froude-scaled to 1888 mm/s) released 122 mm away to fly flat (+5.6°) |
-| Brain circuit | Spikes run retina → LC4/LPLC2 → descending neurons. **Delay the pitch by 2 ms and the trigger moves by exactly one frame** — it reads the ball, not a clock |
-| Learning | On 30 unseen pitches, **all three seeds beat the best blind baseline** (0.877 / 0.566 / 0.613 against 0.471). Contact rate 0.23–0.30 |
-| Shuffled control | Shuffle the wiring and the score survives — **there is no evidence yet that the connectome's structure is what does the work** ([BRAIN-CIRCUIT](docs/records/BRAIN-CIRCUIT.md), Korean) |
-| Recorded hit | The learned policy: 808 mm/s, launch +10°, carry 28.9 mm (about 14 m at human scale), fair |
+**The fly sees the ball with its own eye and decides, by itself, when and
+where to swing.** On **30 pitches it was never trained on**, the learned
+policy beat the best policy that cannot see -- one that swings on a fixed
+frame -- on **all three seeds**.
+
+| | Held-out reward | Contact | Fair |
+| --- | --- | --- | --- |
+| **Learned circuit** (seeds 3 · 4 · 5) | **0.877 · 0.566 · 0.613** | 0.30 · 0.30 · 0.23 | 0.23 · 0.10 · 0.20 |
+| Best policy that cannot see | 0.471 | 0.20 | 0.13 |
+
+That it really uses the eye was checked separately: **delay the pitch by 2 ms
+and the trigger moves by exactly one frame** (2.08 ms). A policy counting a
+clock would not have moved at all. The hit at the top of this page left the
+bat at 808 mm/s, +10°, and carried 28.9 mm -- about 14 m at human scale.
+
+> ⚠️ **A control with the wiring randomly shuffled scores the same** -- one of
+> three was identical. So this score **cannot be credited to the connectome's
+> structure.** The decoder currently says "swing if any descending neuron
+> fires", which makes all twelve interchangeable; what would have to change is
+> written up in [BRAIN-CIRCUIT](docs/records/BRAIN-CIRCUIT.md) (Korean).
+
+<details>
+<summary><b>The checks it took to get here</b> — body, contact, connectome, vision (expand)</summary>
+
+<br/>
+
+| | The question | Result |
+| --- | --- | --- |
+| **G1** body | Can a foreleg swing the bat at all | All 240 runs stable. dt convergence 0.07%, spread across three integrators 0.02%. Actuation was never the bottleneck |
+| **LIT-01** ceiling | How fast may a joint be driven | Measured walking peak 98.6 rad/s; jump estimate 240–516 → design ceiling **300 rad/s** (bat tip 4.53 m/s) |
+| **G4** connectome | Can the looming circuit actually be obtained | LC4 (126) · LPLC2 (185) → 12 descending neurons, 1,343 connections. Known looming–escape pathways (LPLC2 → Giant Fiber, …) are present in the data |
+| **G2** contact | Can the collision be trusted | v1 **FAILED** (contact lasted 3–4 steps, so restitution swung 0.33 ↔ 0.63) → v2 passed (0.42–0.46). The batter-scene check K1–K6 passes too |
+| **VM-01** vision | Can the fly see the pitch | A scale-true ball is **not visible**: 0.25° across against a 3.75° pixel. Over 1,000 combinations measured; it works with a **2× ball and an aimed 20° eye**. The eye's frame rate was never the bottleneck |
+| **D35** pitch | Can the ball come from the real rubber | Once the decision deadline was corrected, **34.4 mm in 52 ms** is enough to see and swing. The price is speed: 35% of a Froude-scaled Kershaw |
+| **D36** swing | Does the bat drive the ball | The old swing was **descending at −18°** through contact, pressing the ball down. Re-deriving the ready pose from the velocity at contact (**+7 to +11.5°**) took carry from 0.3 to 66 mm |
 
 Failed runs are kept, not deleted. Evidence files are in
 [docs/records/evidence/](docs/records/evidence/); the run log is
 [VALIDATION_LOG](docs/records/VALIDATION_LOG.md).
 
+</details>
+
 ## Getting started
 
 **You need:** Python 3.11+, and Node.js 22.18+ for the viewer. Developed on an
-Apple M2 Pro laptop; no GPU required. A 0.1 s episode takes about 0.6 s.
+Apple M2 Pro laptop; no GPU required. A 0.1 s episode runs in about 0.4 s.
 
 ```bash
 git clone https://github.com/gitwub5/FlyOhtani.git && cd FlyOhtani
 python3.11 -m venv .venv
 .venv/bin/pip install -e ".[dev,video]"
-.venv/bin/pytest                      # 139 passed
+.venv/bin/pytest                      # 238 passed
 ```
 
 ### Record an episode
@@ -189,16 +213,19 @@ listed in [viewer/MODIFICATIONS.md](viewer/MODIFICATIONS.md); provenance is in
 ## Repository layout
 
 ```
-flyohtani/
+flyshohei/          the pitcher — pitch types, speed, release geometry, the fly on the mound
+flyohtani/          the batter
 ├── units.py        unit convention (mm · g · μN), constants measured from the source model
-├── body/           the real foreleg + bat model, the G1 sweep, speed limits
-├── brain/          MaleCNS looming-circuit loader, export for the viewer
-├── sense/          eye cameras, ball detection and tracking, observation schema
-├── world/          the batter scene, contact parameters, G2 and the contact check
+├── world/          the batter scene, the ballpark, swing and batted-ball physics, fast episodes
+├── brain/          MaleCNS looming circuit, retina encoding, LIF circuit, viewer export
+├── task/           environment API, observation contract, rewards, pitch draws, policy, search
 ├── record/         episode → video · stills · outcome JSON
+├── studies/        one-off measurements (G1 · G2 · batter check · VM-01)
+├── body/           the real foreleg + bat model, the G1 sweep, speed limits
+├── sense/          the v1 classical-CV pipeline (not on the current path)
 └── assets/         NeuroMechFly meshes/MJCF/walking data, the connectome subgraph (with provenance)
 viewer/             3D brain viewer (based on fly-connectome-template)
-tests/              139 pytest tests + a viewer parser test
+tests/              238 pytest tests + a viewer parser test
 docs/               plan, status, per-gate reports, evidence files (Korean)
 ```
 
@@ -218,11 +245,10 @@ docs/               plan, status, per-gate reports, evidence files (Korean)
 - Containing a connectome does **not** mean the brain is reproduced. This is real
   wiring + assumed neuron dynamics + assumed plasticity.
 - The brain panel in the viewer shows **wiring**, not activity.
-- The swing in the video is **scripted**, not learned.
 - The ball is **twice scale**, the left eye is **six times finer** than a real
-  fruit fly's, and the mound is **60 m away** in real terms. That is what it
-  took to let the fly see a pitch and still swing at it; the bill is itemised
-  in [VM-01](docs/records/VM-01-EYE-RATE.md).
+  fruit fly's, and the pitch travels at **35%** of a Froude-scaled Kershaw
+  fastball. That is what it took to let the fly see a pitch and still swing at
+  it; the bill is itemised in [VM-01](docs/records/VM-01-EYE-RATE.md).
 - "Ohtani-class" here means the ceiling of **this body**, not a scaled human
   one: the bat reaches a quarter of a Froude-scaled Ohtani, and the 300 rad/s
   joint limit was left where the literature put it.
@@ -236,12 +262,13 @@ The documents below are in Korean.
 
 | Document | Contents |
 | --- | --- |
-| [PLAN](docs/PLAN.md) | Design decisions D01–D30, phases and gates |
+| [PLAN](docs/PLAN.md) | Design decisions D01–D36, phases and gates |
 | [STATUS](docs/records/STATUS.md) | What is verified now and what is blocked |
 | [G1 foreleg swing](docs/records/G1-FORELEG-SWING.md) · [LIT-01 speed limits](docs/records/LIT-01-FLY-LEG-LIMITS.md) | Body |
 | [G2 contact](docs/records/G2-CONTACT.md) · [batter scene](docs/records/BATTER-SCENE.md) | World |
 | [VM-01 vision](docs/records/VM-01-EYE-RATE.md) | Can the ball be seen — three failures and the design rules they produced |
-| [G4 connectome](docs/records/G4-CONNECTOME-ACCESS.md) | Brain |
+| [G4 connectome](docs/records/G4-CONNECTOME-ACCESS.md) · [brain circuit](docs/records/BRAIN-CIRCUIT.md) | Brain — obtaining the wiring, and running a circuit on it |
+| [Learning 01](docs/records/LEARNING-01.md) | What was learned, and what it was measured against |
 | [Prior findings](docs/records/PRIOR-FINDINGS.md) | What the previous version settled, and the failures not to repeat |
 | [Index](docs/README.md) | The full list |
 
