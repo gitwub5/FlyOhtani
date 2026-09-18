@@ -16,7 +16,7 @@ A research simulation built from a NeuroMechFly body, a MaleCNS connectome circu
 
 <img src="docs/assets/hit.gif" width="640" alt="A 3.7 mm fly in the batter's box swings a bat and hits the ball. Left: a camera down the third-base line. Right: a camera following the ball.">
 
-<sub>A recorded hit, played 133× slower than real time: a Kershaw-class fastball turned into a line drive to left-centre — about 15 m at human scale. <b>The swing is still scripted</b> — it is not a learned motion.</sub>
+<sub><b>A hit the learned circuit decided on by itself.</b> A pitcher fly throws from the rubber; the batter sees the ball with its own eye and commits at 27.1 ms — "now, high zone". Exit speed 808 mm/s, launch +10°, a fair ball worth about 14 m at human scale. Played 133× slower than real time.</sub>
 
 </div>
 
@@ -45,6 +45,11 @@ flowchart LR
 
 The wiring (who sends how many synapses to whom) is real data. The neuron
 dynamics and the learning rule are **assumptions we made**.
+
+**The whole path runs.** The fly sees the ball only through its eye, the
+circuit decides when and where to swing, and a search tunes that decision. On
+30 pitches it has never seen, it beats the best policy that cannot see — on
+all three seeds tried (see [results](#results-so-far)).
 
 What is verified today and what does not exist yet is in
 [STATUS](docs/records/STATUS.md) (Korean); the full plan and the design decisions
@@ -120,8 +125,10 @@ on one screen. Built by modifying
 | **VM-01** vision | A scale-true ball is **not visible**: 0.25° across against a 3.75° pixel. 180 + 576 + 256 combinations measured; the answer is a 2× ball and an aimed 30° eye. The eye's frame rate was never the bottleneck |
 | Batter-scene contact check | K1–K6 all pass. Restitution 0.41–0.46, no energy created |
 | **VM-01** pitch | A slow pitch is lofted by gravity (+21° launch). It takes a **Kershaw-class fastball** (93 mph Froude-scaled to 1888 mm/s) released 122 mm away to fly flat (+5.6°) |
-| Recorded hit | Exit speed 740 mm/s (32% of a Froude-scaled Ohtani), launch +14°, carry 29.9 mm — **a line drive, about 15 m at human scale** |
-| Recorded miss | Being 3 ms off misses entirely; the contact window is about ±1 ms |
+| Brain circuit | Spikes run retina → LC4/LPLC2 → descending neurons. **Delay the pitch by 2 ms and the trigger moves by exactly one frame** — it reads the ball, not a clock |
+| Learning | On 30 unseen pitches, **all three seeds beat the best blind baseline** (0.877 / 0.566 / 0.613 against 0.471). Contact rate 0.23–0.30 |
+| Shuffled control | Shuffle the wiring and the score survives — **there is no evidence yet that the connectome's structure is what does the work** ([BRAIN-CIRCUIT](docs/records/BRAIN-CIRCUIT.md), Korean) |
+| Recorded hit | The learned policy: 808 mm/s, launch +10°, carry 28.9 mm (about 14 m at human scale), fair |
 
 Failed runs are kept, not deleted. Evidence files are in
 [docs/records/evidence/](docs/records/evidence/); the run log is
@@ -150,6 +157,19 @@ python3.11 -m venv .venv
 
 Each writes `video.mp4`, a contact sheet `sheet.png` and the outcome
 `manifest.json` into `runs/record/<name>/`.
+
+### Running the learner
+
+```bash
+.venv/bin/python -m flyohtani.task.learn --reward carry-v1 \
+    --generations 8 --population 10 --train-pitches 24 --seed 3 \
+    --out runs/learn/my-run.json
+```
+
+It trains on `pitches.training_pitches`, reports on `evaluation_pitches`
+(which nothing selects on), and scores every blind fixed-frame policy for
+comparison into the same JSON. About 0.4 s an episode, 15–20 minutes at these
+settings.
 
 ### Brain visualization viewer
 
