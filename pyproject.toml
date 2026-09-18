@@ -30,7 +30,7 @@ video = [
 ]
 
 [tool.setuptools]
-packages = ["flyohtani", "flyohtani.sense", "flyohtani.body", "flyohtani.brain", "flyohtani.world", "flyohtani.record", "flyohtani.task"]
+packages = ["flyohtani", "flyohtani.sense", "flyohtani.body", "flyohtani.brain", "flyohtani.world", "flyohtani.record", "flyohtani.task", "flyohtani.studies"]
 
 [tool.setuptools.package-data]
 # "assets/*" alone would miss the nested mesh directory. "assets/**/*" covers

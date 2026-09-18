@@ -19,7 +19,7 @@ Criteria (fixed before this was run; see docs/records/BATTER-SCENE.md):
 Speeds 500-3000 mm/s: the demo swing's sweet spot peaks at 442 mm/s and a
 Froude-scaled fastball is ~1.8 m/s, so 3 m/s covers their sum.
 
-Run:  .venv/bin/python -m flyohtani.world.batter_check
+Run:  .venv/bin/python -m flyohtani.studies.batter_check
 """
 from __future__ import annotations
 

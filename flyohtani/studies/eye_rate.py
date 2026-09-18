@@ -20,7 +20,7 @@ see BEFORE it commits to a swing, so the bat must not be mid-swing. The ball
 is placed on its ballistic path analytically rather than stepped, because
 rendering must not depend on integrating 21 ms at 1 us.
 
-    .venv/bin/python -m flyohtani.sense.eye_rate
+    .venv/bin/python -m flyohtani.studies.eye_rate
 """
 from __future__ import annotations
 

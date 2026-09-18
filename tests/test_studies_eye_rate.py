@@ -11,7 +11,7 @@ import math
 
 import pytest
 
-from flyohtani.sense import eye_rate as ER
+from flyohtani.studies import eye_rate as ER
 from flyohtani.world import batter as B
 
 

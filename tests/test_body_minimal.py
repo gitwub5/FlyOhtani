@@ -146,7 +146,7 @@ class TestRollDofDegeneracy:
     def test_g1s_configuration_is_integrable_at_the_timestep_g1_uses(self):
         """The operational claim: with the rolls locked and a bat fitted,
         every driven DOF is integrable at the sweep's own timestep."""
-        from flyohtani.body.g1_sweep import DEFAULT_TIMESTEP
+        from flyohtani.studies.g1_foreleg_swing import DEFAULT_TIMESTEP
 
         limits = self._dt_limits(lock_roll_dofs=True, bat=BAT)
         assert set(limits) == set(ACTIVE_JOINTS)
@@ -205,7 +205,7 @@ class TestBatSpec:
 
 class TestSwingBehaviour:
     def test_a_saturating_step_command_stays_stable(self):
-        from flyohtani.body.g1_sweep import _run_one
+        from flyohtani.studies.g1_foreleg_swing import _run_one
 
         result = _run_one(BAT, target_rad=3.0, sign=-1)
         assert result.stable
@@ -215,7 +215,7 @@ class TestSwingBehaviour:
     def test_a_heavier_bat_swings_slower(self):
         """The load has to actually load the arm. If mass stops mattering,
         something has decoupled the bat from the joints."""
-        from flyohtani.body.g1_sweep import _run_one
+        from flyohtani.studies.g1_foreleg_swing import _run_one
 
         light = _run_one(BatSpec(2e-6, 4.0), target_rad=3.0, sign=-1)
         heavy = _run_one(BatSpec(2e-5, 4.0), target_rad=3.0, sign=-1)
@@ -225,7 +225,7 @@ class TestSwingBehaviour:
     def test_mass_clamping_is_detected_and_reported(self):
         """boundmass silently raises light bodies. The sweep has to say so
         rather than quietly reporting a bat heavier than requested."""
-        from flyohtani.body.g1_sweep import _run_one
+        from flyohtani.studies.g1_foreleg_swing import _run_one
 
         clamped = _run_one(BatSpec(5e-7, 2.0), target_rad=1.0, sign=1, boundmass=1e-6)
         assert clamped.mass_was_clamped

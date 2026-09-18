@@ -1,7 +1,7 @@
 # G2 — 파리 스케일에서 접촉이 사전 등록 수용치를 통과하는가
 
 2026-09-17 · 게이트 G2([PLAN](../PLAN.md) Phase 2) · 구현:
-`flyohtani/world/g2_contact.py` · 원자료: `evidence/G2-contact.json.gz` ·
+`flyohtani/studies/g2_contact.py` · 원자료: `evidence/G2-contact.json.gz` ·
 회귀: `tests/test_world_g2_contact.py`
 
 **이 절(§1~§6)은 실행 전에 작성해 결과 없이 먼저 커밋했다.** 결과(§7 이후)는
@@ -100,7 +100,7 @@ dt를 τ/2 이하로 잡아 그 함정을 구조적으로 피한다. **productio
 
 ## 7. 결과 — 프로토콜 v1: **FAIL**
 
-실행: `.venv/bin/python -m flyohtani.world.g2_contact` (10 workers, 25 s).
+실행: `.venv/bin/python -m flyohtani.studies.g2_contact` (10 workers, 25 s).
 원자료: `evidence/G2-contact.json.gz`. 사전 등록 커밋 `ea7dff9` 이후 실행.
 
 **40개 후보 중 65개 구성 전부를 통과한 후보: 0개.** 사전 등록 §5에 따라 G2는
@@ -254,7 +254,7 @@ C1~C9를 적용한다. 속도·각도·높이 모두 기존 격자 **사이**의
 
 ## 10. 결과 — 프로토콜 v2: **PASS (탐색 프로토콜)**
 
-실행: `.venv/bin/python -m flyohtani.world.g2_contact --protocol v2`
+실행: `.venv/bin/python -m flyohtani.studies.g2_contact --protocol v2`
 (10 workers, 6분 56초). 원자료: `evidence/G2v2-contact.json.gz`.
 사전 등록 커밋 `3266983` 이후 실행.
 

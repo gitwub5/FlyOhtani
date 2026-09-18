@@ -1,7 +1,7 @@
 # G1 — 파리 앞다리가 배트를 휘두를 수 있는가
 
 2026-09-17 · 게이트 G1([PLAN](../PLAN.md) Phase 1) · 구현:
-`flyohtani/body/minimal_body.py`, `flyohtani/body/g1_sweep.py` ·
+`flyohtani/body/minimal_body.py`, `flyohtani/studies/g1_foreleg_swing.py` ·
 원자료: `evidence/G1-swing-sweep.json` · 회귀: `tests/test_body_minimal.py`
 
 ## 판정: PASS — 단, 측정된 속도는 과제 설계에 쓸 수 없다

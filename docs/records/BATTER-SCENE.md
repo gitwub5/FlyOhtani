@@ -9,7 +9,7 @@
 > 이 문서의 나머지(직립 자세, 배트 형상, 접촉 프로토콜 K1~K6)는 그대로 유효하다.
 
 2026-09-17 · 결정 D26~D29 ([PLAN](../PLAN.md)) · 구현:
-`flyohtani/world/batter.py`, `flyohtani/world/batter_check.py` ·
+`flyohtani/world/batter.py`, `flyohtani/studies/batter_check.py` ·
 원자료: `evidence/batter-contact-check.json` · 회귀: `tests/test_world_batter.py`
 
 ## 왜 바꿨나
@@ -108,7 +108,7 @@ D26의 연출이며, 파리 앞다리가 실제로 그렇게 굽는다는 주장
 
 ## 짧은 충돌 확인 — 결과: **PASS**
 
-실행: `.venv/bin/python -m flyohtani.world.batter_check` (약 1초). 기준 커밋
+실행: `.venv/bin/python -m flyohtani.studies.batter_check` (약 1초). 기준 커밋
 `b16b212` 이후 실행. 원자료: `evidence/batter-contact-check.json`.
 
 | 속도 (mm/s) | 반발계수 (위상 10개) | 충돌 후/전 운동에너지 최대 | 최대 파고듦 | 접촉 지속 |

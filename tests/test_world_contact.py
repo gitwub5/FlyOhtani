@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from flyohtani.studies import g2_contact as g2
 from flyohtani.world import contact
-from flyohtani.world import g2_contact as g2
 
 EVIDENCE = Path(__file__).resolve().parent.parent / "docs" / "records" / "evidence"
 

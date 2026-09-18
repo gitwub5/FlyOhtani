@@ -15,7 +15,7 @@ import math
 import mujoco
 import pytest
 
-from flyohtani.world import g2_contact as g2
+from flyohtani.studies import g2_contact as g2
 
 CAND = g2.Candidate(1e-6, 0.3, "default")
 DT = CAND.timeconst_s / g2.V1.production_divisor

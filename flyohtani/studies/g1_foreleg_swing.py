@@ -15,7 +15,7 @@ or claim the resulting motion resembles a swing. A number produced here is
 "the fastest this arm moved a tool under a saturating step command", nothing
 more.
 
-Run:  .venv/bin/python -m flyohtani.body.g1_sweep
+Run:  .venv/bin/python -m flyohtani.studies.g1_foreleg_swing
 """
 from __future__ import annotations
 

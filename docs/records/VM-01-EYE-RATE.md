@@ -1,6 +1,6 @@
 # VM-01 — 파리가 투구를 볼 수 있는가, 눈은 몇 Hz여야 하는가
 
-2026-09-18. 코드 `flyohtani/sense/eye_rate.py`, 근거
+2026-09-18. 코드 `flyohtani/studies/eye_rate.py`, 근거
 `evidence/VM-01-eye-rate.json`(775 KB, 프레임 단위 원자료 포함).
 사전 등록 커밋 `193a1e2`(기준·그리드·테스트만, 결과 없음) → 실행.
 

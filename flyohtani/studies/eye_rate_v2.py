@@ -19,7 +19,7 @@ v2 was designed after seeing v1, exactly like G2 v2. The bias that creates is
 checked the same way: HOLD_OUT_FLIGHTS below are not used to choose anything;
 the configuration chosen on the exploratory set is verified against them.
 
-    .venv/bin/python -m flyohtani.sense.eye_rate_v2
+    .venv/bin/python -m flyohtani.studies.eye_rate_v2
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ import mujoco
 import numpy as np
 
 from flyohtani import units
-from flyohtani.sense.eye_rate import (
+from flyohtani.studies.eye_rate import (
     DECISION_LATENCY_S,
     DETECT_THRESHOLD,
     EVIDENCE,

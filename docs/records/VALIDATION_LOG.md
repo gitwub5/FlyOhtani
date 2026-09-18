@@ -382,3 +382,15 @@ Python 최소 버전을 3.11로 올렸다(D07과 일치, `typing.Self` 사용).
 | `batter_check` · `pytest` | PASS · 223 passed |
 | D36 스윙으로 학습 재실행(시드 3·4·5) | 평가 보상 0.877 / 0.566 / 0.613 vs 최고 맹목 기준선 0.471 — **3/3 기준선 초과**, 접촉 0.23~0.30 |
 | 학습된 정책 녹화 | 27.1 ms에 자체 커밋, `high` 존 선택, 타구 808 mm/s · 발사각 +10° · 비거리 28.9 mm 페어 |
+
+---
+
+## 2026-09-18 · 리팩터링 (실험 고도화 전 정리)
+
+| 단계 | 결과 |
+| --- | --- |
+| 스윙 루프 통합 | `rollout`·`env`·`scenarios`가 각자 갖고 있던 "공이 배트를 떠날 때까지 적분"과 "타구 계산"을 `world/swing.py` 하나로. **이 중복이 실제로 버그 2건을 냈었다**(커밋 프레임 1개 차이, 타구값 불일치) |
+| 구장 분리 | `batter.py` 1,028 → 830줄. 펜스·관중석·베이스·마운드·파울폴·백스톱·투수 파리를 `world/park.py`로 |
+| 일회성 측정 분리 | `g1_sweep`·`g2_contact`·`batter_check`·`eye_rate`·`eye_rate_v2` → **`flyohtani/studies/`**. 라이브러리가 쓰지 않는 코드였다 |
+| 실행 명령 변경 | `python -m flyohtani.studies.batter_check`, `...studies.g2_contact` 등. **위쪽 과거 로그의 명령은 그때 실제로 친 것이라 그대로 둔다** |
+| `pytest` | 229 passed · ruff 클린 |

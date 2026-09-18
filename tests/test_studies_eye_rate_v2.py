@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from flyohtani.sense import eye_rate as V1
-from flyohtani.sense import eye_rate_v2 as V2
+from flyohtani.studies import eye_rate as V1
+from flyohtani.studies import eye_rate_v2 as V2
 
 
 def test_the_hold_out_is_a_subset_that_decides_nothing():

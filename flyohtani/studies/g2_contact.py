@@ -15,7 +15,7 @@ Two protocols live here and both stay runnable exactly as registered:
   v2  section 9, an EXPLORATORY protocol designed after seeing v1: the same
       criteria and candidates on a finer dt ladder, plus hold-out configs.
 
-Run:  .venv/bin/python -m flyohtani.world.g2_contact --protocol v2
+Run:  .venv/bin/python -m flyohtani.studies.g2_contact --protocol v2
 """
 from __future__ import annotations
 
