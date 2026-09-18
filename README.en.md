@@ -16,7 +16,7 @@ A research simulation built from a NeuroMechFly body, a MaleCNS connectome circu
 
 <img src="docs/assets/hit.gif" width="640" alt="A 3.7 mm fly in the batter's box swings a bat and hits the ball. Left: a camera down the third-base line. Right: a camera following the ball.">
 
-<sub>A recorded hit, played 8× slower than real time. <b>The swing is still scripted</b> — it is not a learned motion.</sub>
+<sub>A recorded hit, played 133× slower than real time: a Kershaw-class fastball turned into a line drive to left-centre — about 15 m at human scale. <b>The swing is still scripted</b> — it is not a learned motion.</sub>
 
 </div>
 
@@ -56,23 +56,41 @@ are in [PLAN](docs/PLAN.md) (Korean).
 
 <img src="docs/assets/batter-ready.jpg" width="720" alt="A fly standing upright in the middle of the right-handed batter's box, holding a bat with its foreleg.">
 
+The park is built to real dimensions — foul lines, bases, mound, an outfield
+fence (325 ft down the lines, 400 ft to centre, 12 ft high), stands, foul
+poles and a backstop — and all of it is **scenery only**, with collisions off. The dark
+section of the centre-field stands is the **batter's eye**, there for the
+reason a real park has one: a white ball is lost against a bright sky
+(measured: 7 of 9 frames against sky, 9 of 9 against the screen).
+
 The body is held fixed and **only the right foreleg** moves, through its real
-joints. Bat, ball, home plate and the box are all shrunk by a single factor
-(fly height 3.74 mm ÷ human height 1830 mm ≈ 1/490). The bat is a 1.76 mm solid
-of revolution made from the profile of a real wooden bat.
+joints. Bat, home plate and the box are shrunk by a single factor (fly height
+3.74 mm ÷ human height 1830 mm ≈ 1/490). The bat is a 1.76 mm solid of
+revolution made from the profile of a real wooden bat. **The ball is the one
+exception, at twice scale** (radius 0.151 mm): at true scale it is
+[measurably invisible](docs/records/VM-01-EYE-RATE.md) to this eye. Its mass
+is still scale-true, so it is a big, very light ball.
 
 <img src="docs/assets/swing-strip.jpg" width="720" alt="Seven frames of the swing, from the ready pose to the contact pose.">
 
-<sub>The 35 ms demo swing. Peak joint speed 215 rad/s, inside the 300 rad/s biological ceiling we adopted.</sub>
+<sub>The 38 ms demo swing. Peak joint speed 287 rad/s, inside the 300 rad/s biological ceiling, and the fastest bat speed this arm reaches at the moment of contact (390 mm/s).</sub>
 
 ### What the fly sees
 
 <img src="docs/assets/fly-eyes.png" width="560" alt="Four 32×32 grayscale eye images: three left-eye frames as the ball approaches, and one right-eye frame.">
 
-One 32×32 grayscale camera on each side of the head (120° field of view). Because
-the fly stands sideways, **its left eye looks straight at the pitcher.** The first
-three frames are the left eye as the ball closes in; the last is the right eye.
-The red ring is an annotation — it is not part of the input the fly receives.
+One 32×32 grayscale camera on each side of the head. The fly stands sideways,
+so the left eye is the one facing the pitcher: it is **a 30° acute zone**
+(0.94° per pixel) **aimed down the pitch**, while **the right eye keeps a 120°
+wide field**. Each pixel integrates light over its own solid angle rather than
+point-sampling, the way an ommatidium does. The first three frames are the
+left eye taken from a real pitch: **at release, at the moment the swing must
+start, and at 48 ms**. At the decision the ball is **a third of a pixel
+across at 2–3.5% contrast** — about where a photoreceptor's limit is, and
+about where a human batter reads a 93 mph fastball. It is still picked up in
+all nine frames of the decision window, thanks to the acute zone and the dark
+batter's eye behind it. The last frame is the right eye. The red ring is an
+annotation — it is not part of the input the fly receives.
 
 ### The circuit in the brain
 
@@ -99,9 +117,11 @@ on one screen. Built by modifying
 | **LIT-01** speed ceiling | Measured walking peak 98.6 rad/s; jump estimate 240–516 rad/s → design ceiling **300 rad/s** (bat tip up to 4.53 m/s) |
 | **G4** connectome | LC4 (126) · LPLC2 (185) → 12 descending neurons, 1,343 connections. Known looming–escape pathways (LPLC2 → Giant Fiber, …) are present in the data |
 | **G2** contact | v1 **FAILED** (contact lasted only 3–4 steps, so the restitution coefficient swung 0.33 ↔ 0.63) → v2 passed (restitution 0.42–0.46) |
+| **VM-01** vision | A scale-true ball is **not visible**: 0.25° across against a 3.75° pixel. 180 + 576 + 256 combinations measured; the answer is a 2× ball and an aimed 30° eye. The eye's frame rate was never the bottleneck |
 | Batter-scene contact check | K1–K6 all pass. Restitution 0.41–0.46, no energy created |
-| Recorded hit | Pitch 1.81 m/s (scaled), exit speed 602 mm/s, launch −24°, carry 1.96 mm (~1 m at human scale) — **a fair ground ball** |
-| Recorded miss | Swinging just 4 ms late misses entirely. The timing window is very narrow |
+| **VM-01** pitch | A slow pitch is lofted by gravity (+21° launch). It takes a **Kershaw-class fastball** (93 mph Froude-scaled to 1888 mm/s) released 122 mm away to fly flat (+5.6°) |
+| Recorded hit | Exit speed 740 mm/s (32% of a Froude-scaled Ohtani), launch +14°, carry 29.9 mm — **a line drive, about 15 m at human scale** |
+| Recorded miss | Being 3 ms off misses entirely; the contact window is about ±1 ms |
 
 Failed runs are kept, not deleted. Evidence files are in
 [docs/records/evidence/](docs/records/evidence/); the run log is
@@ -122,10 +142,10 @@ python3.11 -m venv .venv
 ### Record an episode
 
 ```bash
-.venv/bin/python -m flyohtani.record pitch --out runs/record/hit                     # a hit
-.venv/bin/python -m flyohtani.record pitch --timing-ms 4 --out runs/record/miss-late # swinging late
-.venv/bin/python -m flyohtani.record pitch --speed-scale 0.5 --out runs/record/slow  # a slower pitch
-.venv/bin/python -m flyohtani.record swing --out runs/record/swing                   # the swing alone, no ball
+.venv/bin/python -m flyohtani.record pitch --aim-z-mm 0.05 --out runs/record/hit       # a hit
+.venv/bin/python -m flyohtani.record pitch --timing-ms -3 --out runs/record/miss-early # swinging early
+.venv/bin/python -m flyohtani.record pitch --speed-scale 0.8 --out runs/record/slow    # a slower pitch
+.venv/bin/python -m flyohtani.record swing --out runs/record/swing                     # the swing alone, no ball
 ```
 
 Each writes `video.mp4`, a contact sheet `sheet.png` and the outcome
@@ -179,6 +199,13 @@ docs/               plan, status, per-gate reports, evidence files (Korean)
   wiring + assumed neuron dynamics + assumed plasticity.
 - The brain panel in the viewer shows **wiring**, not activity.
 - The swing in the video is **scripted**, not learned.
+- The ball is **twice scale**, the left eye is **six times finer** than a real
+  fruit fly's, and the mound is **60 m away** in real terms. That is what it
+  took to let the fly see a pitch and still swing at it; the bill is itemised
+  in [VM-01](docs/records/VM-01-EYE-RATE.md).
+- "Ohtani-class" here means the ceiling of **this body**, not a scaled human
+  one: the bat reaches a quarter of a Froude-scaled Ohtani, and the 300 rad/s
+  joint limit was left where the literature put it.
 - Hand-written and RL controllers are environment baselines only. Any claim that
   the real circuit does better waits for shuffled-wiring and frozen-circuit
   controls.
@@ -193,6 +220,7 @@ The documents below are in Korean.
 | [STATUS](docs/records/STATUS.md) | What is verified now and what is blocked |
 | [G1 foreleg swing](docs/records/G1-FORELEG-SWING.md) · [LIT-01 speed limits](docs/records/LIT-01-FLY-LEG-LIMITS.md) | Body |
 | [G2 contact](docs/records/G2-CONTACT.md) · [batter scene](docs/records/BATTER-SCENE.md) | World |
+| [VM-01 vision](docs/records/VM-01-EYE-RATE.md) | Can the ball be seen — three failures and the design rules they produced |
 | [G4 connectome](docs/records/G4-CONNECTOME-ACCESS.md) | Brain |
 | [Prior findings](docs/records/PRIOR-FINDINGS.md) | What the previous version settled, and the failures not to repeat |
 | [Index](docs/README.md) | The full list |
