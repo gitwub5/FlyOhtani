@@ -45,12 +45,13 @@ def froude_speed(scale: float, real_mm_s: float = REAL_FASTBALL_MM_S) -> float:
 @dataclass(frozen=True)
 class PitchSpec:
     flight_s: float = B.PITCH_FLIGHT_S
-    """How long the ball is in the air (D31). Replaces the Froude-scaled
-    fastball, which VM-01 measured to be invisible: 19 ms of flight is
-    shorter than the swing it is supposed to trigger."""
-    distance_scale: float = B.PITCH_DISTANCE_SCALE
+    """How long the ball is in the air (D32): the swing, plus the decision
+    latency, plus the frames the fly needs to see it in."""
+    distance_scale: float | None = None
     """Release point along the line to the plate, in units of the scaled
-    mound distance. A longer flight needs a longer one, or the pitch lobs."""
+    mound distance. None derives it from `B.PITCH_SPEED_MM_S` and the flight
+    time -- a Kershaw-class fastball thrown from far enough back to stay
+    flat."""
     speed_scale: float = 1.0
     """Multiplies the speed the flight time implies -- a curriculum lever
     that deliberately breaks the flight time, so it also breaks the arc."""
@@ -136,8 +137,10 @@ def dry_swing(scene: B.Scene) -> tuple[float, np.ndarray]:
 
 
 def _default_views() -> list[View]:
-    return [View("3루 쪽 카메라", free_camera((-0.4, 1.7, 1.9), 11.0, 215, -12)),
-            View("공 따라가는 카메라", free_camera((5, 0, 1.5), 16.0, 250, -18))]
+    """Re-framed for D31c's ballpark: the old angles were chosen against an
+    empty field and now stare into the backstop."""
+    return [View("1루 쪽 카메라", free_camera((1.0, -1.5, 1.4), 10.0, 300, -8)),
+            View("타구를 보는 카메라", free_camera((14.0, 6.0, 2.0), 62.0, 235, -14))]
 
 
 def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Path | None = None,
@@ -155,9 +158,7 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
     r_bat = B.BAT_BARREL_RADIUS_MM * s
 
     aim = p_star + np.array([r_ball + r_bat, 0.0, 0.0]) + np.array(spec.aim_offset_mm)
-    full = np.array([(B.PITCH_DISTANCE_MM - B.PITCHER_EXTENSION_MM) * s, 0.0, B.RELEASE_HEIGHT_MM * s])
-    # Along the same line of approach, so distance is a lever on its own.
-    release = aim + spec.distance_scale * (full - aim)
+    release, _, _ = B.pitch_geometry(aim, s, spec.distance_scale, spec.flight_s)
     speed = (release[0] - aim[0]) / spec.flight_s * spec.speed_scale
     flight = (release[0] - aim[0]) / speed
     g = np.array([0.0, 0.0, -units.GRAVITY])

@@ -20,6 +20,7 @@ Units are the model's own: mm, g, s, uN (flyohtani/units.py).
 """
 from __future__ import annotations
 
+import itertools
 import math
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
@@ -104,11 +105,46 @@ STATIC_POSE = {
     "joint_LFTibia": math.radians(110),
 }
 
-BALL_SCALE = 8.0
-"""D31. The ball is 8x baseball-true: radius 0.60 mm instead of 0.075. At the
-moment the swing must start it then subtends about 1 deg, which is what
-VM-01 found the eye needs. It is no longer a baseball at fly scale -- it is a
-sixth of the fly's height -- and that is the price of seeing it."""
+BALL_SCALE = 2.0
+"""D31b. 2x baseball-true: radius 0.151 mm. D31 first set this to 8x, which
+made the ball a sixth of the fly's height and looked absurd; buying the same
+visibility with eye acuity instead (an aimed 30 deg left eye) brings it back
+to 2x. The ball still is not a baseball at fly scale, and that is on the
+record."""
+
+# ---------------------------------------------------------------- the park
+# Real-ballpark millimetres, scaled by `scale` like every other dimension
+# (D27). All of it is visual: contype=0, so the ball still lands on the
+# ground plane and nothing here can touch the fly.
+
+BASE_PATH_MM = 27_432.0        # 90 ft between bases
+BASE_SIDE_MM = 381.0           # 15 in
+MOUND_RADIUS_MM = 2_743.0      # 9 ft
+MOUND_HEIGHT_MM = 254.0        # 10 in
+RUBBER_MM = (610.0, 152.0)     # 24 x 6 in
+INFIELD_ARC_MM = 28_956.0      # 95 ft from the mound centre
+BASE_PATH_WIDTH_MM = 1_829.0   # 6 ft
+FENCE_LINE_MM = 99_060.0       # 325 ft down the lines
+FENCE_CENTER_MM = 121_920.0    # 400 ft to dead centre
+FENCE_HEIGHT_MM = 3_658.0      # 12 ft -- taller than the 8 ft minimum, as many parks are
+FOUL_POLE_HEIGHT_MM = 12_000.0
+BACKSTOP_MM = 18_288.0         # 60 ft behind the plate
+BACKSTOP_HEIGHT_MM = 9_000.0
+STANDS_DEPTH_MM = 22_000.0
+STANDS_HEIGHT_MM = (12_000.0, 20_000.0)
+BATTERS_EYE_HALF_ANGLE_DEG = 12.0
+BATTERS_EYE_HEIGHT_MM = 22_000.0
+"""The batter's eye is not a free-standing wall: it is the dark section of
+the centre-field stands, which is what it is in a real park. VM-01 v3
+measured why it has to be there at all -- against the bright sky a white ball
+reaches 6% contrast in this eye and is missed; against this it is seen from
+the release point.
+
+It is 22 m tall and 24 deg wide because the ball RISES: pitched from 33 mm
+with a 21 deg launch, it climbs out of a 14 m screen in the last frames
+before the swing must start, and the contrast measured there fell from 21%
+to 5% the moment it crossed into the sky. The stands around it are dark for
+the same reason -- a real crowd is not bright concrete."""
 
 BALL_MASS_SCALE = 1.0
 """Multiplies the ball's mass relative to a scale-true baseball of the SAME
@@ -116,18 +152,30 @@ radius. D31 enlarges the ball 8x, which by itself would make it 512x heavier
 and 77x the bat -- unhittable. Size and mass are therefore separate levers,
 and this one is measured (batter_check) rather than assumed."""
 
-PITCH_DISTANCE_SCALE = 2.0
-PITCH_FLIGHT_S = 0.080
-"""D31. The pitch is specified by how long it takes (80 ms) from a release
-point twice as far out as the scaled mound (69 mm), because VM-01 measured
-both ends of it: the ball needs ~80 ms in the air for the fly to see it and
-still swing, and a flat pitch needs distance >= 10519 * flight^2 (mm, s) or
-gravity turns it into a lob."""
+REAL_FASTBALL_MPH = 93.0
+PITCH_SPEED_MM_S = 1879.0
+"""A Kershaw-class fastball, Froude-scaled: 93 mph = 41.6 m/s, times sqrt(s)
+= 1879 mm/s. Speed is now the fixed quantity and the release DISTANCE is
+derived from it (D32), which is the only way to get a flat pitch -- see
+PITCH_FLIGHT_S."""
 
-EYE_RATE_HZ = 240
-"""D31. NOT an independent setting: the decision window is
+PITCH_FLIGHT_S = 0.065
+"""D32. How long the ball is in the air: the swing (38 ms) plus the decision
+latency (10 ms) plus eight frames at 480 Hz (17 ms). At a fixed fastball
+speed that fixes the release distance too, 1879 * 0.065 = 122 mm.
+
+Gravity is what made the earlier pitches look like lobs. Over a flight t the
+ball falls 0.5*g*t^2, so the launch angle is about atan(0.5*g*t / v): slowing
+the ball to buy time at a short distance bends the pitch upward (+21 deg at
+55 ms from 33 mm), while keeping the speed and moving the release back keeps
+it flat (+5.6 deg). The price is that the mound is 122 mm away -- 60 m in
+real terms -- because a fly needs far longer to swing than Froude scaling
+allows a batter."""
+
+EYE_RATE_HZ = 480
+"""D31b. NOT an independent setting: the decision window is
 flight - swing - latency, and VM-01 asks for 8 frames inside it. See
-`min_eye_rate_hz`; 240 Hz is what the 80 ms pitch needs."""
+`min_eye_rate_hz`; 480 Hz is what the 55 ms pitch needs."""
 
 DECISION_LATENCY_S = 0.010
 MIN_DECISION_FRAMES = 8
@@ -149,12 +197,19 @@ EYE_RESOLUTION = 32
 """Pixels per side, per eye. At a 120 deg field that is ~3.8 deg per pixel,
 close to a fruit fly's ~5 deg interommatidial angle. "Fly-like enough" (D28),
 not an ommatidia model."""
-EYE_FOVY_DEG = 60.0
-"""D31. Was 120 deg. At 32 px that is 1.88 deg per pixel, and VM-01 measured
-that the ball is invisible at 3.75: a 60 deg eye sees what a 128 px eye over
-120 deg sees, for a sixteenth of the rendering. Narrower still (30 deg) loses
-the ball entirely -- it drifts to 45 deg off-axis on its way in -- so this is
-the floor until the eyes are re-aimed. The cost is peripheral vision."""
+EYE_FOVY_DEG = 20.0
+"""The LEFT eye: an acute zone, aimed down the pitch (D31b, narrowed by D32).
+20 deg over 32 px is 0.63 deg per pixel, six times D28's acuity. D31b used
+30 deg; the D32 pitch is released three times farther away, and at 30 deg the
+ball was no longer detectable there (0 of 9 frames against 9 of 9 at 20). VM-01 v2b measured that narrowing the field only works
+once the eye is aimed -- fixed sideways, the ball leaves a 30 deg field
+entirely. Real flies do have a frontal acute zone; this one is finer than a
+fruit fly's and looks the wrong way, so it is a departure, not a model."""
+
+EYE_FOVY_WIDE_DEG = 120.0
+"""The RIGHT eye keeps D28's wide fixed field. The fly stands side-on, so the
+left eye is the one facing the pitcher; leaving the other eye wide keeps
+peripheral vision and a fly-like reference image in every recording."""
 EYE_DOWN_TILT_DEG = 15.0
 """Eyes look sideways, tilted slightly down toward the strike zone."""
 
@@ -280,6 +335,14 @@ class SceneOptions:
     timestep_s: float = TIMESTEP_S
     contact_timeconst_s: float = CONTACT_TIMECONST_S
     eye_resolution: int = EYE_RESOLUTION
+    ballpark: bool = True
+    """The park around the plate (D31c): foul lines, bases, mound, outfield
+    fence, stands, foul poles, and the dark batter's eye in centre field.
+    Visual only. False strips it back to the bare plate and dirt, which is
+    how its effect on what the fly can see was measured."""
+    aim_eyes: bool = True
+    """D31b. False restores D28's fixed sideways eyes -- kept so the change
+    can be measured against what it replaced."""
 
 
 @dataclass
@@ -317,22 +380,202 @@ def _fly_subtree(src_root: ET.Element) -> ET.Element:
     return fly
 
 
-def _eye_cameras(model_probe: mujoco.MjModel, data_probe: mujoco.MjData) -> dict[str, tuple[np.ndarray, str]]:
+def _look_at(forward: np.ndarray, up: np.ndarray) -> str:
+    """MJCF `xyaxes` for a camera whose optical axis is `forward` (cameras
+    look along -z), with `up` as image up."""
+    z = -forward / np.linalg.norm(forward)
+    y = up - (up @ z) * z
+    y /= np.linalg.norm(y)
+    x = np.cross(y, z)
+    return " ".join(f"{v:.6g}" for v in (*x, *y))
+
+
+def _eye_cameras(model_probe: mujoco.MjModel, data_probe: mujoco.MjData,
+                 aim_world: np.ndarray | None = None) -> dict[str, tuple[np.ndarray, str]]:
     """Camera placement for each eye, in the Head body's frame: the eye
-    mesh's own centroid, looking out sideways and a little down."""
+    mesh's own centroid, aimed at `aim_world` (D31b) or, without one, out
+    sideways and a little down as D28 first had it.
+
+    D31b aims the LEFT eye at the point where the ball is when the fly must
+    decide; the right eye stays as D28 built it. VM-01 v2b measured why:
+    with the eye fixed sideways the ball drifts from 16 to 86 degrees
+    off-axis, so a narrow (high-acuity) eye loses it entirely. Aimed this way
+    the whole pre-decision corridor sits within about 7 degrees of the axis,
+    and 30 degrees of field is enough."""
     head = mujoco.mj_name2id(model_probe, mujoco.mjtObj.mjOBJ_BODY, "Head")
     hpos, hmat = data_probe.xpos[head], data_probe.xmat[head].reshape(3, 3)
+    up_world = np.array([0.0, 0.0, 1.0])
     t = math.radians(EYE_DOWN_TILT_DEG)
-    c, s = math.cos(t), math.sin(t)
+    c, st = math.cos(t), math.sin(t)
     out = {}
     for side, sign in (("L", 1.0), ("R", -1.0)):
         g = mujoco.mj_name2id(model_probe, mujoco.mjtObj.mjOBJ_GEOM, f"{side}Eye")
-        local = hmat.T @ (data_probe.geom_xpos[g] - hpos)
-        # look sideways (+/-y), tilted toward -x (down, once upright);
-        # image up is +x (world up, once upright).
-        xaxis = np.array([0.0, 0.0, -1.0 * sign])
-        yaxis = np.array([c, sign * s, 0.0])
-        out[side] = (local, " ".join(f"{v:.6g}" for v in (*xaxis, *yaxis)))
+        eye_world = data_probe.geom_xpos[g]
+        local = hmat.T @ (eye_world - hpos)
+        if aim_world is None or side != "L":
+            xaxis = np.array([0.0, 0.0, -1.0 * sign])
+            yaxis = np.array([c, sign * st, 0.0])
+            out[side] = (local, " ".join(f"{v:.6g}" for v in (*xaxis, *yaxis)))
+            continue
+        # The right eye gets the mirror image of the left eye's aim, so the
+        # two stay symmetric about the fly's midline instead of both
+        # staring at the pitcher.
+        forward = hmat.T @ (np.array(aim_world, dtype=float) - eye_world)
+        out[side] = (local, _look_at(forward, hmat.T @ up_world))
+    return out
+
+
+def pitch_geometry(strike: np.ndarray, scale: float, distance_scale: float | None = None,
+                   flight_s: float | None = None) -> tuple[np.ndarray, np.ndarray, float]:
+    """Release point, launch velocity and flight time for the nominal pitch:
+    a ball thrown down the same line of approach as a real pitch, arriving at
+    `strike` after `flight_s`."""
+    flight = PITCH_FLIGHT_S if flight_s is None else flight_s
+    full = np.array([(PITCH_DISTANCE_MM - PITCHER_EXTENSION_MM) * scale, 0.0,
+                     RELEASE_HEIGHT_MM * scale])
+    # Without an explicit distance, the release point is wherever a fastball
+    # at PITCH_SPEED_MM_S has to start to arrive after `flight` (D32).
+    dscale = (PITCH_SPEED_MM_S * flight / (full[0] - strike[0])
+              if distance_scale is None else distance_scale)
+    release = strike + dscale * (full - strike)
+    g = np.array([0.0, 0.0, -units.GRAVITY])
+    v0 = (strike - release - 0.5 * g * flight ** 2) / flight
+    return release, v0, flight
+
+
+def decision_point(strike: np.ndarray, scale: float, swing_s: float | None = None) -> np.ndarray:
+    """Where the ball is at the last instant a swing can still start. The
+    eyes are aimed here (D31b): it is the middle of what the fly has to see,
+    and aiming at the strike point instead would put the useful part of the
+    flight at the edge of a narrow field."""
+    release, v0, flight = pitch_geometry(strike, scale)
+    swing = DEMO_SWING_S if swing_s is None else swing_s
+    t = max(flight - swing - DECISION_LATENCY_S, 0.0)
+    g = np.array([0.0, 0.0, -units.GRAVITY])
+    return release + v0 * t + 0.5 * g * t ** 2
+
+
+def _fence_radius_mm(theta_rad: float) -> float:
+    """A real outfield fence is shortest down the lines and deepest in dead
+    centre; this interpolates between the two with cos(2*theta), which is
+    exact at both ends (theta = 0 and +/- 45 deg)."""
+    return FENCE_LINE_MM + (FENCE_CENTER_MM - FENCE_LINE_MM) * math.cos(2 * theta_rad)
+
+
+def _wall_segment(name: str, inner_mm: float, outer_mm: float, theta0: float, theta1: float,
+                  height_mm: float, scale: float, rgba: str) -> ET.Element:
+    """One box spanning an arc, laid ALONG the chord between two angles: the
+    box's local x runs tangentially, its y is the wall's thickness. Rotating
+    it the other way turns a wall into a row of radial fins."""
+    a = np.array([math.cos(theta0), math.sin(theta0)]) * inner_mm
+    b = np.array([math.cos(theta1), math.sin(theta1)]) * inner_mm
+    mid_dir = np.array([math.cos((theta0 + theta1) / 2), math.sin((theta0 + theta1) / 2)])
+    centre = (a + b) / 2 + mid_dir * (outer_mm - inner_mm) / 2
+    # Long enough to cover the OUTER edge of its own wedge: a box sized to
+    # the inner chord leaves a widening gap against its neighbour, which
+    # reads as a vertical slot in the stands.
+    half_len = float(np.linalg.norm(b - a) / 2) * (outer_mm / inner_mm) * 1.02
+    yaw = math.atan2(b[1] - a[1], b[0] - a[0])
+    return ET.Element("geom", {
+        "name": name, "type": "box",
+        "size": f"{half_len * scale:.6g} {max(outer_mm - inner_mm, 200.0) * scale / 2:.6g} "
+                f"{height_mm * scale / 2:.6g}",
+        "pos": f"{centre[0] * scale:.6g} {centre[1] * scale:.6g} {height_mm * scale / 2:.6g}",
+        "euler": f"0 0 {yaw:.6g}",
+        "rgba": rgba, "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)})
+
+
+def _ballpark(scale: float) -> list[ET.Element]:
+    """The park, as scenery (D31c). Every geom here is visual only."""
+    out: list[ET.Element] = []
+    z = DIRT_TOP_MM
+
+    def flat(name: str, centre, half, material: str, lift: float = 0.0, yaw: float = 0.0):
+        out.append(ET.Element("geom", {
+            "name": name, "type": "box",
+            "size": f"{half[0] * scale:.6g} {half[1] * scale:.6g} {0.0005:.6g}",
+            "pos": f"{centre[0] * scale:.6g} {centre[1] * scale:.6g} {z + 0.0005 + lift:.6g}",
+            "euler": f"0 0 {yaw:.6g}", "material": material,
+            "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
+
+    # foul lines and the bases they run to
+    corner = BASE_PATH_MM / math.sqrt(2)
+    for sign, side in ((+1, "third"), (-1, "first")):
+        flat(f"foul_line_{side}", (FENCE_LINE_MM / 2 * math.cos(math.pi / 4),
+                                   sign * FENCE_LINE_MM / 2 * math.sin(math.pi / 4)),
+             (FENCE_LINE_MM / 2, CHALK_WIDTH_MM / 2), "chalk", yaw=sign * math.pi / 4)
+        flat(f"base_{side}", (corner, sign * corner), (BASE_SIDE_MM / 2, BASE_SIDE_MM / 2), "chalk", lift=0.001)
+        flat(f"path_{side}", (corner / 2, sign * corner / 2),
+             (BASE_PATH_MM / 2, BASE_PATH_WIDTH_MM / 2), "dirt", yaw=sign * math.pi / 4)
+        flat(f"path_{side}_out", (corner + corner / 2, sign * corner / 2),
+             (BASE_PATH_MM / 2, BASE_PATH_WIDTH_MM / 2), "dirt", yaw=-sign * math.pi / 4)
+    flat("base_second", (BASE_PATH_MM * math.sqrt(2), 0.0),
+         (BASE_SIDE_MM / 2, BASE_SIDE_MM / 2), "chalk", lift=0.001)
+
+    # infield skin: the 95 ft arc measured from the mound, drawn as a disc
+    out.append(ET.Element("geom", {
+        "name": "infield_skin", "type": "cylinder",
+        "size": f"{INFIELD_ARC_MM * scale:.6g} {DIRT_TOP_MM / 4:.6g}",
+        "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 {DIRT_TOP_MM / 4:.6g}",
+        "material": "dirt", "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
+    # ... with the grass cut back in, leaving the base paths above on top
+    out.append(ET.Element("geom", {
+        "name": "infield_grass", "type": "cylinder",
+        "size": f"{(INFIELD_ARC_MM - BASE_PATH_WIDTH_MM * 2) * scale:.6g} {DIRT_TOP_MM / 6:.6g}",
+        "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 {DIRT_TOP_MM / 2 + 0.0002:.6g}",
+        "material": "grass", "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
+
+    # mound and rubber
+    out.append(ET.Element("geom", {
+        "name": "mound", "type": "cylinder",
+        "size": f"{MOUND_RADIUS_MM * scale:.6g} {MOUND_HEIGHT_MM * scale / 2:.6g}",
+        "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 {MOUND_HEIGHT_MM * scale / 2:.6g}",
+        "material": "dirt", "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
+    out.append(ET.Element("geom", {
+        "name": "rubber", "type": "box",
+        "size": f"{RUBBER_MM[1] * scale / 2:.6g} {RUBBER_MM[0] * scale / 2:.6g} {0.0005:.6g}",
+        "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 {MOUND_HEIGHT_MM * scale + 0.0005:.6g}",
+        "material": "chalk", "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
+
+    # outfield fence, the stands behind it, and the batter's eye in centre
+    n = 28
+    edges = [math.radians(-45 + 90 * i / n) for i in range(n + 1)]
+    for i, (t0, t1) in enumerate(itertools.pairwise(edges)):
+        r0, r1 = _fence_radius_mm(t0), _fence_radius_mm(t1)
+        r = (r0 + r1) / 2
+        dark = abs(math.degrees((t0 + t1) / 2)) <= BATTERS_EYE_HALF_ANGLE_DEG
+        tag = "batters_eye_" if dark else ""
+        # One colour all the way round: in a real park the batter's eye is the
+        # screen BEHIND the fence, not a repainted stretch of it.
+        out.append(_wall_segment(f"fence{i}", r, r + 300.0, t0, t1, FENCE_HEIGHT_MM, scale,
+                                 "0.13 0.26 0.17 1"))
+        out.append(_wall_segment(
+            f"{tag}stand{i}", r + 2_000.0, r + 2_000.0 + STANDS_DEPTH_MM, t0, t1,
+            BATTERS_EYE_HEIGHT_MM if dark else STANDS_HEIGHT_MM[0], scale,
+            "0.07 0.11 0.08 1" if dark else "0.30 0.31 0.34 1"))
+        if not dark:
+            out.append(_wall_segment(f"stand_upper{i}", r + 2_000.0 + STANDS_DEPTH_MM,
+                                     r + 2_000.0 + 2 * STANDS_DEPTH_MM, t0, t1,
+                                     STANDS_HEIGHT_MM[1], scale, "0.26 0.27 0.30 1"))
+    for sign in (+1, -1):
+        t = sign * math.radians(45)
+        r = _fence_radius_mm(t)
+        out.append(ET.Element("geom", {
+            "name": f"foul_pole_{'third' if sign > 0 else 'first'}", "type": "cylinder",
+            "size": f"{150.0 * scale:.6g} {FOUL_POLE_HEIGHT_MM * scale / 2:.6g}",
+            "pos": f"{r * math.cos(t) * scale:.6g} {r * math.sin(t) * scale:.6g} "
+                   f"{FOUL_POLE_HEIGHT_MM * scale / 2:.6g}",
+            "rgba": "0.95 0.80 0.15 1", "contype": "0", "conaffinity": "0",
+            "group": str(GROUP_WORLD)}))
+
+    # backstop and the stands behind the plate
+    back = [math.radians(135 + 90 * i / 8) for i in range(9)]
+    for i, (t0, t1) in enumerate(itertools.pairwise(back)):
+        out.append(_wall_segment(f"backstop{i}", BACKSTOP_MM, BACKSTOP_MM + 300.0, t0, t1,
+                                 BACKSTOP_HEIGHT_MM, scale, "0.30 0.32 0.33 1"))
+        out.append(_wall_segment(f"stand_home{i}", BACKSTOP_MM + 2_000.0,
+                                 BACKSTOP_MM + 2_000.0 + STANDS_DEPTH_MM, t0, t1,
+                                 STANDS_HEIGHT_MM[1], scale, "0.28 0.29 0.32 1"))
     return out
 
 
@@ -468,6 +711,9 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
                                          "size": f"{hx:.6g} {hy:.6g} 0.001",
                                          "pos": f"{cx:.6g} {cy:.6g} {DIRT_TOP_MM + 0.001}", "material": "chalk",
                                          "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
+    if opts.ballpark:
+        world += _ballpark(scale)
+
     # directional ("sun"): MuJoCo's default light is a spotlight, whose cone
     # leaves the far field dark.
     world.append(ET.Element("light", {"pos": "3 -6 12", "dir": "-0.2 0.4 -1", "diffuse": "0.55 0.55 0.52",
@@ -510,6 +756,29 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
         world.append(ball)
 
     root = mjcf(world, extra, cameras=cams)
+
+    # pass 3: aim the eyes (D31b). Where to look depends on where the ball is
+    # when the fly must decide, and that needs the bat's sweet spot, which
+    # only exists once the scene is assembled -- hence a third pass over a
+    # throwaway compile of what we just built.
+    if opts.aim_eyes:
+        probe2 = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding="unicode"))
+        pdata2 = mujoco.MjData(probe2)
+        set_arm(probe2, pdata2, CONTACT_POSE)
+        strike = pdata2.site_xpos[mujoco.mj_name2id(probe2, mujoco.mjtObj.mjOBJ_SITE, "bat_sweet")].copy()
+        mujoco.mj_resetData(probe2, pdata2)
+        set_arm(probe2, pdata2, READY_POSE)
+        mujoco.mj_forward(probe2, pdata2)
+        for side, (pos, xy) in _eye_cameras(probe2, pdata2, aim_world=decision_point(strike, scale)).items():
+            cam = next(c for c in root.iter("camera") if c.get("name") == f"eye_{side}")
+            cam.set("pos", " ".join(f"{v:.6g}" for v in pos))
+            cam.set("xyaxes", xy)
+        for cam in root.iter("camera"):
+            if cam.get("name") == "eye_L":
+                cam.set("fovy", repr(EYE_FOVY_DEG))
+            elif cam.get("name") == "eye_R":
+                cam.set("fovy", repr(EYE_FOVY_WIDE_DEG))
+
     ET.indent(root, space=" ")
     return Scene(xml=ET.tostring(root, encoding="unicode"), scale=scale, fly_height_mm=height,
                  bat_length_mm=bat_len, ball_radius_mm=ball_r)
@@ -537,12 +806,26 @@ of D26, a derived engineering pose -- not a claim that a fly's foreleg bends
 this way."""
 
 
-DEMO_SWING_S = 0.035
-"""Demo swing duration. With the long-way path this peaks at ~215 rad/s and
-never touches the ground."""
+DEMO_SWING_S = 0.038
+DEMO_SWING_FOLLOW = 0.6
+"""Demo swing (D32): 38 ms with a 0.6 follow-through, the fastest CONTACT the
+foreleg reaches inside LIT-01's 300 rad/s ceiling.
+
+The point is where the peak lands. The old 27 ms / 0.1 swing peaked at
+590 mm/s in mid-swing and was already SLOWING at the contact point, arriving
+there at 224 mm/s. Carrying the swing further past contact moves the peak
+onto the ball: 390 mm/s at contact, 287 rad/s peak joint speed, lowest point
+0.985 mm, still clear of the ground. A 20-swing sweep of durations and
+follow-throughs is what picked it; everything faster broke the ceiling.
+
+That is a fly's Ohtani, not a human's: Ohtani's bat speed Froude-scales to
+1535 mm/s, and this arm reaches a quarter of it. The batted ball does better
+than that ratio suggests, because a 1879 mm/s fastball brings its own
+momentum back off the bat."""
 
 
-def swing_targets(t_s: float, duration_s: float = DEMO_SWING_S, follow: float = 0.1) -> dict[str, float]:
+def swing_targets(t_s: float, duration_s: float = DEMO_SWING_S,
+                  follow: float = DEMO_SWING_FOLLOW) -> dict[str, float]:
     """Demo swing: a cosine-eased path READY -> CONTACT, carried `follow`
     past CONTACT. Used for rendering and for sizing contact speeds -- the
     learned policy is free to do something else (D15)."""
@@ -564,14 +847,43 @@ def set_arm(model: mujoco.MjModel, data: mujoco.MjData, angles: dict[str, float]
     mujoco.mj_forward(model, data)
 
 
-def render_eyes(model: mujoco.MjModel, data: mujoco.MjData, renderer: mujoco.Renderer) -> dict[str, np.ndarray]:
+EYE_SUPERSAMPLE = 4
+"""Each pixel integrates light over its own solid angle, the way an
+ommatidium does, instead of point-sampling the scene. Measured reason
+(VM-01): a point-sampled ball smaller than a pixel blinks in and out as it
+crosses the pixel grid, so detection came and went with the aliasing rather
+than with the distance. Rendering 4x and box-filtering makes a sub-pixel ball
+a steady dim spot. It is a coarse stand-in for a photoreceptor's Gaussian
+acceptance function, not a model of one."""
+
+
+def render_eyes(model: mujoco.MjModel, data: mujoco.MjData,
+                renderer: mujoco.Renderer | None = None, *,
+                resolution: int = EYE_RESOLUTION,
+                supersample: int = EYE_SUPERSAMPLE) -> dict[str, np.ndarray]:
     """Both eye images, grayscale, with the fly's own head hidden (the
-    cameras sit inside the eye meshes)."""
+    cameras sit inside the eye meshes).
+
+    `renderer` is optional. One sized `resolution * supersample` is
+    downsampled like an owned one; one sized `resolution` is point-sampled,
+    which is what VM-01 v1/v2 measured and is kept only for comparison."""
     opt = mujoco.MjvOption()
     opt.geomgroup[GROUP_HEAD] = 0
-    out = {}
-    for side in ("L", "R"):
-        renderer.update_scene(data, camera=f"eye_{side}", scene_option=opt)
-        rgb = renderer.render()
-        out[side] = (rgb @ np.array([0.299, 0.587, 0.114])).astype(np.uint8)
-    return out
+    gray = np.array([0.299, 0.587, 0.114])
+    own = renderer is None
+    if own:
+        side_px = resolution * supersample
+        renderer = mujoco.Renderer(model, height=side_px, width=side_px)
+    try:
+        out = {}
+        for side in ("L", "R"):
+            renderer.update_scene(data, camera=f"eye_{side}", scene_option=opt)
+            img = renderer.render() @ gray
+            n = img.shape[0] // resolution
+            if n > 1:
+                img = img.reshape(resolution, n, resolution, n).mean(axis=(1, 3))
+            out[side] = img.astype(np.uint8)
+        return out
+    finally:
+        if own:
+            renderer.close()

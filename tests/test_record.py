@@ -37,24 +37,21 @@ def test_scripted_pitch_meets_the_demo_swing(unrecorded):
 
 
 def test_an_early_pitch_is_a_miss_and_has_no_carry():
-    """Under D31 the miss is on the EARLY side. The ball is 8x bigger and the
-    pitch takes 80 ms instead of 19, so swinging late no longer misses -- the
-    ball arrives into a bat that is still there. Measured window: contact from
-    about -2 ms to +16 ms and beyond, where it used to be +-4 ms."""
-    out, _ = S.run_pitch(S.PitchSpec(timing_ms=-8.0), record=False)
+    out, _ = S.run_pitch(S.PitchSpec(timing_ms=-3.0), record=False)
     assert not out.contact
     assert out.carry_mm is None and out.fair is None  # a miss has no batted-ball result
     assert out.landing_xy_mm is not None and out.landing_xy_mm[0] < 0  # past the plate, catcher side
 
 
-def test_contact_alone_is_no_longer_a_task(recwarn):
-    """The finding that D31 hands to the reward design: with this ball, a
-    late swing still connects, so `contact-v1` would be satisfied by doing
-    almost anything. Direction and carry still separate the outcomes."""
-    late, _ = S.run_pitch(S.PitchSpec(timing_ms=8.0), record=False)
+def test_the_timing_window_is_narrow():
+    """D32's fastball crosses at 1888 mm/s, so the scripted swing connects
+    only within about a millisecond: measured, 0 and +1 ms connect, -3 and
+    +3 ms miss entirely."""
     on_time, _ = S.run_pitch(S.PitchSpec(timing_ms=0.0), record=False)
-    assert late.contact and on_time.contact
-    assert on_time.fair and not late.fair
+    early, _ = S.run_pitch(S.PitchSpec(timing_ms=-3.0), record=False)
+    late, _ = S.run_pitch(S.PitchSpec(timing_ms=3.0), record=False)
+    assert on_time.contact and on_time.fair
+    assert not early.contact and not late.contact
 
 
 def test_recording_does_not_change_the_physics(tmp_path, unrecorded):

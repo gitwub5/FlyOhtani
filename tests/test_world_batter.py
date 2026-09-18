@@ -122,16 +122,29 @@ class TestStage:
 
 
 class TestEyes:
-    @pytest.mark.parametrize("side, sign", [("L", +1), ("R", -1)])
-    def test_left_eye_faces_the_pitcher_right_eye_the_catcher(self, md, side, sign):
+    def test_left_eye_is_aimed_where_the_ball_is_when_the_fly_must_decide(self, md, scene):
+        """D31b. Not at the strike point and not straight sideways: at the
+        ball's position at the decision deadline, which is what puts the
+        whole useful stretch of the flight inside a narrow field."""
         m, d = md
         mujoco.mj_forward(m, d)
-        c = _id(m, mujoco.mjtObj.mjOBJ_CAMERA, f"eye_{side}")
-        mat = d.cam_xmat[c].reshape(3, 3)
-        forward, up = -mat[:, 2], mat[:, 1]
-        assert sign * forward[0] > 0.9
+        c = _id(m, mujoco.mjtObj.mjOBJ_CAMERA, "eye_L")
+        forward = -d.cam_xmat[c].reshape(3, 3)[:, 2]
+        d2 = mujoco.MjData(m)
+        B.set_arm(m, d2, B.CONTACT_POSE)
+        strike = d2.site_xpos[_id(m, mujoco.mjtObj.mjOBJ_SITE, "bat_sweet")].copy()
+        want = B.decision_point(strike, scene.scale) - d.cam_xpos[c]
+        want /= np.linalg.norm(want)
+        assert float(forward @ want) == pytest.approx(1.0, abs=1e-6)
+        assert d.cam_xmat[c].reshape(3, 3)[2, 1] > 0.9  # image up is world up
+
+    def test_right_eye_still_looks_the_way_d28_pointed_it(self, md):
+        m, d = md
+        mujoco.mj_forward(m, d)
+        c = _id(m, mujoco.mjtObj.mjOBJ_CAMERA, "eye_R")
+        forward = -d.cam_xmat[c].reshape(3, 3)[:, 2]
+        assert forward[0] < -0.9  # sideways, toward the catcher
         assert forward[2] == pytest.approx(-math.sin(math.radians(B.EYE_DOWN_TILT_DEG)), abs=1e-6)
-        assert up[2] > 0.9
 
     def test_eyes_ride_on_the_head(self, md):
         m, _ = md
@@ -147,20 +160,75 @@ class TestEyes:
             eyes = B.render_eyes(m, d, r)
         finally:
             r.close()
-        for img in eyes.values():
+        for side, img in eyes.items():
             assert img.shape == (B.EYE_RESOLUTION, B.EYE_RESOLUTION)
             assert img.dtype == np.uint8
-            # sky above, ground below: a real scene, not the inside of an eye mesh
-            assert img[:4].mean() > img[-4:].mean() + 20
+            # A real scene, not the inside of an eye mesh: both bright and
+            # dark regions are present. (Which is where stopped being a
+            # useful check once D31c put a 22 m batter's eye in the left
+            # eye's field -- its sky half is now dark screen.)
+            assert img.max() > 150, side
+            assert img.min() < 110, side
 
-    def test_acuity_is_the_one_d31_chose(self):
-        """D28 asked for fly-like (3.75 deg per pixel against a fruit fly's
-        ~5 deg ommatidial spacing). D31 keeps the 32 px but narrows the field
-        to 60 deg, which is FINER than the animal -- a deliberate departure,
-        measured in VM-01, not a drift. The pixel count is what D28 fixed and
-        that is unchanged."""
+    def test_the_batters_eye_is_dark_straight_out_and_does_not_collide(self, md, scene):
+        """D31c. In a real park the batter's eye is the dark section of the
+        centre-field stands, and it is there for the reason VM-01 v3
+        measured: against the bright sky a white ball reaches 6% contrast in
+        this eye and is missed; against this it is seen from release."""
+        m, d = md
+        mujoco.mj_forward(m, d)
+        names = [mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, g) or "" for g in range(m.ngeom)]
+        dark = [g for g, n in enumerate(names) if n.startswith("batters_eye_")]
+        assert dark, "no batter's eye in the park"
+        for g in dark:
+            assert m.geom_rgba[g][:3].max() < 0.2
+            assert m.geom_contype[g] == 0 and m.geom_conaffinity[g] == 0
+            assert d.geom_xpos[g][0] > B.FENCE_LINE_MM * scene.scale  # out past the fence
+            assert abs(math.degrees(math.atan2(d.geom_xpos[g][1], d.geom_xpos[g][0]))) \
+                <= B.BATTERS_EYE_HALF_ANGLE_DEG + 2  # dead centre
+
+    def test_the_park_is_scenery_only(self, md):
+        """Every ballpark geom is visual: the ball lands on the ground plane,
+        and nothing out there can touch the fly or the bat."""
+        m, _ = md
+        park = ("fence", "stand", "backstop", "foul_pole", "base_", "path_", "mound",
+                "rubber", "infield_", "foul_line", "batters_eye_")
+        for g in range(m.ngeom):
+            name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_GEOM, g) or ""
+            if name.startswith(park):
+                assert m.geom_contype[g] == 0 and m.geom_conaffinity[g] == 0, name
+
+    def test_the_fence_is_short_down_the_lines_and_deep_in_centre(self):
+        assert B._fence_radius_mm(0.0) == pytest.approx(B.FENCE_CENTER_MM)
+        assert B._fence_radius_mm(math.radians(45)) == pytest.approx(B.FENCE_LINE_MM)
+        assert B._fence_radius_mm(math.radians(-45)) == pytest.approx(B.FENCE_LINE_MM)
+
+    def test_acuity_is_the_one_d32_chose(self):
+        """D28 asked for fly-like: 32 px over 120 deg, 3.75 deg per pixel
+        against a fruit fly's ~5 deg ommatidial spacing. The left eye is now
+        an aimed 20 deg acute zone -- 0.63 deg per pixel, six times finer
+        than the animal -- because D32's fastball is released 122 mm away.
+        The right eye keeps D28's wide field. A measured departure (VM-01),
+        not a drift."""
         assert B.EYE_RESOLUTION == 32
-        assert B.EYE_FOVY_DEG / B.EYE_RESOLUTION == pytest.approx(1.875)
+        assert B.EYE_FOVY_DEG / B.EYE_RESOLUTION == pytest.approx(0.625)
+        assert B.EYE_FOVY_WIDE_DEG / B.EYE_RESOLUTION == pytest.approx(3.75)
+
+    def test_an_eye_pixel_integrates_light_instead_of_point_sampling(self, md):
+        """VM-01's own artefact: point-sampled, a sub-pixel ball blinks in and
+        out with the pixel grid. Averaging over the pixel's own solid angle
+        turns that into a steady dim spot."""
+        m, d = md
+        mujoco.mj_forward(m, d)
+        assert B.EYE_SUPERSAMPLE > 1
+        fine = B.render_eyes(m, d)["L"]
+        r = mujoco.Renderer(m, B.EYE_RESOLUTION, B.EYE_RESOLUTION)
+        try:
+            coarse = B.render_eyes(m, d, r)["L"]
+        finally:
+            r.close()
+        assert fine.shape == coarse.shape == (B.EYE_RESOLUTION, B.EYE_RESOLUTION)
+        assert not np.array_equal(fine, coarse)
 
 
 class TestPoses:

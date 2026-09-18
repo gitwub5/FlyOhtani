@@ -81,7 +81,11 @@ class Recorder:
         self.width = 2 * self.vw
         self.height = self.vh + eye_px + 20
         self._scene = mujoco.Renderer(model, height=self.vh, width=self.vw)
-        self._eyes = mujoco.Renderer(model, height=B.EYE_RESOLUTION, width=B.EYE_RESOLUTION)
+        # Supersampled, so the eye images in a video are the ones the policy
+        # would get (B.EYE_SUPERSAMPLE -- an ommatidium integrates light over
+        # its own acceptance angle instead of point-sampling).
+        eye_px = B.EYE_RESOLUTION * B.EYE_SUPERSAMPLE
+        self._eyes = mujoco.Renderer(model, height=eye_px, width=eye_px)
         self._opt = mujoco.MjvOption()
         for g in range(5):
             self._opt.geomgroup[g] = 1
