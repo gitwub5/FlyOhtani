@@ -24,6 +24,7 @@ import numpy as np
 
 from flyohtani import units
 from flyohtani.record.video import Recorder, View, free_camera
+from flyohtani.task.observation import BatObservation
 from flyohtani.world import batter as B
 
 REPO = Path(__file__).resolve().parent.parent.parent
@@ -78,6 +79,9 @@ class Outcome:
     fair: bool | None = None
     peak_joint_speed_rad_s: float = 0.0
     peak_sweet_speed_mm_s: float = 0.0
+    swing_zone: str | None = None
+    swing_time_ms: float | None = None
+    """Set only when a policy chose them."""
     warnings: dict[str, int] = field(default_factory=dict)
 
 
@@ -145,7 +149,16 @@ def _default_views() -> list[View]:
 
 def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Path | None = None,
               slow_frame_s: float = 2.5e-4, flight_frame_s: float = 4e-3, fps: int = 30,
-              max_flight_s: float = 0.8) -> tuple[Outcome, dict]:
+              max_flight_s: float = 0.8, policy=None, zone: str = "middle",
+              eye_rate_hz: float = B.EYE_RATE_HZ) -> tuple[Outcome, dict]:
+    """With `policy=None` this is the scripted demo: the swing starts at the
+    moment that meets the pitch, by construction.
+
+    With a policy, NOTHING is arranged. The eye is rendered every 1/eye_rate
+    seconds, the policy is asked, and the swing starts when it says so -- at
+    the zone it says. That is the difference between a video of a swing and a
+    video of a fly deciding to swing, and only the second one is evidence
+    about a policy."""
     spec = spec or PitchSpec()
     scene = B.build_scene()
     s = scene.scale
@@ -157,8 +170,12 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
     r_ball = float(m.geom_size[ids["ball_geom"]][0])
     r_bat = B.BAT_BARREL_RADIUS_MM * s
 
-    aim = p_star + np.array([r_ball + r_bat, 0.0, 0.0]) + np.array(spec.aim_offset_mm)
-    release, _, _ = B.pitch_geometry(aim, s, spec.distance_scale, spec.flight_s)
+    nominal = p_star + np.array([r_ball + r_bat, 0.0, 0.0])
+    aim = nominal + np.array([0.0, 0.0, B.ZONE_OFFSET_MM[zone]]) + np.array(spec.aim_offset_mm)
+    # release_reference: the pitcher's hand does not move when aiming at a
+    # different zone (world.batter.pitch_geometry has the bug this fixes).
+    release, _, _ = B.pitch_geometry(aim, s, spec.distance_scale, spec.flight_s,
+                                     release_reference=nominal)
     speed = (release[0] - aim[0]) / spec.flight_s * spec.speed_scale
     flight = (release[0] - aim[0]) / speed
     g = np.array([0.0, 0.0, -units.GRAVITY])
@@ -170,6 +187,14 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
     if t_release < 0:
         swing_start -= t_release
         t_release = 0.0
+    swing_zone = zone
+    if policy is not None:
+        # The policy decides; nothing is arranged for it. The clock starts at
+        # release, as the env's does.
+        swing_start = math.inf
+        swing_zone = "middle"
+        t_release = max(t_release, 0.0)
+        policy.reset()
 
     B.set_arm(m, d, B.READY_POSE)
     d.qpos[ids["ball_q"]:ids["ball_q"] + 3] = release
@@ -201,9 +226,37 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
                          f"{'페어' if out.fair else '파울'}")
         return phase, lines
 
+    eye_dt = 1.0 / eye_rate_hz
+    # The policy's frame 0 is where the env puts it: the nominal release
+    # moment, BEFORE any timing shift. Starting the eye at the shifted
+    # release instead moved every decision by a frame, and a policy tuned in
+    # the env then swung 2 ms late here.
+    next_eye = max(t_meet - flight, 0.0)
+    eye_renderer = None
+    if policy is not None:
+        px = B.EYE_RESOLUTION * B.EYE_SUPERSAMPLE
+        eye_renderer = mujoco.Renderer(m, height=px, width=px)
+
     while d.time < t_end:
         t = d.time
-        tgt = B.swing_targets(t - swing_start) if t >= swing_start else B.READY_POSE
+        if policy is not None and math.isinf(swing_start) and t >= next_eye - 1e-12:
+            mujoco.mj_forward(m, d)
+            eyes = B.render_eyes(m, d, eye_renderer)
+            angles = np.array([d.qpos[a] for a in
+                               (m.jnt_qposadr[mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, j)]
+                                for j in B.ACTIVE_JOINTS)])
+            obs = BatObservation(eye_left=eyes["L"], eye_right=eyes["R"],
+                                 joint_angle_rad=angles, joint_vel_rad_s=d.qvel[:5].copy(),
+                                 swing_started=False)
+            action = policy(obs)
+            if action.swing:
+                swing_start = t
+                swing_zone = action.zone
+                out.swing_zone = swing_zone
+                out.swing_time_ms = float((t - t_release) * 1e3)
+            next_eye += eye_dt
+        tgt = (B.swing_targets(t - swing_start, zone=swing_zone)
+               if t >= swing_start else B.READY_POSE)
         d.ctrl[:] = [tgt[j] for j in B.ACTIVE_JOINTS]
         if not released:
             d.qpos[ids["ball_q"]:ids["ball_q"] + 3] = release
@@ -212,7 +265,9 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
                 d.qvel[ids["ball_v"]:ids["ball_v"] + 3] = v0
                 released = True
         if phase == "준비" and (released or t >= swing_start):
-            phase = "투구 · 스윙"
+            phase = "투구 · 스윙" if policy is None else "회로가 보고 있다"
+        if policy is not None and phase == "회로가 보고 있다" and t >= swing_start:
+            phase = f"회로가 스윙 ({swing_zone})"
 
         if rec is not None and t >= next_frame - 1e-12:
             mujoco.mj_forward(m, d)
@@ -285,6 +340,8 @@ def run_pitch(spec: PitchSpec | None = None, *, record: bool = True, out_dir: Pa
     if rec is not None:
         out_dir = out_dir or RUNS / f"{_now():%Y%m%d-%H%M%S}-pitch"
         _finish(rec, out_dir, manifest, fps)
+    if eye_renderer is not None:
+        eye_renderer.close()
     return out, manifest
 
 
