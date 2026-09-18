@@ -152,25 +152,36 @@ radius. D31 enlarges the ball 8x, which by itself would make it 512x heavier
 and 77x the bat -- unhittable. Size and mass are therefore separate levers,
 and this one is measured (batter_check) rather than assumed."""
 
-REAL_FASTBALL_MPH = 93.0
-PITCH_SPEED_MM_S = 1879.0
-"""A Kershaw-class fastball, Froude-scaled: 93 mph = 41.6 m/s, times sqrt(s)
-= 1879 mm/s. Speed is now the fixed quantity and the release DISTANCE is
-derived from it (D32), which is the only way to get a flat pitch -- see
-PITCH_FLIGHT_S."""
+PITCH_FROM_MOUND = True
+"""D35. The ball leaves the pitcher's hand, on the rubber, 34.2 mm away --
+not from a point in the air 122 mm out.
 
-PITCH_FLIGHT_S = 0.065
-"""D32. How long the ball is in the air: the swing (38 ms) plus the decision
-latency (10 ms) plus eight frames at 480 Hz (17 ms). At a fixed fastball
-speed that fixes the release distance too, 1879 * 0.065 = 122 mm.
+D32 put the release at 122 mm because the fly needed time to watch, and the
+arithmetic said a pitch long enough to watch had to be thrown from far enough
+back to stay flat. That arithmetic used the wrong deadline: it assumed the
+whole swing had to finish before contact, when contact happens 23.2 ms into
+it (see SWING_TO_CONTACT_S). With the corrected deadline a 50 ms pitch from
+the real mound clears every constraint, so the release goes back where a
+pitcher's hand is."""
 
-Gravity is what made the earlier pitches look like lobs. Over a flight t the
-ball falls 0.5*g*t^2, so the launch angle is about atan(0.5*g*t / v): slowing
-the ball to buy time at a short distance bends the pitch upward (+21 deg at
-55 ms from 33 mm), while keeping the speed and moving the release back keeps
-it flat (+5.6 deg). The price is that the mound is 122 mm away -- 60 m in
-real terms -- because a fly needs far longer to swing than Froude scaling
-allows a batter."""
+PITCH_SPEED_MM_S = 684.0
+"""What the mound distance and the flight time imply: 34.2 mm in 50 ms.
+
+This is 36% of a Froude-scaled Kershaw fastball (1879 mm/s), and that is the
+price of the pitch coming from the mound: the fly needs 50 ms to see and
+swing, and 34 mm in 50 ms is not a fastball. It is a changeup, thrown at a
++16 degree angle. D32's flat 1879 mm/s needed the pitcher to stand where no
+pitcher stands."""
+
+PITCH_FLIGHT_S = 0.050
+"""D35. How long the ball is in the air: contact comes 23.2 ms into the
+swing, plus 10 ms of decision latency, plus eight frames at 480 Hz (17 ms) --
+just over 50 ms, and the eye rate rule wants 476 Hz against the 480 in use.
+
+Gravity still sets the arc: over 50 ms the ball falls 12.3 mm, which from
+34.2 mm away is a +16 degree release. Flatter than the +21 of the earlier
+slow pitch, steeper than D32's +5.6 -- that is what it costs to have the ball
+come from the rubber instead of from 122 mm out."""
 
 EYE_RATE_HZ = 480
 """D31b. NOT an independent setting: the decision window is
@@ -180,14 +191,27 @@ flight - swing - latency, and VM-01 asks for 8 frames inside it. See
 DECISION_LATENCY_S = 0.010
 MIN_DECISION_FRAMES = 8
 
+SWING_TO_CONTACT_S = 0.0232
+"""Swing start -> the sweet spot passing the strike point, measured (and
+regression-tested against `world.rollout.dry_swing`).
+
+CORRECTION. VM-01 and D31/D32 used the WHOLE swing, 38 ms plus a 0.6
+follow-through, as the time a decision has to precede contact by. That is
+wrong: contact happens 23.2 ms into the swing, not after the follow-through.
+The real deadline is 25 ms later than those documents say -- the fly gets
+41.8 ms of looking, not 17 -- which the env's own baseline shows directly
+(the connecting trigger is frame 20 at 41.7 ms). Every visibility number
+measured under the old deadline therefore stands, but stands CONSERVATIVE:
+the frames it counted are the early, dimmest ones."""
+
 
 def min_eye_rate_hz(flight_s: float = PITCH_FLIGHT_S,
-                    swing_s: float | None = None) -> float:
-    """The eye rate a pitch of this length requires (D31). A slower pitch
-    needs a slower eye; a faster one needs a faster eye, and VM-01's hold-out
-    failed precisely because this was treated as a free choice."""
-    swing = DEMO_SWING_S if swing_s is None else swing_s
-    window = flight_s - swing - DECISION_LATENCY_S
+                    swing_to_contact_s: float | None = None) -> float:
+    """The eye rate a pitch of this length requires (D31, corrected). A
+    slower pitch needs a slower eye; a faster one needs a faster eye, and
+    VM-01's hold-out failed precisely because this was treated as free."""
+    to_contact = SWING_TO_CONTACT_S if swing_to_contact_s is None else swing_to_contact_s
+    window = flight_s - to_contact - DECISION_LATENCY_S
     if window <= 0:
         raise ValueError(f"a {flight_s * 1e3:.0f} ms pitch leaves no time to decide in")
     return MIN_DECISION_FRAMES / window
@@ -262,7 +286,8 @@ STANCE_QUAT = _qmul(_quat_axis_angle((0, 0, 1), math.radians(-90)),
                     _quat_axis_angle((0, 1, 0), math.radians(-90)))
 
 
-def _static_copy(src: ET.Element, *, group: int, skip: set[str], pose: dict[str, float]) -> ET.Element:
+def _static_copy(src: ET.Element, *, group: int, skip: set[str], pose: dict[str, float],
+                 prefix: str = "") -> ET.Element:
     """Copies a source body subtree with every joint replaced by its fixed
     angle from `pose` (0 if absent), baked into the body's quaternion in the
     order MuJoCo applies them."""
@@ -270,17 +295,20 @@ def _static_copy(src: ET.Element, *, group: int, skip: set[str], pose: dict[str,
     for j in src.findall("joint"):
         axis = [float(v) for v in j.get("axis", "0 0 1").split()]
         q = _qmul(q, _quat_axis_angle(axis, pose.get(j.get("name"), 0.0)))
-    out = ET.Element("body", {"name": src.get("name"), "pos": src.get("pos", "0 0 0"), "quat": _qstr(q)})
+    out = ET.Element("body", {"name": prefix + src.get("name"), "pos": src.get("pos", "0 0 0"),
+                              "quat": _qstr(q)})
     this_group = GROUP_HEAD if src.get("name") == "Head" else group
     for g in src.findall("geom"):
         geom = _copy_geom(g, collide=False)
         geom.set("group", str(this_group))
         geom.set("rgba", _colour_for(geom.get("name", "")))
+        if prefix and geom.get("name"):
+            geom.set("name", prefix + geom.get("name"))
         out.append(geom)
     for child in src.findall("body"):
         if child.get("name") in skip:
             continue
-        out.append(_static_copy(child, group=this_group, skip=skip, pose=pose))
+        out.append(_static_copy(child, group=this_group, skip=skip, pose=pose, prefix=prefix))
     return out
 
 
@@ -335,6 +363,8 @@ class SceneOptions:
     timestep_s: float = TIMESTEP_S
     contact_timeconst_s: float = CONTACT_TIMECONST_S
     eye_resolution: int = EYE_RESOLUTION
+    pitcher: bool = True
+    """A second fly on the rubber (D35). Visual only."""
     ballpark: bool = True
     """The park around the plate (D31c): foul lines, bases, mound, outfield
     fence, stands, foul poles, and the dark batter's eye in centre field.
@@ -378,6 +408,50 @@ def _fly_subtree(src_root: ET.Element) -> ET.Element:
         g.set("rgba", "0.72 0.52 0.30 1")
     thorax.append(leg)
     return fly
+
+
+PITCHER_POSE = {
+    **STATIC_POSE,
+    # right foreleg up and back: the arm the ball leaves from
+    "joint_RFCoxa": math.radians(-150), "joint_RFFemur": math.radians(-40),
+    "joint_RFTibia": math.radians(70), "joint_RFTarsus1": math.radians(-20),
+    "joint_LFCoxa": math.radians(-40), "joint_LFFemur": math.radians(-80),
+    "joint_LFTibia": math.radians(95),
+}
+"""The pitcher's pose: the same static-copy machinery as the batter's own
+non-driven legs, with the throwing arm raised. Visual only -- nothing about
+this fly is simulated, and the ball's release point comes from the pitch
+geometry, not from its hand."""
+
+
+def _pitcher_subtree(src_root: ET.Element, scale: float, foot_z: float = 0.0) -> ET.Element:
+    """A second fly, standing on the rubber, facing home plate.
+
+    It throws nothing: the ball is launched by `pitch_geometry`. What it does
+    is answer the question a viewer asks first -- where is the ball coming
+    from -- which had no answer while the release point was a bare point in
+    the air."""
+    facing = _qmul(_quat_axis_angle([0.0, 0.0, 1.0], math.pi), STANCE_QUAT)
+    # `foot_z` is where the probe found this fly's feet, so subtracting it
+    # stands the pitcher ON the mound instead of sinking it into one.
+    body = ET.Element("body", {
+        "name": "Pitcher",
+        "pos": f"{PITCH_DISTANCE_MM * scale:.6g} 0 "
+               f"{MOUND_HEIGHT_MM * scale - foot_z + DIRT_TOP_MM:.6g}",
+        "quat": _qstr(facing)})
+    thorax_src = _find_body(src_root, "Thorax")
+    thorax = ET.SubElement(body, "body", {"name": "P_Thorax", "pos": thorax_src.get("pos")})
+    for g in thorax_src.findall("geom"):
+        geom = _copy_geom(g, collide=False)
+        geom.set("group", str(GROUP_FLY))
+        geom.set("rgba", _CHITIN)
+        if geom.get("name"):
+            geom.set("name", "P_" + geom.get("name"))
+        thorax.append(geom)
+    for child in thorax_src.findall("body"):
+        thorax.append(_static_copy(child, group=GROUP_FLY, skip=set(),
+                                   pose=PITCHER_POSE, prefix="P_"))
+    return body
 
 
 def _look_at(forward: np.ndarray, up: np.ndarray) -> str:
@@ -426,18 +500,32 @@ def _eye_cameras(model_probe: mujoco.MjModel, data_probe: mujoco.MjData,
 
 
 def pitch_geometry(strike: np.ndarray, scale: float, distance_scale: float | None = None,
-                   flight_s: float | None = None) -> tuple[np.ndarray, np.ndarray, float]:
+                   flight_s: float | None = None,
+                   release_reference: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray, float]:
     """Release point, launch velocity and flight time for the nominal pitch:
     a ball thrown down the same line of approach as a real pitch, arriving at
-    `strike` after `flight_s`."""
+    `strike` after `flight_s`.
+
+    `release_reference` is where the release point is computed FROM, and it
+    defaults to `strike` only for a single-zone pitch. With strike zones it
+    must be passed, and must not depend on the zone -- the release point is
+    the pitcher's hand, and a pitcher does not move when aiming higher.
+
+    That was a real bug: deriving the release from the strike point meant
+    aiming 0.45 mm higher dropped the hand 1.16 mm (the line pivots, and the
+    release is 3.6 times farther out than the plate). A high pitch then
+    appeared LOWER in the eye than a low one, which is the opposite of the
+    thing the fly is supposed to read."""
     flight = PITCH_FLIGHT_S if flight_s is None else flight_s
     full = np.array([(PITCH_DISTANCE_MM - PITCHER_EXTENSION_MM) * scale, 0.0,
                      RELEASE_HEIGHT_MM * scale])
     # Without an explicit distance, the release point is wherever a fastball
     # at PITCH_SPEED_MM_S has to start to arrive after `flight` (D32).
-    dscale = (PITCH_SPEED_MM_S * flight / (full[0] - strike[0])
-              if distance_scale is None else distance_scale)
-    release = strike + dscale * (full - strike)
+    origin = strike if release_reference is None else np.asarray(release_reference, dtype=float)
+    # Default: the pitcher's own release point (D35). A distance_scale is
+    # still honoured, for measurements that need the ball farther out.
+    dscale = 1.0 if distance_scale is None else distance_scale
+    release = origin + dscale * (full - origin)
     g = np.array([0.0, 0.0, -units.GRAVITY])
     v0 = (strike - release - 0.5 * g * flight ** 2) / flight
     return release, v0, flight
@@ -713,6 +801,8 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
                                          "contype": "0", "conaffinity": "0", "group": str(GROUP_WORLD)}))
     if opts.ballpark:
         world += _ballpark(scale)
+    if opts.pitcher:
+        world.append(_pitcher_subtree(src_root, scale, foot_z))
 
     # directional ("sun"): MuJoCo's default light is a spotlight, whose cone
     # leaves the far field dark.
@@ -789,7 +879,8 @@ READY_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, (-135.0, -151.9, 128.8, -
 asked for a grip above the thorax and a bat direction of about
 (-0.35, 0.35, 1) -- back, away from the plate, up. Achieved (-0.31, 0.31, 0.90)."""
 
-CONTACT_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, (5.4, 99.1, 15.2, -77.7, -34.3)), strict=True))
+CONTACT_POSE_ANGLES_DEG = (5.4, 99.1, 15.2, -77.7, -34.3)
+CONTACT_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, CONTACT_POSE_ANGLES_DEG), strict=True))
 """Bat level-ish across the plate. CHOSEN: the same search, asking for the
 sweet spot over the middle of the plate at 1.2 mm and the bat pointing across
 it. Achieved: sweet spot within 0.002 mm of the plate's middle, at 1.197 mm.
@@ -805,6 +896,27 @@ recording (whose largest range of motion is 1.76 rad). That is the staging
 of D26, a derived engineering pose -- not a claim that a fly's foreleg bends
 this way."""
 
+
+STRIKE_ZONES: tuple[str, ...] = ("high", "middle", "low")
+ZONE_OFFSET_MM = {"high": 0.45, "middle": 0.0, "low": -0.35}
+"""Where each zone's contact point sits, relative to the middle one. The
+spread is 0.80 mm, 2.7 ball diameters, so swinging at the wrong zone misses
+-- which is the point: a pitch that can arrive high or low only makes the
+task harder if the fly has to swing somewhere different."""
+
+CONTACT_POSES = {
+    "high": dict(zip(ACTIVE_JOINTS, map(math.radians, (5.4, 100.7, 15.7, -91.5, -34.2)), strict=True)),
+    "middle": CONTACT_POSE,
+    "low": dict(zip(ACTIVE_JOINTS, map(math.radians, (5.4, 94.6, 15.2, -64.9, -33.6)), strict=True)),
+}
+"""One contact pose per zone, found by `world.poses.find_contact_pose` and
+cached here the way READY_POSE and CONTACT_POSE always were -- with the
+difference that the search is now in the repo and a test reproduces these.
+
+They are deliberately a FAMILY rather than three separate solutions: five
+joints reaching for one point is redundant, so the search is pulled toward
+the middle pose. What comes out differs mostly in one joint (the tibia, by
+about 13 degrees), which is what "swing higher" should look like."""
 
 DEMO_SWING_S = 0.038
 DEMO_SWING_FOLLOW = 0.6
@@ -825,13 +937,14 @@ momentum back off the bat."""
 
 
 def swing_targets(t_s: float, duration_s: float = DEMO_SWING_S,
-                  follow: float = DEMO_SWING_FOLLOW) -> dict[str, float]:
+                  follow: float = DEMO_SWING_FOLLOW, zone: str = "middle") -> dict[str, float]:
     """Demo swing: a cosine-eased path READY -> CONTACT, carried `follow`
     past CONTACT. Used for rendering and for sizing contact speeds -- the
     learned policy is free to do something else (D15)."""
     u = min(max(t_s / duration_s, 0.0), 1.0)
     e = (0.5 - 0.5 * math.cos(math.pi * u)) * (1.0 + follow)
-    return {j: READY_POSE[j] + e * (CONTACT_POSE[j] - READY_POSE[j]) for j in ACTIVE_JOINTS}
+    contact = CONTACT_POSES[zone]
+    return {j: READY_POSE[j] + e * (contact[j] - READY_POSE[j]) for j in ACTIVE_JOINTS}
 
 
 def joint_qpos_addr(model: mujoco.MjModel) -> dict[str, int]:

@@ -82,3 +82,18 @@ def test_the_criteria_are_the_ones_that_were_registered():
     assert R.MAX_ANGLE_ERROR_DEG == 0.5
     assert R.MAX_CARRY_REL == 0.02
     assert R.COARSE_DT_S == B.TIMESTEP_S, "coarsening the swing failed the criteria"
+
+
+def test_the_swing_to_contact_constant_is_still_true():
+    """B.SWING_TO_CONTACT_S is the corrected decision deadline (VM-01 used
+    the whole swing and was 25 ms too strict). It is a measured number, so
+    it gets a regression test rather than a comment."""
+    t_star, _ = R.dry_swing(B.build_scene(), B.DEMO_SWING_S, B.DEMO_SWING_FOLLOW)
+    assert t_star == pytest.approx(B.SWING_TO_CONTACT_S, abs=5e-4)
+
+
+def test_the_eye_rate_rule_uses_the_corrected_deadline():
+    need = B.min_eye_rate_hz()
+    window = B.PITCH_FLIGHT_S - B.SWING_TO_CONTACT_S - B.DECISION_LATENCY_S
+    assert need == pytest.approx(B.MIN_DECISION_FRAMES / window)
+    assert need < B.EYE_RATE_HZ, "the eye is faster than the rule requires"

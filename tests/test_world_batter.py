@@ -298,3 +298,63 @@ class TestContactSettings:
             if name in ("ground", "ball") or name.startswith("bat_c"):
                 continue
             assert m.geom_contype[g] == 0 and m.geom_conaffinity[g] == 0, name
+
+
+class TestStrikeZones:
+    """D34: the pitch can arrive high, middle or low, and the fly has to
+    swing somewhere different for each. What each combination achieves is a
+    measurement (docs/records/), not an assertion."""
+
+    def test_the_zones_are_further_apart_than_a_ball(self, md, scene):
+        m, d = md
+        heights = {}
+        for zone in B.STRIKE_ZONES:
+            B.set_arm(m, d, B.CONTACT_POSES[zone])
+            heights[zone] = float(d.site_xpos[_id(m, mujoco.mjtObj.mjOBJ_SITE, "bat_sweet")][2])
+        spread = heights["high"] - heights["low"]
+        assert spread > 2 * 2 * scene.ball_radius_mm, "zones a policy could confuse for free"
+        assert heights["high"] > heights["middle"] > heights["low"]
+
+    def test_the_middle_zone_is_the_pose_everything_was_validated_with(self):
+        assert B.CONTACT_POSES["middle"] is B.CONTACT_POSE
+
+    def test_the_poses_are_one_family_not_three_contortions(self):
+        """They differ mostly in one joint. A swing that had to re-pose the
+        whole arm per zone would be three motions, and the joint-speed
+        ceiling was only ever checked for one."""
+        ref = np.array([B.CONTACT_POSE[j] for j in B.ACTIVE_JOINTS])
+        for zone in B.STRIKE_ZONES:
+            q = np.array([B.CONTACT_POSES[zone][j] for j in B.ACTIVE_JOINTS])
+            assert np.degrees(np.abs(q - ref)).max() < 20.0, zone
+
+    def test_the_search_still_finds_the_cached_poses(self, scene):
+        """The poses are cached constants; this is what stops them drifting
+        away from the search that produced them."""
+        from flyohtani.world.poses import find_contact_pose
+        m = mujoco.MjModel.from_xml_string(scene.xml)
+        d = mujoco.MjData(m)
+        B.set_arm(m, d, B.CONTACT_POSE)
+        middle = d.site_xpos[_id(m, mujoco.mjtObj.mjOBJ_SITE, "bat_sweet")].copy()
+        for zone in ("high", "low"):
+            target = middle + np.array([0.0, 0.0, B.ZONE_OFFSET_MM[zone]])
+            found = find_contact_pose(target, restarts=60, scene=scene)
+            assert found.usable, zone
+            assert abs(found.sweet_xyz[2] - target[2]) < 0.05, zone
+
+    def test_a_swing_travels_the_line_from_ready_to_its_own_zone(self):
+        """Every joint moves along the same line at the same fraction -- the
+        swing is one motion aimed at one pose, carried past it by the
+        follow-through (so the end point is beyond the contact pose, not at
+        it)."""
+        for zone in B.STRIKE_ZONES:
+            contact = B.CONTACT_POSES[zone]
+            for t in (0.25 * B.DEMO_SWING_S, 0.6 * B.DEMO_SWING_S, B.DEMO_SWING_S):
+                targets = B.swing_targets(t, zone=zone)
+                fractions = [(targets[j] - B.READY_POSE[j]) / (contact[j] - B.READY_POSE[j])
+                             for j in B.ACTIVE_JOINTS
+                             if abs(contact[j] - B.READY_POSE[j]) > 1e-6]
+                assert max(fractions) == pytest.approx(min(fractions), abs=1e-9)
+            end = B.swing_targets(B.DEMO_SWING_S, zone=zone)
+            j = B.ACTIVE_JOINTS[1]
+            overshoot = (end[j] - B.READY_POSE[j]) / (contact[j] - B.READY_POSE[j])
+            assert overshoot == pytest.approx(1 + B.DEMO_SWING_FOLLOW, abs=1e-9)

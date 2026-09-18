@@ -135,17 +135,18 @@ def compiled(scene: B.Scene) -> mujoco.MjModel:
 _TRAJ: dict[tuple, np.ndarray] = {}
 
 
-def swing_table(duration_s: float, follow: float, dt: float, n: int) -> np.ndarray:
+def swing_table(duration_s: float, follow: float, dt: float, n: int,
+                zone: str = "middle") -> np.ndarray:
     """The whole swing's joint targets, precomputed as (n, 5).
 
     The targets are a fixed function of time, so building the dict and taking
     a cosine inside the stepping loop was pure overhead -- about half the
     per-step cost, since mj_step itself is 7 us and the loop was taking 20."""
-    key = (duration_s, follow, dt, n)
+    key = (duration_s, follow, dt, n, zone)
     if key not in _TRAJ:
         table = np.empty((n, len(B.ACTIVE_JOINTS)))
         for i in range(n):
-            tgt = B.swing_targets(i * dt, duration_s=duration_s, follow=follow)
+            tgt = B.swing_targets(i * dt, duration_s=duration_s, follow=follow, zone=zone)
             table[i] = [tgt[j] for j in B.ACTIVE_JOINTS]
         _TRAJ[key] = table
     return _TRAJ[key]
