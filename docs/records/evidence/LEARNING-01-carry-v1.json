@@ -1,0 +1,154 @@
+{
+ "reward": "carry-v1",
+ "seed": 0,
+ "generations": 8,
+ "population": 10,
+ "train_pitches": 18,
+ "best_genome": {
+  "motor_delay_frames": 5,
+  "spikes_to_swing": 1,
+  "zone_rise_boundary": -0.38184071227606997,
+  "zone_window_frames": 5,
+  "input_gain_scale": 1.1583068075568828
+ },
+ "train_reward": 0.5709509600876603,
+ "held_out": {
+  "reward": 0.26709781148778516,
+  "contact_rate": 0.23333333333333334,
+  "zone_rate": 0.5,
+  "fair_rate": 0.03333333333333333,
+  "n": 30
+ },
+ "baselines_held_out": {
+  "fixed-frame-18": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-frame-20": {
+   "reward": 0.2932614974540187,
+   "contact_rate": 0.16666666666666666,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.03333333333333333,
+   "n": 30
+  },
+  "fixed-frame-22": {
+   "reward": 0.20034661963572595,
+   "contact_rate": 0.16666666666666666,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.03333333333333333,
+   "n": 30
+  }
+ },
+ "history": [
+  {
+   "generation": 0,
+   "genome": {
+    "motor_delay_frames": 3,
+    "spikes_to_swing": 1,
+    "zone_rise_boundary": -0.09,
+    "zone_window_frames": 5,
+    "input_gain_scale": 1.0
+   },
+   "train_reward": 0.21798366264138844
+  },
+  {
+   "generation": 1,
+   "genome": {
+    "motor_delay_frames": 4,
+    "spikes_to_swing": 2,
+    "zone_rise_boundary": -0.22950184647833005,
+    "zone_window_frames": 4,
+    "input_gain_scale": 0.9677139422433715
+   },
+   "train_reward": 0.39080552621989423,
+   "train_contact": 0.16666666666666666
+  },
+  {
+   "generation": 2,
+   "genome": {
+    "motor_delay_frames": 4,
+    "spikes_to_swing": 2,
+    "zone_rise_boundary": -0.22950184647833005,
+    "zone_window_frames": 4,
+    "input_gain_scale": 0.9677139422433715
+   },
+   "train_reward": 0.39080552621989423,
+   "train_contact": 0.16666666666666666
+  },
+  {
+   "generation": 3,
+   "genome": {
+    "motor_delay_frames": 4,
+    "spikes_to_swing": 2,
+    "zone_rise_boundary": -0.22950184647833005,
+    "zone_window_frames": 4,
+    "input_gain_scale": 0.9677139422433715
+   },
+   "train_reward": 0.39080552621989423,
+   "train_contact": 0.16666666666666666
+  },
+  {
+   "generation": 4,
+   "genome": {
+    "motor_delay_frames": 4,
+    "spikes_to_swing": 2,
+    "zone_rise_boundary": -0.22950184647833005,
+    "zone_window_frames": 4,
+    "input_gain_scale": 0.9677139422433715
+   },
+   "train_reward": 0.39080552621989423,
+   "train_contact": 0.16666666666666666
+  },
+  {
+   "generation": 5,
+   "genome": {
+    "motor_delay_frames": 4,
+    "spikes_to_swing": 2,
+    "zone_rise_boundary": -0.22950184647833005,
+    "zone_window_frames": 4,
+    "input_gain_scale": 0.9677139422433715
+   },
+   "train_reward": 0.39080552621989423,
+   "train_contact": 0.16666666666666666
+  },
+  {
+   "generation": 6,
+   "genome": {
+    "motor_delay_frames": 4,
+    "spikes_to_swing": 2,
+    "zone_rise_boundary": -0.22950184647833005,
+    "zone_window_frames": 4,
+    "input_gain_scale": 0.9677139422433715
+   },
+   "train_reward": 0.39080552621989423,
+   "train_contact": 0.16666666666666666
+  },
+  {
+   "generation": 7,
+   "genome": {
+    "motor_delay_frames": 5,
+    "spikes_to_swing": 1,
+    "zone_rise_boundary": -0.3178904309582675,
+    "zone_window_frames": 4,
+    "input_gain_scale": 1.1593281938764164
+   },
+   "train_reward": 0.40826016816906674,
+   "train_contact": 0.2777777777777778
+  },
+  {
+   "generation": 8,
+   "genome": {
+    "motor_delay_frames": 5,
+    "spikes_to_swing": 1,
+    "zone_rise_boundary": -0.38184071227606997,
+    "zone_window_frames": 5,
+    "input_gain_scale": 1.1583068075568828
+   },
+   "train_reward": 0.5709509600876603,
+   "train_contact": 0.3333333333333333
+  }
+ ]
+}
