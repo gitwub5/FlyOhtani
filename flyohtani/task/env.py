@@ -38,6 +38,7 @@ from flyohtani.task.observation import BatObservation
 from flyohtani.task.outcome import Outcome
 from flyohtani.world import batter as B
 from flyohtani.world import rollout as R
+from flyohtani.world import swing as S
 
 
 @dataclass(frozen=True)
@@ -186,46 +187,27 @@ class BattingEnv:
         the landing point."""
         m, d = self._model, self._data
         m.opt.timestep = B.TIMESTEP_S
-        bat_geoms = {mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, f"bat_c{i}") for i in range(5)}
         n_steps = round((self.swing_duration_s * (1 + self.swing_follow) + 0.010) / B.TIMESTEP_S)
-        table = R.swing_table(self.swing_duration_s, self.swing_follow, B.TIMESTEP_S, n_steps, zone)
+        table = S.swing_table(self.swing_duration_s, self.swing_follow, B.TIMESTEP_S, n_steps, zone)
         # The ball is already in flight with the right velocity, so the
-        # integrator carries it from here: re-placing it analytically every
-        # step would cost an mj_forward per step and gain nothing.
-        ctrl, contacts, qvel_arm = d.ctrl, d.contact, d.qvel[:5]
-        in_contact = False
-        peak_q = 0.0
-        past_x = float(self._strike[0]) - 3 * (self._r_ball + self._r_bat)
-        for i in range(n_steps):
-            ctrl[:] = table[i]
-            mujoco.mj_step(m, d)
-            peak_q = max(peak_q, float(max(qvel_arm.max(), -qvel_arm.min())))
-            touching = False
-            for k in range(d.ncon):
-                c = contacts[k]
-                if ((c.geom1 == self._ball_geom and c.geom2 in bat_geoms)
-                        or (c.geom2 == self._ball_geom and c.geom1 in bat_geoms)):
-                    touching = True
-                    break
-            if touching:
-                in_contact = True
-            elif in_contact or float(d.xpos[self._ball][0]) < past_x:
-                break  # off the bat, or past the plate having missed
+        # integrator carries it from here.
+        run = S.step_swing(m, d, table, ball_geom=self._ball_geom, ball_body=self._ball,
+                           bat_geoms=S.bat_geom_ids(m),
+                           stop_x_mm=float(self._strike[0]) - 3 * (self._r_ball + self._r_bat),
+                           sweet_site=self._sweet)
+        in_contact, peak_q = run.contact, run.peak_joint_speed_rad_s
         self.outcome.peak_joint_speed_rad_s = peak_q
         if not in_contact:
             return
 
-        pos = d.xpos[self._ball].copy()
-        vel = d.qvel[self._va:self._va + 3].copy()
-        t_land = R.time_to_ground(pos, vel, self._r_ball)
-        landing = R.ballistic(pos, vel, t_land) if np.isfinite(t_land) else None
+        hit = S.batted_ball(d.xpos[self._ball].copy(),
+                            d.qvel[self._va:self._va + 3].copy(), self._r_ball)
         self.outcome.contact = True
-        self.outcome.exit_speed_mm_s = float(np.linalg.norm(vel))
-        self.outcome.launch_angle_deg = float(np.degrees(np.arctan2(vel[2], np.hypot(vel[0], vel[1]))))
-        self.outcome.spray_angle_deg = float(np.degrees(np.arctan2(vel[1], vel[0])))
-        if landing is not None:
-            self.outcome.carry_mm = float(np.linalg.norm(landing[:2]))
-            self.outcome.fair = R._fair(landing)
+        self.outcome.exit_speed_mm_s = hit.exit_speed_mm_s
+        self.outcome.launch_angle_deg = hit.launch_angle_deg
+        self.outcome.spray_angle_deg = hit.spray_angle_deg
+        self.outcome.carry_mm = hit.carry_mm
+        self.outcome.fair = hit.fair
 
     def _observe(self) -> BatObservation:
         eyes = B.render_eyes(self._model, self._data, self._renderer)

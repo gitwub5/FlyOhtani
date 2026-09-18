@@ -38,6 +38,8 @@ import numpy as np
 
 from flyohtani import units
 from flyohtani.world import batter as B
+from flyohtani.world import swing as S
+from flyohtani.world.swing import ballistic, bat_geom_ids, swing_table
 
 COARSE_DT_S = B.TIMESTEP_S
 """Phase B away from contact. This is the contact timestep -- i.e. phase B is
@@ -99,26 +101,6 @@ class Rollout:
     warnings: dict[str, int]
 
 
-def ballistic(pos: np.ndarray, vel: np.ndarray, t: float) -> np.ndarray:
-    g = np.array([0.0, 0.0, -units.GRAVITY])
-    return pos + vel * t + 0.5 * g * t * t
-
-
-def time_to_ground(pos: np.ndarray, vel: np.ndarray, radius_mm: float) -> float:
-    """When a projectile's surface first reaches the ground plane. Returns
-    inf if it never does (only possible if it is already rising away and the
-    scene had no gravity)."""
-    g = units.GRAVITY
-    z0 = float(pos[2]) - radius_mm - B.DIRT_TOP_MM
-    vz = float(vel[2])
-    if g <= 0:
-        return math.inf if vz >= 0 else -z0 / vz
-    disc = vz * vz + 2 * g * z0
-    if disc < 0:
-        return math.inf
-    return (vz + math.sqrt(disc)) / g
-
-
 _MODELS: dict[int, mujoco.MjModel] = {}
 
 
@@ -130,26 +112,6 @@ def compiled(scene: B.Scene) -> mujoco.MjModel:
     if key not in _MODELS:
         _MODELS[key] = scene.model()
     return _MODELS[key]
-
-
-_TRAJ: dict[tuple, np.ndarray] = {}
-
-
-def swing_table(duration_s: float, follow: float, dt: float, n: int,
-                zone: str = "middle") -> np.ndarray:
-    """The whole swing's joint targets, precomputed as (n, 5).
-
-    The targets are a fixed function of time, so building the dict and taking
-    a cosine inside the stepping loop was pure overhead -- about half the
-    per-step cost, since mj_step itself is 7 us and the loop was taking 20."""
-    key = (duration_s, follow, dt, n, zone)
-    if key not in _TRAJ:
-        table = np.empty((n, len(B.ACTIVE_JOINTS)))
-        for i in range(n):
-            tgt = B.swing_targets(i * dt, duration_s=duration_s, follow=follow, zone=zone)
-            table[i] = [tgt[j] for j in B.ACTIVE_JOINTS]
-        _TRAJ[key] = table
-    return _TRAJ[key]
 
 
 _DRY: dict[tuple, tuple[float, np.ndarray]] = {}
@@ -188,12 +150,6 @@ def dry_swing(scene: B.Scene, duration_s: float, follow: float) -> tuple[float, 
     return _DRY[key]
 
 
-def _fair(landing: np.ndarray) -> bool:
-    """Inside the foul lines: the two 45 degree lines from home plate."""
-    x, y = float(landing[0]), float(landing[1])
-    return x > 0 and abs(y) <= x
-
-
 def run(spec_timing_ms: float = 0.0, aim_offset_mm: tuple[float, float, float] = (0.0, 0.0, 0.0),
         *, flight_s: float | None = None, distance_scale: float | None = None,
         swing_duration_s: float | None = None, swing_follow: float | None = None,
@@ -211,7 +167,7 @@ def run(spec_timing_ms: float = 0.0, aim_offset_mm: tuple[float, float, float] =
     sweet = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, "bat_sweet")
     qa = m.jnt_qposadr[m.body_jntadr[ball_b]]
     va = m.jnt_dofadr[m.body_jntadr[ball_b]]
-    bat_geoms = {mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, f"bat_c{i}") for i in range(5)}
+    bat_geoms = bat_geom_ids(m)
     r_ball = float(m.geom_size[ball_g][0])
     r_bat = B.BAT_BARREL_RADIUS_MM * scene.scale
 
@@ -227,7 +183,6 @@ def run(spec_timing_ms: float = 0.0, aim_offset_mm: tuple[float, float, float] =
     # arm is holding still. The clock starts where the swing does, with the
     # ball already as far along its flight as run_pitch would have it.
     ball_elapsed = flight - t_star - spec_timing_ms * 1e-3
-    t0 = 0.0
     pos = ballistic(release, v0, max(ball_elapsed, 0.0))
     vel = v0 + np.array([0.0, 0.0, -units.GRAVITY]) * max(ball_elapsed, 0.0)
     held_until = max(-ball_elapsed, 0.0)  # pitch not released yet at swing start
@@ -258,52 +213,25 @@ def run(spec_timing_ms: float = 0.0, aim_offset_mm: tuple[float, float, float] =
     contact_time = None
     in_contact = False
     steps = 0
-    vel6 = np.zeros(6)
     # A pitch this far behind the strike point cannot be hit by any part of
     # the swing, so a miss stops there instead of running the swing out.
     past_x = float(strike[0]) - 3.0 * (r_ball + r_bat)
     m.opt.timestep = COARSE_DT_S
     n_steps = round((swing_dur * (1 + follow) + 0.010) / COARSE_DT_S)
     table = swing_table(swing_dur, follow, COARSE_DT_S, n_steps)
-    # views and locals, hoisted out of the loop: at 7 us per mj_step, a
-    # couple of attribute lookups and a numpy temporary per step are not
-    # noise -- they were most of the cost before this.
-    qvel_arm = d.qvel[:5]
-    ctrl = d.ctrl
-    step = mujoco.mj_step
-    contacts = d.contact
-    for i in range(n_steps):
-        if held_until > 0:
-            if d.time < held_until:
-                d.qpos[qa:qa + 3] = release
-                d.qvel[va:va + 6] = 0
-            else:
-                d.qvel[va:va + 3] = v0
-                held_until = 0.0
-        ctrl[:] = table[i]
-        step(m, d)
-        steps += 1
-        hi = qvel_arm.max()
-        lo = qvel_arm.min()
-        q = max(-lo, hi)
-        if q > peak_q:
-            peak_q = float(q)
-        touching = False
-        for k in range(d.ncon):
-            c = contacts[k]
-            if (c.geom1 == ball_g and c.geom2 in bat_geoms) or (c.geom2 == ball_g and c.geom1 in bat_geoms):
-                touching = True
-                break
-        if touching:
-            if not in_contact:
-                in_contact = True
-                contact_time = float(d.time) - t0
-                mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_SITE, sweet, vel6, 0)
-                sweet_at_contact = float(np.linalg.norm(vel6[3:]))
-        elif in_contact:
-            break  # the ball is off the bat; phase C takes it from here
-        elif d.xpos[ball_b][0] < past_x:
-            break  # missed: the ball is behind the plate and nothing can hit it
+    if held_until > 0:
+        # the pitch has not left the hand yet at the swing's first step
+        d.qpos[qa:qa + 3] = release
+        d.qvel[va:va + 6] = 0
+        mujoco.mj_forward(m, d)
+        while d.time < held_until:
+            mujoco.mj_step(m, d)
+        d.qvel[va:va + 3] = v0
+    run = S.step_swing(m, d, table, ball_geom=ball_g, ball_body=ball_b,
+                       bat_geoms=bat_geoms, stop_x_mm=past_x, sweet_site=sweet)
+    in_contact, contact_time = run.contact, run.contact_time_s
+    sweet_at_contact, peak_q, steps = (run.sweet_speed_at_contact_mm_s,
+                                       run.peak_joint_speed_rad_s, run.steps)
     m.opt.timestep = B.TIMESTEP_S
 
     warnings = {mujoco.mjtWarning(i).name: int(d.warning[i].number)
@@ -312,22 +240,17 @@ def run(spec_timing_ms: float = 0.0, aim_offset_mm: tuple[float, float, float] =
         return Rollout(False, None, None, None, None, None, None, None,
                        peak_q, 0.0, steps, warnings)
 
-    # phase C: a projectile again -- solve for the ground instead of stepping.
-    pos = d.xpos[ball_b].copy()
-    vel = d.qvel[va:va + 3].copy()
-    speed = float(np.linalg.norm(vel))
-    t_land = time_to_ground(pos, vel, r_ball)
-    landing = ballistic(pos, vel, t_land) if math.isfinite(t_land) else None
-    carry = float(np.linalg.norm(landing[:2])) if landing is not None else None
+    # phase C: a projectile again -- solved, not stepped (world.swing).
+    hit = S.batted_ball(d.xpos[ball_b].copy(), d.qvel[va:va + 3].copy(), r_ball)
     return Rollout(
         contact=True,
         contact_time_s=contact_time,
-        exit_speed_mm_s=speed,
-        launch_angle_deg=math.degrees(math.atan2(float(vel[2]), float(np.hypot(vel[0], vel[1])))),
-        spray_angle_deg=math.degrees(math.atan2(float(vel[1]), float(vel[0]))),
-        carry_mm=carry,
-        landing_xy_mm=(float(landing[0]), float(landing[1])) if landing is not None else None,
-        fair=_fair(landing) if landing is not None else None,
+        exit_speed_mm_s=hit.exit_speed_mm_s,
+        launch_angle_deg=hit.launch_angle_deg,
+        spray_angle_deg=hit.spray_angle_deg,
+        carry_mm=hit.carry_mm,
+        landing_xy_mm=hit.landing_xy_mm,
+        fair=hit.fair,
         peak_joint_speed_rad_s=peak_q,
         sweet_speed_at_contact_mm_s=sweet_at_contact,
         steps=steps,

@@ -1,5 +1,8 @@
 """The fast episode path, held against the slow one.
 
+The ballistics and fair-territory tests that used to live here moved to
+tests/test_world_swing.py with the code they cover.
+
 `rollout.run` exists only to be faster than `record.scenarios.run_pitch`; the
 moment it answers differently it is worthless. These tests are the contract:
 the criteria live in the module (pre-registered, before it was written) and
@@ -7,7 +10,6 @@ this file applies them.
 """
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from flyohtani.record import scenarios as S
@@ -50,29 +52,6 @@ def test_it_agrees_about_the_swing_itself(paired):
     ceiling is checked against, so it may not drift."""
     for case, ref, fast in paired:
         assert fast.peak_joint_speed_rad_s == pytest.approx(ref.peak_joint_speed_rad_s, rel=0.02), case
-
-
-def test_phase_c_solves_the_same_parabola_the_simulator_walks():
-    """The landing point is computed, not stepped. With no drag and no spin
-    that is exact, and this is the check that it is not merely close."""
-    pos = np.array([1.0, 0.0, 4.0])
-    vel = np.array([300.0, 50.0, 200.0])
-    t = R.time_to_ground(pos, vel, radius_mm=0.15)
-    landed = R.ballistic(pos, vel, t)
-    assert landed[2] == pytest.approx(0.15 + B.DIRT_TOP_MM, abs=1e-9)
-    assert R.ballistic(pos, vel, t * 0.99)[2] > landed[2]
-
-
-def test_a_ball_that_never_comes_down_is_reported_as_such():
-    assert R.time_to_ground(np.array([0.0, 0.0, 1.0]), np.array([0.0, 0.0, 0.0]),
-                            radius_mm=2.0) == float("inf")
-
-
-def test_fair_territory_is_between_the_foul_lines():
-    assert R._fair(np.array([10.0, 0.0]))
-    assert R._fair(np.array([10.0, 9.9]))
-    assert not R._fair(np.array([10.0, 10.1]))
-    assert not R._fair(np.array([-1.0, 0.0]))
 
 
 def test_the_criteria_are_the_ones_that_were_registered():
