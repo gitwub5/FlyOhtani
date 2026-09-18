@@ -15,10 +15,10 @@ joint-level action space is the obvious alternative:
 Joint-level control is not ruled out -- `step` takes an action object so that
 adding it later is an extension, not a rewrite.
 
-WHAT THIS DOES NOT DO: score. PLAN's Phase 5 versions the reward in three
-steps and none of them is chosen yet, so `step` returns 0.0 and puts the
-outcome in `info`. An environment that invented a reward here would have the
-most important research decision in the project buried in a default.
+SCORING: `reward_name` picks one of `task.rewards` (versioned, PLAN Phase 5)
+and it is paid ONCE, on the step that ends the episode. The default is None
+-- no reward at all -- so a caller that has not chosen one gets zeros rather
+than someone else's choice by accident.
 
 Cost, measured: while the fly is only watching, physics is not stepped at all
 -- the arm is holding a pose and the ball cannot touch anything, so the ball
@@ -33,34 +33,22 @@ from dataclasses import dataclass, field
 import mujoco
 import numpy as np
 
+from flyohtani.task import rewards
 from flyohtani.task.observation import BatObservation
+from flyohtani.task.outcome import Outcome
 from flyohtani.world import batter as B
 from flyohtani.world import rollout as R
 
 
 @dataclass(frozen=True)
 class Action:
-    """One decision per eye frame."""
+    """One decision per eye frame: whether to swing, and where.
+
+    `zone` is only read on the frame the swing starts -- once committed, the
+    bat is going where it was sent."""
 
     swing: bool = False
-
-
-@dataclass
-class Outcome:
-    """Ground truth about what happened. Goes to the CALLER, never into an
-    observation -- scoring and learning-signal code may read it; a policy
-    may not."""
-
-    swung: bool = False
-    contact: bool = False
-    swing_frame: int | None = None
-    exit_speed_mm_s: float | None = None
-    launch_angle_deg: float | None = None
-    spray_angle_deg: float | None = None
-    carry_mm: float | None = None
-    fair: bool | None = None
-    peak_joint_speed_rad_s: float = 0.0
-    frames_seen: int = 0
+    zone: str = "middle"
 
 
 @dataclass
@@ -70,10 +58,13 @@ class PitchSpec:
     flight_s: float | None = None
     distance_scale: float | None = None
     timing_ms: float = 0.0
-    """Shifts the release. Non-zero means the fly must swing earlier or later
-    than the nominal moment -- the crudest form of pitch variation there is,
-    and a placeholder until Phase 5 gives the launcher a distribution."""
+    """Shifts the release, so the fly must swing earlier or later."""
+    zone: str = "middle"
+    """Where the pitch arrives: high, middle or low. The zones are 0.80 mm
+    apart, which is 2.7 ball diameters, so this is a real choice and not a
+    nudge -- the fly has to read it off the eye and swing to match."""
     aim_offset_mm: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    """On top of the zone, for tuning a demo."""
 
 
 @dataclass
@@ -89,6 +80,8 @@ class BattingEnv:
     eye_rate_hz: float = B.EYE_RATE_HZ
     swing_duration_s: float = B.DEMO_SWING_S
     swing_follow: float = B.DEMO_SWING_FOLLOW
+    reward_name: str | None = None
+    """A key of `task.rewards.REWARDS`. None means every step scores 0."""
 
     def __post_init__(self) -> None:
         self._model = R.compiled(self.scene)
@@ -105,6 +98,7 @@ class BattingEnv:
         self.outcome = Outcome()
         self._frame = 0
         self._done = True
+        self._reward = rewards.get(self.reward_name) if self.reward_name else None
 
     def close(self) -> None:
         self._renderer.close()
@@ -120,34 +114,40 @@ class BattingEnv:
 
         t_star, p_star = R.dry_swing(self.scene, self.swing_duration_s, self.swing_follow)
         self._t_star = t_star
-        strike = (p_star + np.array([self._r_ball + self._r_bat, 0.0, 0.0])
-                  + np.array(self.pitch.aim_offset_mm))
+        zone_dz = B.ZONE_OFFSET_MM[self.pitch.zone]
+        nominal = p_star + np.array([self._r_ball + self._r_bat, 0.0, 0.0])
+        strike = nominal + np.array([0.0, 0.0, zone_dz]) + np.array(self.pitch.aim_offset_mm)
         self._strike = strike
+        # The release point comes from the NOMINAL strike point, so it is the
+        # same hand position whatever zone is being aimed at (see
+        # pitch_geometry's docstring -- this was a bug).
         self._release, self._v0, self._flight = B.pitch_geometry(
-            strike, self.scene.scale, self.pitch.distance_scale, self.pitch.flight_s)
+            strike, self.scene.scale, self.pitch.distance_scale, self.pitch.flight_s,
+            release_reference=nominal)
         # timing_ms > 0 delays the release, so the ball arrives later.
         self._t_release = self.pitch.timing_ms * 1e-3
         self._frame = 0
         self._done = False
-        self.outcome = Outcome()
+        self.outcome = Outcome(pitch_zone=self.pitch.zone)
         self._place_ball(0.0)
         return self._observe()
 
     def step(self, action: Action | bool) -> tuple[BatObservation, float, bool, dict]:
         """One eye frame. Returns (observation, reward, done, info).
 
-        `reward` is 0.0 on purpose -- see the module docstring."""
+        The reward is paid on the terminal step and is 0 on every other."""
         if self._done:
             raise RuntimeError("episode is over; call reset()")
-        swing = action.swing if isinstance(action, Action) else bool(action)
+        act = action if isinstance(action, Action) else Action(swing=bool(action))
         self.outcome.frames_seen = self._frame + 1
 
-        if swing:
+        if act.swing:
             self.outcome.swung = True
             self.outcome.swing_frame = self._frame
-            self._resolve_swing()
+            self.outcome.swing_zone = act.zone
+            self._resolve_swing(act.zone)
             self._done = True
-            return self._observe(), 0.0, True, {"outcome": self.outcome}
+            return self._observe(), self._score(), True, {"outcome": self.outcome}
 
         self._frame += 1
         t = self._frame / self.eye_rate_hz
@@ -156,8 +156,11 @@ class BattingEnv:
         # to decide.
         if float(self._data.xpos[self._ball][0]) < self._strike[0] - 3 * (self._r_ball + self._r_bat):
             self._done = True
-            return self._observe(), 0.0, True, {"outcome": self.outcome}
+            return self._observe(), self._score(), True, {"outcome": self.outcome}
         return self._observe(), 0.0, False, {}
+
+    def _score(self) -> float:
+        return self._reward(self.outcome) if self._reward else 0.0
 
     # -------------------------------------------------------------- innards
 
@@ -177,7 +180,7 @@ class BattingEnv:
         d.qvel[self._va + 3:self._va + 6] = 0
         mujoco.mj_forward(m, d)
 
-    def _resolve_swing(self) -> None:
+    def _resolve_swing(self, zone: str = "middle") -> None:
         """The swing is a fixed trajectory once triggered, so the rest of the
         episode resolves in one go: integrate to separation, then solve for
         the landing point."""
@@ -185,7 +188,7 @@ class BattingEnv:
         m.opt.timestep = B.TIMESTEP_S
         bat_geoms = {mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, f"bat_c{i}") for i in range(5)}
         n_steps = round((self.swing_duration_s * (1 + self.swing_follow) + 0.010) / B.TIMESTEP_S)
-        table = R.swing_table(self.swing_duration_s, self.swing_follow, B.TIMESTEP_S, n_steps)
+        table = R.swing_table(self.swing_duration_s, self.swing_follow, B.TIMESTEP_S, n_steps, zone)
         # The ball is already in flight with the right velocity, so the
         # integrator carries it from here: re-placing it analytically every
         # step would cost an mj_forward per step and gain nothing.
@@ -236,13 +239,14 @@ class BattingEnv:
         )
 
 
-def swing_at_frame(env: BattingEnv, frame: int, pitch: PitchSpec | None = None) -> Outcome:
+def swing_at_frame(env: BattingEnv, frame: int, pitch: PitchSpec | None = None,
+                   zone: str = "middle") -> Outcome:
     """Run one episode with a fixed trigger frame -- the scripted policy, and
     the baseline every learned one has to beat."""
     env.reset(pitch)
     done = False
     i = 0
     while not done:
-        _, _, done, _ = env.step(Action(swing=(i == frame)))
+        _, _, done, _ = env.step(Action(swing=(i == frame), zone=zone))
         i += 1
     return env.outcome

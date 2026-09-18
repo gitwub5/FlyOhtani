@@ -149,3 +149,36 @@ class TestOnlyTheEyeCarriesThePitch:
         assert np.array_equal(obs_a.joint_vel_rad_s, obs_b.joint_vel_rad_s)
         assert not np.array_equal(obs_a.eye_left, obs_b.eye_left), "the eye saw no difference"
         assert np.array_equal(a.joint_angle_rad, b.joint_angle_rad)
+
+
+class TestPolicies:
+    """The wiring from eye to action. What it achieves is a measurement and
+    lives in docs/records/BRAIN-CIRCUIT.md, not in an assertion here."""
+
+    def test_the_fixed_frame_policy_swings_when_told_and_sees_nothing(self, env):
+        from flyohtani.task.policy import FixedFramePolicy, run_episode
+        out = run_episode(env, FixedFramePolicy(frame=4))
+        assert out.swung and out.swing_frame == 4
+
+    def test_the_circuit_policy_runs_end_to_end_and_records_its_own_trace(self, env):
+        from flyohtani.task.policy import CircuitPolicy, run_episode
+        policy = CircuitPolicy()
+        out = run_episode(env, policy)
+        assert policy.trace, "no trace"
+        assert {"t_s", "lc_spikes", "dn_spikes", "swing"} <= set(policy.trace[0])
+        assert out.frames_seen == len(policy.trace)
+
+    def test_the_motor_delay_shifts_the_swing_by_exactly_that_many_frames(self, env):
+        """The measured offset between this circuit's commit and the frame
+        that connects is a constant, so the parameter that fixes it has to
+        behave like one."""
+        from flyohtani.task.policy import CircuitPolicy, run_episode
+        base = run_episode(env, CircuitPolicy(motor_delay_frames=0))
+        delayed = run_episode(env, CircuitPolicy(motor_delay_frames=2))
+        assert base.swung and delayed.swung
+        assert delayed.swing_frame == base.swing_frame + 2
+
+    def test_a_policy_that_never_commits_ends_the_episode_without_swinging(self, env):
+        from flyohtani.task.policy import CircuitPolicy, run_episode
+        out = run_episode(env, CircuitPolicy(spikes_to_swing=10_000))
+        assert not out.swung and not out.contact
