@@ -32,35 +32,53 @@ from typing import ClassVar
 import numpy as np
 
 from flyohtani.brain.circuit import LoomingCircuit
+from flyohtani.brain.connectome import LoomingSubgraph
 from flyohtani.task import rewards
 from flyohtani.task.env import BattingEnv, PitchSpec
 from flyohtani.task.pitches import evaluation_pitches, training_pitches
 from flyohtani.task.policy import CircuitPolicy, FixedFramePolicy, run_episode
+from flyohtani.world import batter as B
 
 
 @dataclass(frozen=True)
 class Genome:
     """Everything the search may move. Bounds are the ranges over which the
     quantity means anything -- a 12-frame motor delay is longer than the
-    pitch, a zone boundary outside the measured rise rates is a constant."""
+    pitch, a zone boundary outside the measured rise rates is a constant.
+
+    That last clause was true of this class's own bounds. `zone_rise_boundary`
+    was allowed (-0.40, 0.20) while the feature it thresholds actually ranges
+    -1.385 .. -0.860 in this scene (`studies.zone_rise`, 12 genomes x 12
+    pitches): EVERY value the search could reach read every pitch as "high",
+    so the parameter was dead and the D36 results contain no zone readout.
+    The bounds below are the measured range plus about 0.2 on each side, so
+    the two constant answers stay reachable too -- if never reading the zone
+    really is better, the search should be able to say so."""
 
     motor_delay_frames: int = 3
     spikes_to_swing: int = 1
-    zone_rise_boundary: float = -0.09
+    zone_rise_boundary: float = -1.12
     zone_window_frames: int = 5
     input_gain_scale: float = 1.0
 
     BOUNDS: ClassVar[dict[str, tuple[float, float]]] = {
         "motor_delay_frames": (0, 8),
         "spikes_to_swing": (1, 4),
-        "zone_rise_boundary": (-0.40, 0.20),
+        "zone_rise_boundary": (-1.60, -0.70),
         "zone_window_frames": (3, 9),
         "input_gain_scale": (0.4, 2.5),
     }
 
-    def policy(self) -> CircuitPolicy:
+    def policy(self, graph: LoomingSubgraph | None = None) -> CircuitPolicy:
+        """`graph` swaps the wiring the circuit runs on. It is NOT part of the
+        genome: the search does not get to choose its own connectome. It is
+        how the shuffled control is run -- same search, same bounds, same
+        pitches, one thing different."""
+        circuit = (LoomingCircuit(graph=graph, input_gain=13_500.0 * self.input_gain_scale)
+                   if graph is not None
+                   else LoomingCircuit(input_gain=13_500.0 * self.input_gain_scale))
         return CircuitPolicy(
-            circuit=LoomingCircuit(input_gain=13_500.0 * self.input_gain_scale),
+            circuit=circuit,
             spikes_to_swing=self.spikes_to_swing,
             motor_delay_frames=self.motor_delay_frames,
             zone_rise_boundary=self.zone_rise_boundary,
@@ -104,9 +122,10 @@ class Score:
 
 
 def evaluate(genome: Genome, pitches: list[PitchSpec], reward_name: str,
-             env: BattingEnv | None = None) -> Score:
+             env: BattingEnv | None = None,
+             graph: LoomingSubgraph | None = None) -> Score:
     env = env or BattingEnv()
-    policy = genome.policy()
+    policy = genome.policy(graph)
     reward_fn = rewards.get(reward_name)
     total = contact = zone = fair = 0.0
     for pitch in pitches:
@@ -126,47 +145,73 @@ and the connecting frame moved to 13, which made the search look better than
 it was. A baseline has to be the best a blind policy can do, not the best of
 three arbitrary ones."""
 
+BASELINE_ZONES = B.STRIKE_ZONES
+"""...and every stance it could take. The same argument as BASELINE_FRAMES,
+found one axis later: the D36 searches were compared against a baseline
+pinned to the middle zone, while the policies they scored had all converged
+on swinging at ONE zone every pitch. Sweeping frames but not zones measured
+"seeing beats not seeing" with the stance folded in on one side only."""
+
+_BASELINE_CACHE: dict[tuple, dict[str, Score]] = {}
+"""The sweep is deterministic in (pitches, reward) and now costs
+len(frames) x len(zones) x len(pitches) episodes, so three seeds against the
+same held-out set would otherwise pay for the identical sweep three times."""
+
 
 def baseline_scores(pitches: list[PitchSpec], reward_name: str,
                     env: BattingEnv | None = None) -> dict[str, Score]:
     """Policies that cannot see, for the search to be measured against. Every
-    frame is tried and the best one is what the search has to beat."""
+    frame at every zone is tried and the best one is what the search has to
+    beat."""
+    key = (reward_name, tuple((p.zone, round(p.timing_ms, 9)) for p in pitches))
+    if key in _BASELINE_CACHE:
+        return _BASELINE_CACHE[key]
     env = env or BattingEnv()
     reward_fn = rewards.get(reward_name)
     out = {}
-    for frame in BASELINE_FRAMES:
-        total = contact = zone = fair = 0.0
-        policy = FixedFramePolicy(frame)
-        for pitch in pitches:
-            o = run_episode(env, policy, pitch)
-            total += reward_fn(o)
-            contact += o.contact
-            zone += o.swing_zone == o.pitch_zone
-            fair += bool(o.fair)
-        n = len(pitches)
-        out[f"fixed-frame-{frame}"] = Score(total / n, contact / n, zone / n, fair / n, n)
+    for swing_zone in BASELINE_ZONES:
+        for frame in BASELINE_FRAMES:
+            total = contact = zone = fair = 0.0
+            policy = FixedFramePolicy(frame, swing_zone)
+            for pitch in pitches:
+                o = run_episode(env, policy, pitch)
+                total += reward_fn(o)
+                contact += o.contact
+                zone += o.swing_zone == o.pitch_zone
+                fair += bool(o.fair)
+            n = len(pitches)
+            out[f"fixed-{swing_zone}-{frame}"] = Score(total / n, contact / n, zone / n, fair / n, n)
     best = max(out, key=lambda k: out[k].reward)
     out["best-blind"] = out[best]
-    out["best-blind-frame"] = Score(float(best.rsplit("-", 1)[1]), 0.0, 0.0, 0.0, 0)
+    out["best-blind-at"] = best
+    _BASELINE_CACHE[key] = out
     return out
 
 
 def search(reward_name: str = "carry-v1", generations: int = 6, population: int = 12,
-           train_pitches: int = 16, seed: int = 0, out_path: Path | None = None) -> dict:
+           train_pitches: int = 16, seed: int = 0, out_path: Path | None = None,
+           baselines: dict[str, Score] | None = None,
+           graph: LoomingSubgraph | None = None,
+           condition: str = "real-wiring") -> dict:
     """(mu + lambda) hill climbing from a random start. Small on purpose: the
     point is whether the free parameters can be set at all, not to squeeze a
-    number out of a big search."""
+    number out of a big search.
+
+    `baselines` takes a sweep computed elsewhere. It does not depend on the
+    seed -- a blind policy is the same policy whatever the search did -- and
+    sweeping frames x zones over the held-out set is now the expensive half
+    of a run, so several seeds share one instead of each recomputing it."""
     rng = np.random.default_rng(seed)
     env = BattingEnv()
     train = training_pitches(train_pitches)
     held_out = evaluation_pitches(30)
 
     parent = Genome()
-    parent_score = evaluate(parent, train, reward_name, env)
+    parent_score = evaluate(parent, train, reward_name, env, graph)
     history = [{"generation": 0, "genome": parent.__dict__ | {}, "train_reward": parent_score.reward}]
     for g in range(1, generations + 1):
         children = [parent.mutated(rng) for _ in range(population - 1)] + [Genome.random(rng)]
-        scored = [(evaluate(c, train, reward_name, env), c) for c in children]
+        scored = [(evaluate(c, train, reward_name, env, graph), c) for c in children]
         best_score, best = max(scored, key=lambda s: s[0].reward)
         if best_score.reward > parent_score.reward:
             parent, parent_score = best, best_score
@@ -174,9 +219,13 @@ def search(reward_name: str = "carry-v1", generations: int = 6, population: int 
                         "train_reward": parent_score.reward,
                         "train_contact": parent_score.contact_rate})
 
-    final = evaluate(parent, held_out, reward_name, env)
+    final = evaluate(parent, held_out, reward_name, env, graph)
+    blind = baselines if baselines is not None else baseline_scores(held_out, reward_name, env)
     result = {
         "reward": reward_name,
+        "condition": condition,
+        "wiring_provenance": (graph.provenance.get("derived") if graph is not None
+                              else "MaleCNS v1.0 as released"),
         "seed": seed,
         "generations": generations,
         "population": population,
@@ -184,7 +233,8 @@ def search(reward_name: str = "carry-v1", generations: int = 6, population: int 
         "best_genome": dict(parent.__dict__),
         "train_reward": parent_score.reward,
         "held_out": final.__dict__,
-        "baselines_held_out": {k: v.__dict__ for k, v in baseline_scores(held_out, reward_name, env).items()},
+        "baselines_held_out": {k: (v.__dict__ if isinstance(v, Score) else v)
+                               for k, v in blind.items()},
         "history": history,
     }
     if out_path:

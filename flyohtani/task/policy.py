@@ -64,15 +64,24 @@ class CircuitPolicy:
     spikes_to_swing: int = DN_SPIKES_TO_SWING
     window_s: float = DECODE_WINDOW_S
     motor_delay_frames: int = MOTOR_DELAY_FRAMES
-    zone_rise_boundary: float = -0.09
+    zone_rise_boundary: float = -1.12
     """Rows per frame separating a high pitch from a low one.
 
     The zone is read from how fast the ball CLIMBS the image, not from where
     it is. Position turned out to carry the clock as much as the zone: the
     ball rises from row 17 to row 11 over a flight, which swamps the ~1 px
     the zones differ by, and a readout taken whenever the circuit happened to
-    commit scored at chance (31%). The climb rate does not drift that way --
-    measured, -0.17 rows/frame for a high pitch against +0.01 for a low one.
+    commit scored at chance (31%). The climb rate does not drift that way.
+
+    THE NUMBER IS SCENE-SPECIFIC, which cost a whole set of results. It was
+    -0.09, calibrated when the ball was released 122 mm from the plate (D32).
+    D35 moved the release to the pitcher's hand at 34 mm; the ball sweeps the
+    image faster from there and the rise at commit moved to about -1.0 .. -1.4
+    (`studies.zone_rise`). Nothing failed loudly. The boundary simply sat
+    above every value it could ever see, so `_read_zone` answered "high" to
+    every pitch, and all three D36 searches converged on a policy with no
+    zone readout at all. The value here is now the middle of the MEASURED
+    range -- a CHOSEN starting point inside a live range, not an optimum.
 
     Two zones, not three: the middle zone is not separable from the low one
     by this eye (d = 0.46), and pretending otherwise would be reading noise.
@@ -172,11 +181,19 @@ class CircuitPolicy:
 
 @dataclass
 class FixedFramePolicy:
-    """Swings on frame `frame`, having seen nothing. The baseline -- and the
-    thing G3 exists to catch: if a seeing policy cannot beat it across
-    varying pitches, the seeing is decorative."""
+    """Swings on frame `frame`, at `zone`, having seen nothing. The baseline
+    -- and the thing G3 exists to catch: if a seeing policy cannot beat it
+    across varying pitches, the seeing is decorative.
+
+    `zone` exists because leaving it at the default was quietly unfair. A
+    blind policy that always swings at the middle zone cannot reach a high
+    pitch no matter which frame it picks, so a seeing policy that commits to
+    ONE zone -- which is what the D36 searches actually converged on -- was
+    being compared against an opponent forbidden to make that same choice.
+    Blind means "cannot see the pitch", not "cannot pick a stance"."""
 
     frame: int
+    zone: str = "middle"
     _i: int = 0
 
     def reset(self) -> None:
@@ -185,7 +202,7 @@ class FixedFramePolicy:
     def __call__(self, obs: BatObservation) -> Action:
         swing = self._i == self.frame
         self._i += 1
-        return Action(swing=swing)
+        return Action(swing=swing, zone=self.zone)
 
 
 def run_episode(env, policy, pitch=None):

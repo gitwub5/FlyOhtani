@@ -13,6 +13,14 @@ from flyohtani.task.outcome import Outcome
 from flyohtani.world import batter as B
 
 
+@pytest.fixture(scope="module")
+def env():
+    from flyohtani.task.env import BattingEnv
+    e = BattingEnv()
+    yield e
+    e.close()
+
+
 class TestPitches:
     def test_training_and_evaluation_draws_are_disjoint_streams(self):
         assert pitches.TRAINING_SEED != pitches.EVALUATION_SEED
@@ -105,3 +113,49 @@ class TestSearch:
         assert score.n == 2
         assert 0.0 <= score.contact_rate <= 1.0
         assert score.reward == pytest.approx(score.contact_rate)
+
+
+class TestTheZoneBoundaryCanStillBeReached:
+    """The bounds of `zone_rise_boundary` against the feature it thresholds.
+
+    This is here because the two came apart silently and stayed apart across
+    a whole set of results. The boundary is a threshold on the ball's climb
+    rate in the eye, and that rate depends on the scene: D35 moved the
+    release from 122 mm to the pitcher's hand at 34 mm, the rate moved by
+    roughly a factor of ten, and the search's allowed range no longer
+    contained any value that separated anything. Every pitch read "high".
+    Nothing raised, nothing failed, and three seeds of results were reported
+    with a dead parameter in them.
+
+    So the measurement is a test now. If the scene changes again, this fails
+    and names the new range instead of leaving it to be noticed later.
+    `flyohtani.studies.zone_rise` is the full version; this is the cheap one.
+    """
+
+    def test_the_search_can_reach_the_rise_rates_the_eye_actually_produces(self, env):
+        from flyohtani.studies.zone_rise import measure
+
+        result = measure(genomes=[("default", learn.Genome()),
+                                  ("gain-2x", learn.Genome(input_gain_scale=2.0))],
+                         env=env)
+        lo, hi = learn.Genome.BOUNDS["zone_rise_boundary"]
+        assert lo <= result["observed_min"], (
+            f"the ball climbs at {result['observed_min']:+.3f} rows/frame but the search "
+            f"cannot try anything below {lo:+.3f} -- re-run studies.zone_rise and reset the bounds")
+        assert result["observed_max"] <= hi, (
+            f"the ball climbs at {result['observed_max']:+.3f} rows/frame but the search "
+            f"cannot try anything above {hi:+.3f} -- re-run studies.zone_rise and reset the bounds")
+
+    def test_the_default_boundary_is_one_the_search_is_allowed_to_hold(self):
+        lo, hi = learn.Genome.BOUNDS["zone_rise_boundary"]
+        assert lo <= learn.Genome().zone_rise_boundary <= hi
+
+    def test_a_high_pitch_climbs_faster_than_a_low_one(self, env):
+        """The sign of the signal, which is what makes the zone readable at
+        all. Its size is a measurement and lives in docs/records/."""
+        from flyohtani.studies.zone_rise import measure
+
+        rows = measure(genomes=[("default", learn.Genome())], env=env)["rows"]
+        high, low = rows[0]["high"], rows[0]["low"]
+        assert high and low, "the circuit never committed, so nothing was read"
+        assert high["mean"] < low["mean"]
