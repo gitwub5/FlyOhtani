@@ -1,0 +1,332 @@
+{
+ "ball_radius_mm": 0.15071340428913874,
+ "eye_rate_hz": 480,
+ "pixel_deg": 0.625,
+ "timings_ms": [
+  -2.0,
+  0.0,
+  2.0
+ ],
+ "conditions": [
+  {
+   "flight_s": 0.052,
+   "speed_mm_s": 689.3795880297029,
+   "launch_angle_deg": 17.51267075434242,
+   "eye_aimed_for_this_flight": true,
+   "reads": [
+    {
+     "swing_to_contact_s": 0.0246,
+     "window_ms": 17.4,
+     "deadline_frame": 8.0,
+     "peak_by_deadline": 0.28476066265706484,
+     "peak_overall": 0.6744607178527667,
+     "fraction_available": 0.4424693006151051,
+     "peak_frame": 18.0,
+     "peak_arrives_ms_late": 20.833333333333332,
+     "distance_at_deadline_mm": 23.152868984320357,
+     "angular_diameter_deg": 0.7459222459512852,
+     "pixels_across": 1.1934755935220562,
+     "eye_rate_needed_hz": 459.7701149425288
+    },
+    {
+     "swing_to_contact_s": 0.02,
+     "window_ms": 22.0,
+     "deadline_frame": 10.0,
+     "peak_by_deadline": 0.3205089489341479,
+     "peak_overall": 0.6744607178527667,
+     "fraction_available": 0.47520773330510596,
+     "peak_frame": 18.0,
+     "peak_arrives_ms_late": 16.666666666666668,
+     "distance_at_deadline_mm": 20.39453342619929,
+     "angular_diameter_deg": 0.846803858157955,
+     "pixels_across": 1.354886173052728,
+     "eye_rate_needed_hz": 363.6363636363637
+    },
+    {
+     "swing_to_contact_s": 0.015,
+     "window_ms": 26.999999999999996,
+     "deadline_frame": 12.0,
+     "peak_by_deadline": 0.3374079450432448,
+     "peak_overall": 0.6744607178527667,
+     "fraction_available": 0.5311820232558342,
+     "peak_frame": 18.0,
+     "peak_arrives_ms_late": 12.5,
+     "distance_at_deadline_mm": 17.636197868078213,
+     "angular_diameter_deg": 0.9792396126033863,
+     "pixels_across": 1.566783380165418,
+     "eye_rate_needed_hz": 296.29629629629636
+    },
+    {
+     "swing_to_contact_s": 0.01,
+     "window_ms": 31.999999999999993,
+     "deadline_frame": 15.0,
+     "peak_by_deadline": 0.3439403121872038,
+     "peak_overall": 0.6744607178527667,
+     "fraction_available": 0.5311820232558342,
+     "peak_frame": 18.0,
+     "peak_arrives_ms_late": 6.25,
+     "distance_at_deadline_mm": 13.498694530896607,
+     "angular_diameter_deg": 1.2793656707323886,
+     "pixels_across": 2.0469850731718218,
+     "eye_rate_needed_hz": 250.00000000000006
+    }
+   ]
+  },
+  {
+   "flight_s": 0.065,
+   "speed_mm_s": 596.1762111972868,
+   "launch_angle_deg": 28.092111138757115,
+   "eye_aimed_for_this_flight": false,
+   "reads": [
+    {
+     "swing_to_contact_s": 0.0246,
+     "window_ms": 30.400000000000002,
+     "deadline_frame": 14.0,
+     "peak_by_deadline": 0.2996789761138385,
+     "peak_overall": 0.2996789761138385,
+     "fraction_available": 1.0,
+     "peak_frame": 7.0,
+     "peak_arrives_ms_late": -14.583333333333334,
+     "distance_at_deadline_mm": 18.739532091326645,
+     "angular_diameter_deg": 0.9215871307960388,
+     "pixels_across": 1.4745394092736621,
+     "eye_rate_needed_hz": 263.1578947368421
+    },
+    {
+     "swing_to_contact_s": 0.02,
+     "window_ms": 34.99999999999999,
+     "deadline_frame": 16.0,
+     "peak_by_deadline": 0.2996789761138385,
+     "peak_overall": 0.2996789761138385,
+     "fraction_available": 1.0,
+     "peak_frame": 7.0,
+     "peak_arrives_ms_late": -18.75,
+     "distance_at_deadline_mm": 16.53286364482979,
+     "angular_diameter_deg": 1.0445864648043086,
+     "pixels_across": 1.6713383436868938,
+     "eye_rate_needed_hz": 228.57142857142858
+    },
+    {
+     "swing_to_contact_s": 0.015,
+     "window_ms": 40.0,
+     "deadline_frame": 19.0,
+     "peak_by_deadline": 0.2996789761138385,
+     "peak_overall": 0.2996789761138385,
+     "fraction_available": 1.0,
+     "peak_frame": 7.0,
+     "peak_arrives_ms_late": -25.0,
+     "distance_at_deadline_mm": 13.222860975084505,
+     "angular_diameter_deg": 1.3060514034883373,
+     "pixels_across": 2.0896822455813395,
+     "eye_rate_needed_hz": 200.0
+    },
+    {
+     "swing_to_contact_s": 0.01,
+     "window_ms": 45.0,
+     "deadline_frame": 21.0,
+     "peak_by_deadline": 0.2996789761138385,
+     "peak_overall": 0.2996789761138385,
+     "fraction_available": 1.0,
+     "peak_frame": 7.0,
+     "peak_arrives_ms_late": -29.166666666666668,
+     "distance_at_deadline_mm": 11.016192528587649,
+     "angular_diameter_deg": 1.5676384125631557,
+     "pixels_across": 2.508221460101049,
+     "eye_rate_needed_hz": 177.77777777777777
+    }
+   ]
+  },
+  {
+   "flight_s": 0.08,
+   "speed_mm_s": 559.6924036230083,
+   "launch_angle_deg": 40.225875937758765,
+   "eye_aimed_for_this_flight": false,
+   "reads": [
+    {
+     "swing_to_contact_s": 0.0246,
+     "window_ms": 45.400000000000006,
+     "deadline_frame": 21.0,
+     "peak_by_deadline": 0.2586907911343627,
+     "peak_overall": 0.2586907911343627,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -37.5,
+     "distance_at_deadline_mm": 15.360571032628332,
+     "angular_diameter_deg": 1.1243025895063914,
+     "pixels_across": 1.7988841432102263,
+     "eye_rate_needed_hz": 176.21145374449338
+    },
+    {
+     "swing_to_contact_s": 0.02,
+     "window_ms": 49.99999999999999,
+     "deadline_frame": 23.0,
+     "peak_by_deadline": 0.2586907911343627,
+     "peak_overall": 0.2586907911343627,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -41.666666666666664,
+     "distance_at_deadline_mm": 13.567652919849635,
+     "angular_diameter_deg": 1.2728637561539178,
+     "pixels_across": 2.0365820098462684,
+     "eye_rate_needed_hz": 160.0
+    },
+    {
+     "swing_to_contact_s": 0.015,
+     "window_ms": 55.0,
+     "deadline_frame": 26.0,
+     "peak_by_deadline": 0.2586907911343627,
+     "peak_overall": 0.2586907911343627,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -47.91666666666667,
+     "distance_at_deadline_mm": 10.878275750681592,
+     "angular_diameter_deg": 1.587510693325916,
+     "pixels_across": 2.5400171093214654,
+     "eye_rate_needed_hz": 145.45454545454547
+    },
+    {
+     "swing_to_contact_s": 0.01,
+     "window_ms": 60.00000000000001,
+     "deadline_frame": 28.0,
+     "peak_by_deadline": 0.2586907911343627,
+     "peak_overall": 0.2586907911343627,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -52.083333333333336,
+     "distance_at_deadline_mm": 9.085357637902895,
+     "angular_diameter_deg": 1.900739710985334,
+     "pixels_across": 3.041183537576534,
+     "eye_rate_needed_hz": 133.33333333333331
+    }
+   ]
+  },
+  {
+   "flight_s": 0.1,
+   "speed_mm_s": 577.7404616751215,
+   "launch_angle_deg": 53.72065239535395,
+   "eye_aimed_for_this_flight": false,
+   "reads": [
+    {
+     "swing_to_contact_s": 0.0246,
+     "window_ms": 65.40000000000002,
+     "deadline_frame": 31.0,
+     "peak_by_deadline": 0.20974311963867676,
+     "peak_overall": 0.20974311963867676,
+     "fraction_available": 1.0,
+     "peak_frame": 5.0,
+     "peak_arrives_ms_late": -54.16666666666667,
+     "distance_at_deadline_mm": 11.95402661834881,
+     "angular_diameter_deg": 1.4446654272475663,
+     "pixels_across": 2.311464683596106,
+     "eye_rate_needed_hz": 122.3241590214067
+    },
+    {
+     "swing_to_contact_s": 0.02,
+     "window_ms": 70.0,
+     "deadline_frame": 33.0,
+     "peak_by_deadline": 0.20974311963867676,
+     "peak_overall": 0.20974311963867676,
+     "fraction_available": 1.0,
+     "peak_frame": 5.0,
+     "peak_arrives_ms_late": -58.333333333333336,
+     "distance_at_deadline_mm": 10.51969212812585,
+     "angular_diameter_deg": 1.6416167194165674,
+     "pixels_across": 2.6265867510665077,
+     "eye_rate_needed_hz": 114.28571428571428
+    },
+    {
+     "swing_to_contact_s": 0.015,
+     "window_ms": 75.00000000000001,
+     "deadline_frame": 36.0,
+     "peak_by_deadline": 0.20974311963867676,
+     "peak_overall": 0.20974311963867676,
+     "fraction_available": 1.0,
+     "peak_frame": 5.0,
+     "peak_arrives_ms_late": -64.58333333333334,
+     "distance_at_deadline_mm": 8.36819039279142,
+     "angular_diameter_deg": 2.063602305185476,
+     "pixels_across": 3.3017636882967616,
+     "eye_rate_needed_hz": 106.66666666666666
+    },
+    {
+     "swing_to_contact_s": 0.01,
+     "window_ms": 80.00000000000001,
+     "deadline_frame": 38.0,
+     "peak_by_deadline": 0.20974311963867676,
+     "peak_overall": 0.20974311963867676,
+     "fraction_available": 1.0,
+     "peak_frame": 5.0,
+     "peak_arrives_ms_late": -68.75,
+     "distance_at_deadline_mm": 6.93385590256846,
+     "angular_diameter_deg": 2.490355319517371,
+     "pixels_across": 3.9845685112277933,
+     "eye_rate_needed_hz": 99.99999999999999
+    }
+   ]
+  },
+  {
+   "flight_s": 0.13,
+   "speed_mm_s": 672.1792854935487,
+   "launch_angle_deg": 66.969486231315,
+   "eye_aimed_for_this_flight": false,
+   "reads": [
+    {
+     "swing_to_contact_s": 0.0246,
+     "window_ms": 95.4,
+     "deadline_frame": 45.0,
+     "peak_by_deadline": 0.1768402973560465,
+     "peak_overall": 0.1768402973560465,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -87.5,
+     "distance_at_deadline_mm": 9.361191193715001,
+     "angular_diameter_deg": 1.8447430082400051,
+     "pixels_across": 2.9515888131840082,
+     "eye_rate_needed_hz": 83.85744234800838
+    },
+    {
+     "swing_to_contact_s": 0.02,
+     "window_ms": 100.0,
+     "deadline_frame": 48.0,
+     "peak_by_deadline": 0.1768402973560465,
+     "peak_overall": 0.1768402973560465,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -93.75,
+     "distance_at_deadline_mm": 7.706189858842357,
+     "angular_diameter_deg": 2.240832737628307,
+     "pixels_across": 3.5853323802052914,
+     "eye_rate_needed_hz": 80.0
+    },
+    {
+     "swing_to_contact_s": 0.015,
+     "window_ms": 105.00000000000001,
+     "deadline_frame": 50.0,
+     "peak_by_deadline": 0.1768402973560465,
+     "peak_overall": 0.1768402973560465,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -97.91666666666667,
+     "distance_at_deadline_mm": 6.602855635593929,
+     "angular_diameter_deg": 2.6151541892898647,
+     "pixels_across": 4.184246702863783,
+     "eye_rate_needed_hz": 76.19047619047619
+    },
+    {
+     "swing_to_contact_s": 0.01,
+     "window_ms": 110.00000000000001,
+     "deadline_frame": 52.0,
+     "peak_by_deadline": 0.1768402973560465,
+     "peak_overall": 0.1768402973560465,
+     "fraction_available": 1.0,
+     "peak_frame": 3.0,
+     "peak_arrives_ms_late": -102.08333333333333,
+     "distance_at_deadline_mm": 5.499521412345501,
+     "angular_diameter_deg": 3.1395754464382115,
+     "pixels_across": 5.023320714301138,
+     "eye_rate_needed_hz": 72.72727272727272
+    }
+   ]
+  }
+ ]
+}
