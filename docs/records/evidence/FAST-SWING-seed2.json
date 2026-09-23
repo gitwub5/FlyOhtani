@@ -1,0 +1,181 @@
+{
+ "criteria": {
+  "ceiling_rad_s": 300.0,
+  "attack_range_deg": [
+   5.0,
+   15.0
+  ],
+  "speed_floor_mm_s": 400.0,
+  "tracking_tol_mm": 0.2
+ },
+ "status_quo": {
+  "duration_s": 0.04,
+  "analytic_minimum_s": 0.03810252164266483,
+  "max_joint_travel_deg": 260.59000000000003,
+  "zones": [
+   {
+    "zone": "high",
+    "speed_mm_s": 511.69499126917214,
+    "attack_deg": 11.593779397014162,
+    "peak_joint_speed_rad_s": 284.602187278421,
+    "clearance_mm": 0.8025976966236104,
+    "closest_mm": 0.04899973754653506,
+    "time_to_contact_s": 0.024600000000000448
+   },
+   {
+    "zone": "middle",
+    "speed_mm_s": 516.7699821322188,
+    "attack_deg": 8.849278362685496,
+    "peak_joint_speed_rad_s": 283.9156654327128,
+    "clearance_mm": 0.7342832584511021,
+    "closest_mm": 0.10821736211906507,
+    "time_to_contact_s": 0.024575000000000447
+   },
+   {
+    "zone": "low",
+    "speed_mm_s": 526.2903627920545,
+    "attack_deg": 6.878984915804258,
+    "peak_joint_speed_rad_s": 283.38623737616206,
+    "clearance_mm": 0.6321353868985169,
+    "closest_mm": 0.165303114191359,
+    "time_to_contact_s": 0.024575000000000447
+   }
+  ]
+ },
+ "yaw_sweep": [
+  {
+   "yaw_gap_deg": 45.0,
+   "feasible": false,
+   "duration_s": null,
+   "min_speed_mm_s": 450.6094191585997,
+   "attack_min_deg": 31.05075997354859,
+   "attack_max_deg": 54.137469443043926,
+   "min_clearance_mm": 0.5061370488417528,
+   "max_closest_mm": 0.10433380812031368
+  },
+  {
+   "yaw_gap_deg": 60.0,
+   "feasible": false,
+   "duration_s": null,
+   "min_speed_mm_s": 514.4647867697431,
+   "attack_min_deg": 27.275603446027816,
+   "attack_max_deg": 47.45722631014326,
+   "min_clearance_mm": 0.511533603591964,
+   "max_closest_mm": 0.09302689509458453
+  },
+  {
+   "yaw_gap_deg": 90.0,
+   "feasible": false,
+   "duration_s": null,
+   "min_speed_mm_s": 601.5466012952954,
+   "attack_min_deg": 22.259416711155424,
+   "attack_max_deg": 36.62809983801212,
+   "min_clearance_mm": 0.539842610921013,
+   "max_closest_mm": 0.04441483435655335
+  },
+  {
+   "yaw_gap_deg": 120.0,
+   "feasible": false,
+   "duration_s": null,
+   "min_speed_mm_s": 581.0855908904028,
+   "attack_min_deg": 17.805991854217222,
+   "attack_max_deg": 27.73117671854188,
+   "min_clearance_mm": 0.5778979199790564,
+   "max_closest_mm": 0.09450242269480057
+  },
+  {
+   "yaw_gap_deg": 150.0,
+   "feasible": false,
+   "duration_s": null,
+   "min_speed_mm_s": 566.8251328204866,
+   "attack_min_deg": 14.088562420342328,
+   "attack_max_deg": 21.540696323998638,
+   "min_clearance_mm": 0.6002122118387764,
+   "max_closest_mm": 0.14203092861935104
+  },
+  {
+   "yaw_gap_deg": 180.0,
+   "feasible": false,
+   "duration_s": null,
+   "min_speed_mm_s": 554.974164421958,
+   "attack_min_deg": 11.294367731454273,
+   "attack_max_deg": 17.389803966851737,
+   "min_clearance_mm": 0.614178428952133,
+   "max_closest_mm": 0.1660482262387678
+  },
+  {
+   "yaw_gap_deg": 195.0,
+   "feasible": false,
+   "duration_s": null,
+   "min_speed_mm_s": 549.9841053725253,
+   "attack_min_deg": 10.1870452253486,
+   "attack_max_deg": 15.840944464748947,
+   "min_clearance_mm": 0.619266374609132,
+   "max_closest_mm": 0.17283420426943963
+  },
+  {
+   "yaw_gap_deg": 210.0,
+   "feasible": true,
+   "duration_s": 0.030705435914500225,
+   "min_speed_mm_s": 546.1099671214137,
+   "attack_min_deg": 9.243422197120983,
+   "attack_max_deg": 14.552255423417048,
+   "min_clearance_mm": 0.6234895269258356,
+   "max_closest_mm": 0.17737367241731342
+  },
+  {
+   "yaw_gap_deg": 260.6,
+   "feasible": true,
+   "duration_s": 0.03810398380627981,
+   "min_speed_mm_s": 537.9333168356463,
+   "attack_min_deg": 6.969217164757057,
+   "attack_max_deg": 11.486936968841652,
+   "min_clearance_mm": 0.6335460563168364,
+   "max_closest_mm": 0.18350518296627913
+  }
+ ],
+ "result": {
+  "seed": 2,
+  "found": true,
+  "seconds": 114.600754737854,
+  "duration_s": 0.01796402991554273,
+  "max_joint_travel_deg": 122.85923224696793,
+  "ready_pose_deg": {
+   "joint_RFCoxa_yaw": -117.45923224696794,
+   "joint_RFCoxa": 81.06292666603052,
+   "joint_RFFemur": 46.05980648429939,
+   "joint_RFTibia": -53.54577041042264,
+   "joint_RFTarsus1": -56.404329391370325
+  },
+  "swing_to_contact_s": 0.01177500000000008,
+  "zones": [
+   {
+    "zone": "high",
+    "speed_mm_s": 543.6662249808802,
+    "attack_deg": 14.964345496599945,
+    "peak_joint_speed_rad_s": 297.4214474026934,
+    "clearance_mm": 0.6497118617099468,
+    "closest_mm": 0.08375410916120418,
+    "time_to_contact_s": 0.01177500000000008
+   },
+   {
+    "zone": "middle",
+    "speed_mm_s": 541.7155273897184,
+    "attack_deg": 9.696390877307769,
+    "peak_joint_speed_rad_s": 295.83031435417524,
+    "clearance_mm": 0.6474357454763064,
+    "closest_mm": 0.14308360764323827,
+    "time_to_contact_s": 0.01177500000000008
+   },
+   {
+    "zone": "low",
+    "speed_mm_s": 548.4040277206279,
+    "attack_deg": 5.621771851333804,
+    "peak_joint_speed_rad_s": 294.8361660554716,
+    "clearance_mm": 0.6405154144481946,
+    "closest_mm": 0.1983678215902396,
+    "time_to_contact_s": 0.01177500000000008
+   }
+  ]
+ }
+}
