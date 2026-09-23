@@ -49,7 +49,8 @@ dynamics and the learning rule are **assumptions we made**.
 **The whole path runs.** The fly sees the ball only through its eye, the
 circuit decides when and where to swing, and a search tunes that decision. On
 30 pitches it has never seen, it beats the best policy that cannot see — on
-all three seeds tried (see [results](#results)).
+all three seeds tried on contact rate, and two of three on reward
+(see [results](#results)).
 
 What is verified today and what does not exist yet is in
 [STATUS](docs/records/STATUS.md) (Korean); the full plan and the design decisions
@@ -119,23 +120,40 @@ on one screen. Built by modifying
 **The fly sees the ball with its own eye and decides, by itself, when and
 where to swing.** On **30 pitches it was never trained on**, the learned
 policy beat the best policy that cannot see -- one that swings on a fixed
-frame -- on **all three seeds**.
+frame from a fixed stance -- on **all three seeds by contact rate, and two of
+three by reward**.
 
-| | Held-out reward | Contact | Fair |
-| --- | --- | --- | --- |
-| **Learned circuit** (seeds 3 · 4 · 5) | **0.877 · 0.566 · 0.613** | 0.30 · 0.30 · 0.23 | 0.23 · 0.10 · 0.20 |
-| Best policy that cannot see | 0.471 | 0.20 | 0.13 |
+| | Held-out reward | Contact | Fair | Zone read |
+| --- | --- | --- | --- | --- |
+| **Learned circuit** (seeds 3 · 4 · 5) | **1.537 · 0.980 · 0.696** | **0.70 · 0.43 · 0.50** | 0.43 · 0.27 · 0.13 | 0.67 · 0.67 · 0.47 |
+| Best policy that cannot see | 0.751 | 0.37 | 0.17 | — |
+
+**0.67 is a structural ceiling** on the zone read: a third of the held-out set
+is a middle pitch and the policy only ever outputs high or low. Seeds 3 and 4
+reach it exactly -- 10/10 on high pitches, 10/10 on low.
 
 That it really uses the eye was checked separately: **delay the pitch by 2 ms
 and the trigger moves by exactly one frame** (2.08 ms). A policy counting a
-clock would not have moved at all. The hit at the top of this page left the
-bat at 808 mm/s, +10°, and carried 28.9 mm -- about 14 m at human scale.
+clock would not have moved at all. The hit at the top of this page is from the
+previous run's policy (D36): 808 mm/s, +10°, carrying 28.9 mm -- about 14 m at
+human scale.
 
-> ⚠️ **A control with the wiring randomly shuffled scores the same** -- one of
-> three was identical. So this score **cannot be credited to the connectome's
-> structure.** The decoder currently says "swing if any descending neuron
-> fires", which makes all twelve interchangeable; what would have to change is
-> written up in [BRAIN-CIRCUIT](docs/records/BRAIN-CIRCUIT.md) (Korean).
+> 📝 **These numbers changed substantially on 2026-09-23.** The parameter that
+> reads the zone sat outside the search's bounds and was therefore **dead** --
+> every pitch read as "high" -- while the baseline was pinned to the middle
+> stance and was therefore **too weak**. Fixing both raised contact from 0.30
+> to 0.70 and the baseline from 0.471 to 0.751: **both sides got stronger and
+> the relative margin barely moved** (1.45x to 1.43x). Written up in
+> [LEARNING-01](docs/records/LEARNING-01.md) (Korean).
+
+> ⚠️ **A control with the wiring randomly shuffled beats this score.** The
+> whole search was re-run on shuffled wiring against the same 30 pitches: in
+> one of three matched pairs the shuffle came out ahead (0.696 vs **1.244**),
+> and that shuffle also beat the blind baseline and read the zone. So the
+> table above **cannot be credited to the connectome's structure**, and
+> "it beat a policy that cannot see" is not evidence of the connectome either.
+> The criterion was fixed before the run; the diagnosis and what would have to
+> change are in [BRAIN-CIRCUIT](docs/records/BRAIN-CIRCUIT.md) (Korean).
 
 <details>
 <summary><b>The checks it took to get here</b> — body, contact, connectome, vision (expand)</summary>

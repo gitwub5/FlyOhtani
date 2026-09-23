@@ -1,0 +1,561 @@
+{
+ "reward": "carry-v1",
+ "seed": 5,
+ "generations": 8,
+ "population": 10,
+ "train_pitches": 24,
+ "best_genome": {
+  "motor_delay_frames": 8,
+  "spikes_to_swing": 3,
+  "zone_rise_boundary": -1.2485718209824006,
+  "zone_window_frames": 4,
+  "input_gain_scale": 1.069365200582679
+ },
+ "train_reward": 1.3775381480826878,
+ "held_out": {
+  "reward": 0.6955514575177297,
+  "contact_rate": 0.5,
+  "zone_rate": 0.4666666666666667,
+  "fair_rate": 0.13333333333333333,
+  "n": 30
+ },
+ "baselines_held_out": {
+  "fixed-high-6": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-7": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-8": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-9": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-10": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-11": {
+   "reward": 0.20024448829006977,
+   "contact_rate": 0.1,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.03333333333333333,
+   "n": 30
+  },
+  "fixed-high-12": {
+   "reward": 0.523997769204395,
+   "contact_rate": 0.23333333333333334,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.13333333333333333,
+   "n": 30
+  },
+  "fixed-high-13": {
+   "reward": 0.5287041198250964,
+   "contact_rate": 0.3,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.16666666666666666,
+   "n": 30
+  },
+  "fixed-high-14": {
+   "reward": 0.4017881877715213,
+   "contact_rate": 0.13333333333333333,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.13333333333333333,
+   "n": 30
+  },
+  "fixed-high-15": {
+   "reward": 0.1,
+   "contact_rate": 0.1,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-16": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-17": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-18": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-19": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-20": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-21": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-22": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-23": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-24": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-high-25": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.16666666666666666,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-6": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-7": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-8": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-9": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-10": {
+   "reward": 0.20422548114799313,
+   "contact_rate": 0.1,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.1,
+   "n": 30
+  },
+  "fixed-middle-11": {
+   "reward": 0.4046018224252646,
+   "contact_rate": 0.23333333333333334,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.1,
+   "n": 30
+  },
+  "fixed-middle-12": {
+   "reward": 0.37003590063090946,
+   "contact_rate": 0.16666666666666666,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.13333333333333333,
+   "n": 30
+  },
+  "fixed-middle-13": {
+   "reward": 0.29268157443979065,
+   "contact_rate": 0.16666666666666666,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.06666666666666667,
+   "n": 30
+  },
+  "fixed-middle-14": {
+   "reward": 0.47112187345788,
+   "contact_rate": 0.2,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.13333333333333333,
+   "n": 30
+  },
+  "fixed-middle-15": {
+   "reward": 0.16931215474350836,
+   "contact_rate": 0.13333333333333333,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.03333333333333333,
+   "n": 30
+  },
+  "fixed-middle-16": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-17": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-18": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-19": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-20": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-21": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-22": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-23": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-24": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-middle-25": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.2,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-6": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-7": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-8": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-9": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-10": {
+   "reward": 0.03333333333333333,
+   "contact_rate": 0.03333333333333333,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-11": {
+   "reward": 0.3336768986355969,
+   "contact_rate": 0.13333333333333333,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.1,
+   "n": 30
+  },
+  "fixed-low-12": {
+   "reward": 0.7510550288650375,
+   "contact_rate": 0.36666666666666664,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.16666666666666666,
+   "n": 30
+  },
+  "fixed-low-13": {
+   "reward": 0.26728104100119565,
+   "contact_rate": 0.23333333333333334,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.03333333333333333,
+   "n": 30
+  },
+  "fixed-low-14": {
+   "reward": 0.13469223808337435,
+   "contact_rate": 0.1,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.03333333333333333,
+   "n": 30
+  },
+  "fixed-low-15": {
+   "reward": 0.3138448101766258,
+   "contact_rate": 0.13333333333333333,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.06666666666666667,
+   "n": 30
+  },
+  "fixed-low-16": {
+   "reward": 0.12203438048173476,
+   "contact_rate": 0.03333333333333333,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.03333333333333333,
+   "n": 30
+  },
+  "fixed-low-17": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-18": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-19": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-20": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-21": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-22": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-23": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-24": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.23333333333333334,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "fixed-low-25": {
+   "reward": 0.0,
+   "contact_rate": 0.0,
+   "zone_rate": 0.13333333333333333,
+   "fair_rate": 0.0,
+   "n": 30
+  },
+  "best-blind": {
+   "reward": 0.7510550288650375,
+   "contact_rate": 0.36666666666666664,
+   "zone_rate": 0.3333333333333333,
+   "fair_rate": 0.16666666666666666,
+   "n": 30
+  },
+  "best-blind-at": "fixed-low-12"
+ },
+ "history": [
+  {
+   "generation": 0,
+   "genome": {
+    "motor_delay_frames": 3,
+    "spikes_to_swing": 1,
+    "zone_rise_boundary": -1.12,
+    "zone_window_frames": 5,
+    "input_gain_scale": 1.0
+   },
+   "train_reward": 0.0
+  },
+  {
+   "generation": 1,
+   "genome": {
+    "motor_delay_frames": 3,
+    "spikes_to_swing": 1,
+    "zone_rise_boundary": -1.12,
+    "zone_window_frames": 5,
+    "input_gain_scale": 1.0
+   },
+   "train_reward": 0.0,
+   "train_contact": 0.0
+  },
+  {
+   "generation": 2,
+   "genome": {
+    "motor_delay_frames": 5,
+    "spikes_to_swing": 4,
+    "zone_rise_boundary": -0.881328988774505,
+    "zone_window_frames": 5,
+    "input_gain_scale": 0.5707960913637764
+   },
+   "train_reward": 0.12322214330067588,
+   "train_contact": 0.041666666666666664
+  },
+  {
+   "generation": 3,
+   "genome": {
+    "motor_delay_frames": 6,
+    "spikes_to_swing": 3,
+    "zone_rise_boundary": -1.1256041710986258,
+    "zone_window_frames": 3,
+    "input_gain_scale": 0.6419624862697321
+   },
+   "train_reward": 0.5193492830310206,
+   "train_contact": 0.3333333333333333
+  },
+  {
+   "generation": 4,
+   "genome": {
+    "motor_delay_frames": 7,
+    "spikes_to_swing": 4,
+    "zone_rise_boundary": -1.1078104962835562,
+    "zone_window_frames": 3,
+    "input_gain_scale": 0.7313048452919371
+   },
+   "train_reward": 0.9955642283764007,
+   "train_contact": 0.5416666666666666
+  },
+  {
+   "generation": 5,
+   "genome": {
+    "motor_delay_frames": 8,
+    "spikes_to_swing": 3,
+    "zone_rise_boundary": -1.1955501637087833,
+    "zone_window_frames": 3,
+    "input_gain_scale": 0.9793777661147389
+   },
+   "train_reward": 1.2466949802845917,
+   "train_contact": 0.7083333333333334
+  },
+  {
+   "generation": 6,
+   "genome": {
+    "motor_delay_frames": 8,
+    "spikes_to_swing": 3,
+    "zone_rise_boundary": -1.2299542847823153,
+    "zone_window_frames": 3,
+    "input_gain_scale": 0.9847666050190239
+   },
+   "train_reward": 1.323002272066862,
+   "train_contact": 0.7083333333333334
+  },
+  {
+   "generation": 7,
+   "genome": {
+    "motor_delay_frames": 8,
+    "spikes_to_swing": 3,
+    "zone_rise_boundary": -1.2299542847823153,
+    "zone_window_frames": 3,
+    "input_gain_scale": 0.9847666050190239
+   },
+   "train_reward": 1.323002272066862,
+   "train_contact": 0.7083333333333334
+  },
+  {
+   "generation": 8,
+   "genome": {
+    "motor_delay_frames": 8,
+    "spikes_to_swing": 3,
+    "zone_rise_boundary": -1.2485718209824006,
+    "zone_window_frames": 4,
+    "input_gain_scale": 1.069365200582679
+   },
+   "train_reward": 1.3775381480826878,
+   "train_contact": 0.6666666666666666
+  }
+ ]
+}
