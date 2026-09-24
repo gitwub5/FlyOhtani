@@ -117,24 +117,32 @@ and this one is measured (batter_check) rather than assumed."""
 
 EYE_RATE_HZ = 480
 """D31b. NOT an independent setting: the decision window is
-flight - swing - latency, and VM-01 asks for 8 frames inside it. See
-`min_eye_rate_hz`; 480 Hz is what the 55 ms pitch needs."""
+flight - swing_to_contact - latency, and VM-01 asks for 8 frames inside it.
+See `min_eye_rate_hz`. 480 Hz was what the pitch needed when the swing took
+24.6 ms to reach the ball (459 Hz required); after D37 the rule asks for 270
+and 480 is kept, so the eye is now comfortably faster than required rather
+than barely fast enough."""
 
 DECISION_LATENCY_S = 0.010
 MIN_DECISION_FRAMES = 8
 
-SWING_TO_CONTACT_S = 0.0246
+SWING_TO_CONTACT_S = 0.01235
 """Swing start -> the sweet spot passing the strike point, measured (and
 regression-tested against `world.rollout.dry_swing`).
 
-CORRECTION. VM-01 and D31/D32 used the WHOLE swing, 38 ms plus a 0.6
-follow-through, as the time a decision has to precede contact by. That is
-wrong: contact happens 23.2 ms into the swing, not after the follow-through.
-The real deadline is 25 ms later than those documents say -- the fly gets
-41.8 ms of looking, not 17 -- which the env's own baseline shows directly
-(the connecting trigger is frame 20 at 41.7 ms). Every visibility number
-measured under the old deadline therefore stands, but stands CONSERVATIVE:
-the frames it counted are the early, dimmest ones."""
+D37 halved it, from 0.0246. That is the whole point of D37: this number is
+subtracted from the flight time to get the fly's decision deadline, so every
+millisecond off it is a millisecond longer the fly may look, with the ball
+closer and larger when it finally commits. The decision window goes 17.4 ->
+29.65 ms and the eye rate the rule demands drops from 460 to 270 Hz (the eye
+runs at 480 either way).
+
+CORRECTION, kept because it is the reason this constant exists. VM-01 and
+D31/D32 used the WHOLE swing as the time a decision has to precede contact
+by. That is wrong: contact happens partway into the swing, not after the
+follow-through. Every visibility number measured under the old deadline
+therefore stands, but stands CONSERVATIVE -- the frames it counted are the
+early, dimmest ones."""
 
 
 def min_eye_rate_hz(flight_s: float = P.STANDARD.flight_s,
@@ -153,14 +161,29 @@ EYE_RESOLUTION = 32
 """Pixels per side, per eye. At a 120 deg field that is ~3.8 deg per pixel,
 close to a fruit fly's ~5 deg interommatidial angle. "Fly-like enough" (D28),
 not an ommatidia model."""
-EYE_FOVY_DEG = 20.0
-"""The LEFT eye: an acute zone, aimed down the pitch (D31b, narrowed by D32).
-20 deg over 32 px is 0.63 deg per pixel, six times D28's acuity. D31b used
-30 deg; the D32 pitch is released three times farther away, and at 30 deg the
-ball was no longer detectable there (0 of 9 frames against 9 of 9 at 20). VM-01 v2b measured that narrowing the field only works
-once the eye is aimed -- fixed sideways, the ball leaves a 30 deg field
-entirely. Real flies do have a frontal acute zone; this one is finer than a
-fruit fly's and looks the wrong way, so it is a departure, not a model."""
+EYE_FOVY_DEG = 15.0
+"""The LEFT eye: an acute zone, aimed down the pitch (D31b, narrowed by D32
+to 20 and by D38 to 15). 15 deg over 32 px is 0.47 deg per pixel, eight times
+D28's acuity.
+
+D38 is a MEASURED choice, not a guess at "more is better". With D37's
+deadline, `studies.eye_field` sweeps the field and asks how much of the
+flight's looming signal has arrived by the moment the fly must commit:
+
+    20 deg   64%      15 deg  100%      11 deg   95%
+    17 deg   77%      13 deg   95%       9 deg   76%
+
+15 is the WIDEST field at which all of it has arrived -- i.e. the smallest
+departure from a real fly's eye that stops the circuit having to decide
+before the looming exists, which is what BRAIN-CIRCUIT blamed the shuffled
+control's survival on. Narrower is not better: past 13 the signal keeps
+growing but the ball's expansion starts leaving the field before the
+deadline, and by 9 deg the fly is back to seeing three quarters of it.
+
+The ball's angular diameter at the deadline is 2.48 px here, against 1.86 at
+20 deg. VM-01's continuity criterion (>= 0.8 of decision-window frames detect
+the ball) passes at every field from 20 down to 9, so it is not what picked
+this -- it only says none of them lose the ball."""
 
 EYE_FOVY_WIDE_DEG = 120.0
 """The RIGHT eye keeps D28's wide fixed field. The fly stands side-on, so the
@@ -305,6 +328,11 @@ class SceneOptions:
     aim_eyes: bool = True
     """D31b. False restores D28's fixed sideways eyes -- kept so the change
     can be measured against what it replaced."""
+    eye_fovy_deg: float = EYE_FOVY_DEG
+    """The LEFT eye's acute zone, in degrees. An option for the same reason
+    `ball_scale` and `aim_eyes` are: it is a number the project has already
+    moved twice (D31b 30, D32 20) and will have to defend, so sweeping it has
+    to be possible without editing a constant. The right eye stays wide."""
 
 
 @dataclass
@@ -389,11 +417,18 @@ def _eye_cameras(model_probe: mujoco.MjModel, data_probe: mujoco.MjData,
 
 def decision_point(strike: np.ndarray, scale: float, swing_s: float | None = None) -> np.ndarray:
     """Where the ball is at the last instant a swing can still start. The
-    eyes are aimed here (D31b): it is the middle of what the fly has to see,
-    and aiming at the strike point instead would put the useful part of the
-    flight at the edge of a narrow field."""
+    eyes are aimed here (D31b): aiming at the strike point instead would put
+    the useful part of the flight at the edge of a narrow field.
+
+    CORRECTED in D37. This used the WHOLE swing, which is the same mistake
+    `SWING_TO_CONTACT_S` exists to record: the deadline is when the swing must
+    START for the sweet spot to reach the ball, and contact happens partway
+    into the swing, not after the follow-through. With the old 40 ms swing the
+    formula pointed the eye at 2 ms into a 52 ms flight -- essentially at the
+    pitcher's hand -- when the real deadline was 27.4 ms. The aim is now the
+    deadline it is named after."""
     release, v0, flight = P.geometry(strike, scale)
-    swing = DEMO_SWING_S if swing_s is None else swing_s
+    swing = SWING_TO_CONTACT_S if swing_s is None else swing_s
     t = max(flight - swing - DECISION_LATENCY_S, 0.0)
     g = np.array([0.0, 0.0, -units.GRAVITY])
     return release + v0 * t + 0.5 * g * t ** 2
@@ -603,7 +638,7 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
             cam.set("xyaxes", xy)
         for cam in root.iter("camera"):
             if cam.get("name") == "eye_L":
-                cam.set("fovy", repr(EYE_FOVY_DEG))
+                cam.set("fovy", repr(opts.eye_fovy_deg))
             elif cam.get("name") == "eye_R":
                 cam.set("fovy", repr(EYE_FOVY_WIDE_DEG))
 
@@ -612,29 +647,49 @@ def build_scene(opts: SceneOptions = DEFAULT_SCENE) -> Scene:
                  bat_length_mm=bat_len, ball_radius_mm=ball_r)
 
 
-READY_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, (-255.19, 87.79, 74.02, -19.58, -113.13)), strict=True))
-"""Where the fly waits. FOUND by `world.poses.find_ready_pose`, scored on
-what the swing out of it does at the moment of contact rather than on how it
-looks standing still.
+READY_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, (-117.46, 81.06, 46.06, -53.55, -56.40)), strict=True))
+"""Where the fly waits. FOUND by `world.poses.find_fast_ready_pose` (D37),
+scored on how LITTLE time the swing out of it takes, with the contact
+instant's speed and attack angle held as limits rather than as the objective.
+
+It replaced a pose that was 2.2x slower for one reason: its
+`joint_RFCoxa_yaw` sat 260.6 degrees from the contact poses while no other
+joint was more than 78.8 away, and a cosine ease peaks at
+dtheta * pi(1+follow) / (2*duration), so that joint alone set the swing's
+duration. Nothing had pushed back on it, because the search that produced it
+scored only the contact instant and never the path. The yaw now starts 122.9
+degrees out instead, and the other four joints have moved to keep the attack
+angle inside +5..+15 while it does.
+
+Measured consequence: the swing goes 40 -> 19 ms and swing-to-contact 24.60
+-> 12.35, WITHOUT costing bat speed (510-516 mm/s against 512-526) and
+without touching the ball, the eye, the pitch or the mound. Bat speed never
+depended on how far the arm travelled -- the joint-speed ceiling set it, and
+a shorter path just sweeps a smaller arc at the same rate. The point of the
+time is the fly's eye: the decision deadline is
+flight - swing_to_contact - latency, so this moves it 12 ms later and the
+ball is 1.19 -> ~1.8 pixels across when the fly has to commit
+(`studies.decision_window`, `docs/records/G1-FORELEG-SWING.md`).
+
+The pose this replaced was itself a correction, and that history is worth
+keeping: before it, the swing met the ball moving DOWNWARD at -18 degrees,
+chasing a pitch already falling at -23, and everything solid went into the
+dirt (launch -30 to -78, carries under 2 mm). Meeting the ball forward and
+slightly up is what fixed that, and is a limit here rather than something
+this search was free to trade away.
+
+ONE pose for all three zones, deliberately. The fly does not know where the
+pitch is going until it sees it, so a stance per zone would put the answer in
+the body before the question was asked. The search scores the WORST zone.
 
 The pose it replaced was chosen for its appearance -- bat up and back over
 the shoulder -- and the swing out of it met the ball moving DOWNWARD at -18
 degrees, chasing a pitch that already falls at -23. Everything solid went
 into the dirt: launch angles of -30 to -78 and carries under 2 mm.
 
-This one meets the ball moving forward and slightly up (+7 to +11.5 degrees
-across the three zones) at 539-557 mm/s, against 390 before, with the speed
-pointed at the ball instead of across it: the velocity at contact went from
-(251, 273, -121) to about (538, 1, 95). Measured consequence, same contact
-poses and same pitch: carry 0.30 mm -> 66 mm in the middle zone.
-
-ONE pose for all three zones, deliberately. The fly does not know where the
-pitch is going until it sees it, so a stance per zone would put the answer in
-the body before the question was asked. The search scores the WORST zone.
-
-Peak joint speed is 298-299 rad/s -- LIT-01's ceiling is 300, and the search
-stops exactly there, which is worth saying plainly: this swing is limited by
-the animal, not by the search."""
+Peak joint speed is 281 rad/s commanded and 281.4 measured through the
+collision -- LIT-01's ceiling is 300. The swing is limited by the animal,
+not by the search."""
 
 CONTACT_POSE_ANGLES_DEG = (5.4, 99.1, 15.2, -77.7, -34.3)
 CONTACT_POSE = dict(zip(ACTIVE_JOINTS, map(math.radians, CONTACT_POSE_ANGLES_DEG), strict=True))
@@ -675,27 +730,29 @@ joints reaching for one point is redundant, so the search is pulled toward
 the middle pose. What comes out differs mostly in one joint (the tibia, by
 about 13 degrees), which is what "swing higher" should look like."""
 
-DEMO_SWING_S = 0.040
+DEMO_SWING_S = 0.019
 DEMO_SWING_FOLLOW = 0.6
-"""Demo swing: 40 ms with a 0.6 follow-through.
+"""Demo swing: 19 ms with a 0.6 follow-through (D37).
 
-38 ms was the fastest the commanded swing could be inside LIT-01's 300 rad/s
-ceiling -- 299 rad/s -- but that left nothing for the COLLISION, which adds
-joint speed of its own: a recorded episode came out at 301.9. 40 ms brings
-the command to 283-285 and the impact fits underneath. The bat gives up 5%
-of its speed for it (512-526 mm/s against 539-557).
+17.96 ms is the fastest READY_POSE can be swung inside LIT-01's 300 rad/s
+ceiling, and it measures 297.4 through the collision -- a margin of 2.6.
+19 ms is that minimum plus 5%, which is the SAME RULE that set the previous
+swing (40 ms over an analytic 38.1), and it brings the margin to 18.6, a
+little better than the 15.4 the old swing had. The choice is the margin, not
+the outcome: 20 ms was also measured, gives more margin still and happens to
+put all three zones fair, and was not chosen for that -- picking the body by
+what it does to the carry is how a swing gets tuned to a reward.
 
-The point is where the peak lands. The old 27 ms / 0.1 swing peaked at
-590 mm/s in mid-swing and was already SLOWING at the contact point, arriving
-there at 224 mm/s. Carrying the swing further past contact moves the peak
-onto the ball: 390 mm/s at contact, 287 rad/s peak joint speed, lowest point
-0.985 mm, still clear of the ground. A 20-swing sweep of durations and
-follow-throughs is what picked it; everything faster broke the ceiling.
+The follow-through is what puts the peak on the ball rather than before it.
+An earlier 27 ms / 0.1 swing peaked at 590 mm/s in mid-swing and was already
+SLOWING when it reached the contact point, arriving at 224 mm/s; carrying the
+swing past contact moved the peak onto the ball. 0.6 is unchanged by D37 --
+only the stance and the duration moved.
 
 That is a fly's Ohtani, not a human's: Ohtani's bat speed Froude-scales to
-1535 mm/s, and this arm reaches a quarter of it. The batted ball does better
-than that ratio suggests, because a 1879 mm/s fastball brings its own
-momentum back off the bat."""
+1535 mm/s, and this arm reaches about a third of it (510-516 mm/s). The
+batted ball does better than that ratio suggests, because the pitch brings
+its own momentum back off the bat."""
 
 
 def swing_targets(t_s: float, duration_s: float = DEMO_SWING_S,

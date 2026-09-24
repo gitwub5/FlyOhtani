@@ -138,6 +138,13 @@ clock would not have moved at all. The hit at the top of this page is from the
 previous run's policy (D36): 808 mm/s, +10°, carrying 28.9 mm -- about 14 m at
 human scale.
 
+> ⚠️ **As of 2026-09-24 these numbers are stale.** D37 (swing 40 -> 19 ms)
+> and D38 (left eye 20 -> 15 deg) changed the body and the eye, and the share
+> of the looming signal that has arrived when the fly must commit went from
+> 44% to **100%**. Everything above was measured BEFORE that; there is no
+> score for the current configuration yet, and re-running is the next task
+> ([STATUS](docs/records/STATUS.md), Korean).
+>
 > 📝 **These numbers changed substantially on 2026-09-23.** The parameter that
 > reads the zone sat outside the search's bounds and was therefore **dead** --
 > every pitch read as "high" -- while the baseline was pinned to the middle

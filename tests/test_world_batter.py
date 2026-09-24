@@ -173,12 +173,18 @@ class TestEyes:
     def test_acuity_is_the_one_d32_chose(self):
         """D28 asked for fly-like: 32 px over 120 deg, 3.75 deg per pixel
         against a fruit fly's ~5 deg ommatidial spacing. The left eye is now
-        an aimed 20 deg acute zone -- 0.63 deg per pixel, six times finer
-        than the animal -- because D32's fastball is released 122 mm away.
-        The right eye keeps D28's wide field. A measured departure (VM-01),
-        not a drift."""
+        an aimed 15 deg acute zone -- 0.47 deg per pixel, EIGHT times finer
+        than the animal. The right eye keeps D28's wide field.
+
+        The number has moved three times and every move is a measurement, not
+        a drift: 30 deg (D31b) because a scale-true ball is invisible, 20
+        (D32) because the fastball is released farther out, 15 (D38) because
+        `studies.eye_field` measured that 15 is the WIDEST field at which all
+        of the flight's looming signal has arrived by the deadline D37 left.
+        Narrower is not better -- at 9 deg the expansion leaves the field
+        early and the fly is back to 76% of it."""
         assert B.EYE_RESOLUTION == 32
-        assert B.EYE_FOVY_DEG / B.EYE_RESOLUTION == pytest.approx(0.625)
+        assert B.EYE_FOVY_DEG / B.EYE_RESOLUTION == pytest.approx(0.46875)
         assert B.EYE_FOVY_WIDE_DEG / B.EYE_RESOLUTION == pytest.approx(3.75)
 
     def test_an_eye_pixel_integrates_light_instead_of_point_sampling(self, md):

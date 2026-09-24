@@ -92,6 +92,17 @@ MIN_DISTINCT_SIZES = 3
 """V3. Distinct detectable-pixel counts within the decision window. Looming
 is a size CHANGE; a ball that is 1 px in every frame carries no expansion."""
 
+FIELD_OF_VIEW_DEG = 20.0
+"""The left eye's field THIS STUDY's numbers were taken at, not whatever the
+live constant is now.
+
+`in_fov` and `detected_px` are read off the compiled camera, so pointing this
+at `B.EYE_FOVY_DEG` meant the study silently re-reported itself every time the
+field moved -- 30 (D31b), 20 (D32), 15 (D38). D38 is what made it visible: at
+15 deg the ball in this study's geometry falls outside the field entirely and
+"a bigger ball covers more of the eye" started returning 0 pixels. A study is
+a record of a measurement; the geometry it was measured at belongs to it."""
+
 DETECT_THRESHOLD = 8
 """V1. Per-pixel grayscale change (0-255) counted as "the ball is here".
 Chosen above MuJoCo's frame-to-frame noise for a static scene, which is 0."""
@@ -200,8 +211,12 @@ PARKED = np.array([0.0, -250.0, 5.0])
 
 
 def measure(speed_scale: float, eye_rate_hz: int, ball_scale: float,
-            distance_scale: float = 1.0) -> Combination:
-    scene = B.build_scene(B.SceneOptions(ball_scale=ball_scale))
+            distance_scale: float = 1.0, fovy_deg: float | None = None) -> Combination:
+    """`fovy_deg` overrides the field; it defaults to this study's own
+    `FIELD_OF_VIEW_DEG` rather than the live constant, for the reason written
+    there."""
+    scene = B.build_scene(B.SceneOptions(ball_scale=ball_scale,
+                                        eye_fovy_deg=fovy_deg or FIELD_OF_VIEW_DEG))
     model = scene.model()
     data = mujoco.MjData(model)
     res, px_per_deg = _eye_geometry(model)

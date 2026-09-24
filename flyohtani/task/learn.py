@@ -47,24 +47,30 @@ class Genome:
     pitch, a zone boundary outside the measured rise rates is a constant.
 
     That last clause was true of this class's own bounds. `zone_rise_boundary`
-    was allowed (-0.40, 0.20) while the feature it thresholds actually ranges
-    -1.385 .. -0.860 in this scene (`studies.zone_rise`, 12 genomes x 12
-    pitches): EVERY value the search could reach read every pitch as "high",
-    so the parameter was dead and the D36 results contain no zone readout.
-    The bounds below are the measured range plus about 0.2 on each side, so
-    the two constant answers stay reachable too -- if never reading the zone
-    really is better, the search should be able to say so."""
+    was allowed (-0.40, 0.20) while the feature it thresholds actually ranged
+    -1.385 .. -0.860 (`studies.zone_rise`): EVERY value the search could reach
+    read every pitch as "high", so the parameter was dead and the D36 results
+    contain no zone readout.
+
+    The rule is now: the measured range plus about 0.2 on each side, so the two
+    constant answers stay reachable too -- if never reading the zone really is
+    better, the search should be able to say so. D37 and D38 each moved the
+    measured range again (the swing changed the deadline, the narrower field
+    changed how fast the ball crosses the image), and the regression test in
+    tests/test_task_learning.py caught both. THREE recalibrations in one day is
+    the argument for the test, not against it: the first drift went unnoticed
+    through a whole set of results."""
 
     motor_delay_frames: int = 3
     spikes_to_swing: int = 1
-    zone_rise_boundary: float = -1.12
+    zone_rise_boundary: float = -1.44
     zone_window_frames: int = 5
     input_gain_scale: float = 1.0
 
     BOUNDS: ClassVar[dict[str, tuple[float, float]]] = {
         "motor_delay_frames": (0, 8),
         "spikes_to_swing": (1, 4),
-        "zone_rise_boundary": (-1.60, -0.70),
+        "zone_rise_boundary": (-1.90, -1.00),
         "zone_window_frames": (3, 9),
         "input_gain_scale": (0.4, 2.5),
     }

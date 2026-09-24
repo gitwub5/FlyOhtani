@@ -22,10 +22,19 @@ def test_v2_keeps_v1s_thresholds_where_it_claims_to():
     assert V2.DETECT_THRESHOLD is V1.DETECT_THRESHOLD
 
 
-def test_swing_floor_is_shorter_than_the_demo_swing():
+def test_the_demo_swing_is_now_faster_than_v2_assumed_was_possible():
+    """This assertion used to run the other way, and the flip is the point.
+
+    VM-01 v2 fixed SWING_FLOOR_S at 25 ms by deriving it from the stance it
+    had: that arm peaked at 215 rad/s in 35 ms, so 25 ms would have put it at
+    the 300 rad/s ceiling. The floor was therefore a property of a STANCE, not
+    of the animal, and D37 found a stance that reaches the same contact poses
+    in 19 ms inside the same ceiling by travelling 122.9 degrees instead of
+    260.6. v2's constant is left exactly as it was -- it records what v2
+    assumed, and that is why it is worth keeping."""
     from flyohtani.world import batter as B
 
-    assert V2.SWING_FLOOR_S < B.DEMO_SWING_S
+    assert B.DEMO_SWING_S < V2.SWING_FLOOR_S
 
 
 @pytest.fixture(scope="module")

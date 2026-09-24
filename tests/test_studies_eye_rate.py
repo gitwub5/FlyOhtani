@@ -62,7 +62,7 @@ def test_slowing_the_ball_alone_lobs_it(slow_combination):
 
 
 def test_field_of_view_is_recorded_per_frame(slow_combination):
-    half = B.EYE_FOVY_DEG / 2
+    half = ER.FIELD_OF_VIEW_DEG / 2
     for f in slow_combination.frames:
         assert f.in_fov == (f.off_axis_deg <= half)
     assert any(f.in_fov for f in slow_combination.frames)
