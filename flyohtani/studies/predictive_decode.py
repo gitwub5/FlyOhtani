@@ -116,6 +116,46 @@ def dn_features(trace: dict, graph=None) -> np.ndarray:
     return rows.ravel()
 
 
+# ------------------------------------------------------- the bottleneck ladder
+# The DN readout scores 0.183 where the LC readout scores 1.158, and the real
+# wiring lands BELOW its own shuffles. Two very different things could cause
+# that, and they have different consequences:
+#
+#   the projection   311 cells -> 12, a linear map the synapse counts define.
+#                    If this is what loses it, the finding is about the wiring.
+#   the spiking      a LIF, then integer spike counts over nine frames. If
+#                    this is what loses it, the finding is about our neuron
+#                    model's bandwidth and says nothing about the connectome.
+#
+# So read the same twelve channels three ways, from the same traces.
+
+
+def dn_drive_features(trace: dict, graph=None) -> np.ndarray:
+    """The input each DN receives, as a continuous value. No spiking at all --
+    purely the linear projection the wiring defines."""
+    c = (LoomingCircuit(graph=graph) if graph is not None else LoomingCircuit())
+    w = c.weights[c.target_slice, c.source_slice]
+    rows = []
+    for f in range(READ_UNTIL):
+        lc = np.concatenate([np.asarray(trace[t])[f] for t in SOURCE_TYPES])
+        rows.append(w @ lc)
+    return np.array(rows).ravel()
+
+
+def dn_voltage_features(trace: dict, graph=None) -> np.ndarray:
+    """Membrane potential per frame: the LIF's dynamics, without discretising
+    the output into spikes."""
+    c = (LoomingCircuit(graph=graph) if graph is not None else LoomingCircuit())
+    dt = 1.0 / (B.EYE_RATE_HZ * CIRCUIT_SUBSTEPS)
+    rows = []
+    for f in range(READ_UNTIL):
+        vec = c.retinal_drive({t: np.asarray(trace[t])[f] for t in SOURCE_TYPES})
+        for _ in range(CIRCUIT_SUBSTEPS):
+            c.step(dt, vec)
+        rows.append(c.state.v[c.target_slice].copy())
+    return np.array(rows).ravel()
+
+
 def fit_ridge(X: np.ndarray, Y: np.ndarray, lam: float = RIDGE):
     mu, sd = X.mean(0), X.std(0) + 1e-9
     Z = np.c_[(X - mu) / sd, np.ones(len(X))]
@@ -187,11 +227,34 @@ def main() -> None:
     print(f"  real at the {verdict['percentile']:.0f}th percentile -> "
           f"{'PASSES' if verdict['passes'] else 'DOES NOT PASS'}")
 
+    print("\nbottleneck ladder: the same twelve channels, read three ways")
+    print(f"{'channel':>34} {'real':>8} {'shuffle mean':>13} {'n':>3}")
+    print("-" * 62)
+    ladder = {}
+    graphs = [shuffled(seed=3000 + k) for k in range(6)]
+    for label, fn in (("DN input (continuous)", dn_drive_features),
+                      ("DN membrane (continuous)", dn_voltage_features),
+                      ("DN spikes (integer)", dn_features)):
+        def mk(graph, fn=fn):
+            return lambda one_trace: fn(one_trace, graph)
+        real_f = mk(None)
+        Xr = np.array([real_f(tr) for tr in train_traces])
+        r = evaluate(fit_ridge(Xr, Y), tab, held_traces, held_specs, real_f)
+        sh = []
+        for g in graphs:
+            f2 = mk(g)
+            Xs = np.array([f2(tr) for tr in train_traces])
+            sh.append(evaluate(fit_ridge(Xs, Y), tab, held_traces, held_specs, f2)["reward"])
+        ladder[label] = {"real": r, "shuffles": sh, "shuffle_mean": float(np.mean(sh))}
+        print(f"{label:>34} {r['reward']:8.3f} {np.mean(sh):13.3f} {len(sh):3d}", flush=True)
+    print(f"{'LC 311 (no bottleneck)':>34} "
+          f"{results['LC (311 cells, upper bound)']['reward']:8.3f} {'-':>13}")
+
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     out = EVIDENCE / "PREDICTIVE-DECODE.json"
     out.write_text(json.dumps({"read_until": READ_UNTIL, "n_train": N_TRAIN,
-                               "readouts": results, "null": verdict}, indent=1,
-                              default=float) + "\n")
+                               "readouts": results, "null": verdict,
+                               "ladder": ladder}, indent=1, default=float) + "\n")
     print("\nwrote", out)
 
 
