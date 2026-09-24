@@ -72,10 +72,34 @@ AFTER the swing has to start, which is a fact about the task, not about the
 gain."""
 
 
+TAU_W_S = 0.050
+ADAPTATION = 0.0
+"""Spike-frequency adaptation: each spike adds `ADAPTATION` to a current that
+decays with `TAU_W_S` and subtracts from the drive.
+
+WHY IT IS HERE. Without it this neuron measures how long until threshold --
+a LEVEL readout -- and D39 measured what that costs: with three flight times
+the circuit's commit moves only 1-3 frames between them, and in the WRONG
+direction (later on the fast ball, 7.1 against 5.3, where the task needs the
+fast ball about nine frames EARLIER). Time to contact is a RATE quantity, and
+nothing in a fixed-threshold LIF can represent one.
+
+With adaptation a steady drive produces a burst that dies away, while a
+GROWING drive keeps firing, so the population's output follows the change in
+contrast rather than its level. That is the smallest biologically real change
+that could put a rate in the circuit's output, and adaptation is a property
+real neurons have rather than a mechanism invented for this task.
+
+DEFAULT ZERO, deliberately: every result on record was measured without it,
+and turning it on by default would change them silently. `studies.adaptation`
+sweeps it against a pre-registered criterion."""
+
+
 @dataclass
 class CircuitState:
     v: np.ndarray
     refractory_until_s: np.ndarray
+    w: np.ndarray
     time_s: float = 0.0
 
 
@@ -91,6 +115,8 @@ class LoomingCircuit:
     synapse_gain: float = SYNAPSE_GAIN
     input_gain: float = INPUT_GAIN
     tau_m_s: float = TAU_M_S
+    adaptation: float = ADAPTATION
+    tau_w_s: float = TAU_W_S
 
     def __post_init__(self) -> None:
         source_ids = [int(b) for t in SOURCE_TYPES for b in self.graph.ids_of_type(t)]
@@ -114,7 +140,8 @@ class LoomingCircuit:
     # ---------------------------------------------------------------- state
 
     def new_state(self) -> CircuitState:
-        return CircuitState(v=np.zeros(self.n), refractory_until_s=np.full(self.n, -np.inf))
+        return CircuitState(v=np.zeros(self.n), refractory_until_s=np.full(self.n, -np.inf),
+                            w=np.zeros(self.n))
 
     def reset(self) -> None:
         self.state = self.new_state()
@@ -129,11 +156,15 @@ class LoomingCircuit:
         s = self.state
         s.time_s += dt_s
         awake = s.time_s >= s.refractory_until_s
-        s.v += np.where(awake, (-s.v / self.tau_m_s + drive) * dt_s, 0.0)
+        if self.adaptation:
+            s.w -= s.w / self.tau_w_s * dt_s
+        s.v += np.where(awake, (-s.v / self.tau_m_s + drive - s.w) * dt_s, 0.0)
         spikes = s.v >= V_THRESHOLD
         if spikes.any():
             s.v[spikes] = V_RESET
             s.refractory_until_s[spikes] = s.time_s + REFRACTORY_S
+            if self.adaptation:
+                s.w[spikes] += self.adaptation
             # Synaptic input lands on the next step, which is what a delay of
             # one timestep means here; no axonal delays are modelled.
             s.v += self.weights @ spikes.astype(float)

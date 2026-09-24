@@ -80,14 +80,32 @@ evidence. Delete it to rebuild, and the scene changing is exactly when to."""
 
 def load_or_build(reward_name: str = "carry-v1", n_pitches: int = 36,
                   cache: Path | None = CACHE) -> Table:
+    """The cache stores a plain dict, not the dataclass.
+
+    Pickling the dataclass recorded it as `__main__.Table`, because this
+    module is `__main__` when run with -m, and then no OTHER module could
+    load the cache. Storing the fields keeps the file independent of which
+    module happened to write it."""
     import pickle
+    import sys
     if cache and cache.exists():
+        raw = cache.read_bytes()
+        try:
+            data = pickle.loads(raw)
+        except AttributeError:
+            # written by an older version, as __main__.Table
+            sys.modules["__main__"].Table = Table
+            data = pickle.loads(raw)
+        tab = Table(**data) if isinstance(data, dict) else data
         print(f"reusing cached table {cache}", flush=True)
-        return pickle.loads(cache.read_bytes())
+        if not isinstance(data, dict):
+            cache.write_bytes(pickle.dumps(vars(tab)))
+            print("  (rewritten in the module-independent format)", flush=True)
+        return tab
     tab = build_table(reward_name, n_pitches)
     if cache:
         cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_bytes(pickle.dumps(tab))
+        cache.write_bytes(pickle.dumps(vars(tab)))
         print(f"cached table to {cache}", flush=True)
     return tab
 
