@@ -49,6 +49,107 @@ timestep PLAN Phase 4 asks for."""
 
 
 @dataclass
+class ZoneReader:
+    """Where the pitch is going, read from the eye.
+
+    Extracted so that `CircuitPolicy` and `FirstMotionPolicy` share it instead
+    of carrying a copy each -- the same reason `world.swing` exists.
+
+    WORTH SAYING PLAINLY: this reads the RETINA, not the circuit. The
+    connectome is not in this path at all. So "where" has never been a thing
+    the wiring contributed, and a control that keeps this and replaces only
+    the circuit isolates exactly what the wiring does contribute.
+    """
+
+    boundary: float
+    window_frames: int
+
+    def __post_init__(self) -> None:
+        self._rows: deque[float] = deque(maxlen=self.window_frames)
+        self.at_commit: float | None = None
+
+    def reset(self) -> None:
+        self._rows.clear()
+        self.at_commit = None
+
+    def observe(self, motion: np.ndarray) -> None:
+        total = float(motion.sum())
+        if total <= 0:
+            return
+        rows = np.arange(motion.shape[0], dtype=float)[:, None]
+        self._rows.append(float((rows * motion).sum() / total))
+
+    def rise(self) -> float | None:
+        """Rows per frame the ball is climbing: negative is rising."""
+        if len(self._rows) < 3:
+            return None
+        y = np.asarray(self._rows)
+        return float(np.polyfit(np.arange(len(y), dtype=float), y, 1)[0])
+
+    def zone(self) -> str:
+        self.at_commit = self.rise()
+        if self.at_commit is None:
+            return "middle"
+        return "high" if self.at_commit < self.boundary else "low"
+
+
+@dataclass
+class FirstMotionPolicy:
+    """Sees the ball, but computes no looming: it swings a fixed number of
+    frames after the eye first registers motion at all.
+
+    THE CONTROL THAT WAS MISSING. The blind baseline asks "is the eye used?"
+    and the answer has always been yes. The question that matters is narrower:
+    does the LOOMING CIRCUIT contribute anything a threshold on raw retinal
+    motion does not? Everything here is identical to `CircuitPolicy` -- same
+    eye, same retina, same receptive fields, same zone readout -- except that
+    the LIF network over the MaleCNS subgraph is replaced by `pooled >
+    threshold`.
+
+    If this scores what the circuit scores, the connectome is decorative, and
+    no amount of physics or optics changes that. It is a cheap control and it
+    should have existed before any of the learning runs did.
+
+    It is also the policy the task currently REWARDS: with one pitch speed,
+    "first motion plus a fixed wait" is an exact solution, because the flight
+    time never varies. That is a fact about the task, not about the fly.
+    """
+
+    motion_threshold: float = 0.05
+    motor_delay_frames: int = 14
+    zone_rise_boundary: float = -1.44
+    zone_window_frames: int = 5
+    resolution: int = 32
+
+    def __post_init__(self) -> None:
+        self.retina = Retina(self.resolution)
+        self._field = build_receptive_fields(1, self.resolution)
+        self.zones = ZoneReader(self.zone_rise_boundary, self.zone_window_frames)
+        self._committed_at: int | None = None
+        self._frame = 0
+        self._zone = "middle"
+
+    def reset(self) -> None:
+        self.retina.reset()
+        self.zones.reset()
+        self._committed_at = None
+        self._frame = 0
+        self._zone = "middle"
+
+    def __call__(self, obs: BatObservation) -> Action:
+        on, off = self.retina.encode(obs.eye_left)
+        motion = on + off
+        self.zones.observe(motion)
+        if self._committed_at is None and float(motion.max()) >= self.motion_threshold:
+            self._committed_at = self._frame
+            self._zone = self.zones.zone()
+        swing = (self._committed_at is not None
+                 and self._frame >= self._committed_at + self.motor_delay_frames)
+        self._frame += 1
+        return Action(swing=swing, zone=self._zone)
+
+
+@dataclass
 class CircuitPolicy:
     """The real thing: sees only what the fly sees.
 
@@ -102,22 +203,22 @@ class CircuitPolicy:
         self._frame = 0
         self._centres = {t: self._fields[t].centres for t in SOURCE_TYPES}
         self._zone: str = "middle"
-        self._rows: deque[float] = deque(maxlen=self.zone_window_frames)
+        self.zones = ZoneReader(self.zone_rise_boundary, self.zone_window_frames)
         self.zone_evidence_at_commit: float | None = None
-        """What `_read_zone` saw, kept for calibration. Read at the moment of
-        commitment, which is NOT the end of the episode -- calibrating against
-        the end value put the boundaries in the wrong place and the zone
-        readout at chance."""
+        """What the zone reader saw, kept for calibration. Read at the moment
+        of commitment, which is NOT the end of the episode -- calibrating
+        against the end value put the boundaries in the wrong place and the
+        zone readout at chance."""
         self.trace: list[dict] = []
 
     def reset(self) -> None:
         self.retina.reset()
         self.circuit.reset()
+        self.zones.reset()
         self._recent.clear()
         self._committed_at = None
         self._frame = 0
         self._zone = "middle"
-        self._rows.clear()
         self.zone_evidence_at_commit = None
         self.trace.clear()
 
@@ -125,7 +226,7 @@ class CircuitPolicy:
         on, off = self.retina.encode(obs.eye_left)
         motion = on + off
         pooled = {t: self._fields[t].pool(motion) for t in SOURCE_TYPES}
-        self._accumulate_zone_evidence(motion)
+        self.zones.observe(motion)
         drive = self.circuit.retinal_drive(pooled)
         dt = 1.0 / (self.frame_rate_hz * CIRCUIT_SUBSTEPS)
         spikes = np.zeros(self.circuit.n, dtype=bool)
@@ -141,8 +242,8 @@ class CircuitPolicy:
 
         if self._committed_at is None and len(self._recent) >= self.spikes_to_swing:
             self._committed_at = self._frame
-            self._zone = self._read_zone()
-            self.zone_evidence_at_commit = self._zone_evidence()
+            self._zone = self.zones.zone()
+            self.zone_evidence_at_commit = self.zones.at_commit
         swing = (self._committed_at is not None
                  and self._frame >= self._committed_at + self.motor_delay_frames)
         self._frame += 1
@@ -155,28 +256,6 @@ class CircuitPolicy:
             "zone": self._zone,
         })
         return Action(swing=swing, zone=self._zone)
-
-    def _accumulate_zone_evidence(self, motion: np.ndarray) -> None:
-        """Remember where the moving thing was, for the last few frames."""
-        total = float(motion.sum())
-        if total <= 0:
-            return
-        rows = np.arange(motion.shape[0], dtype=float)[:, None]
-        self._rows.append(float((rows * motion).sum() / total))
-
-    def _zone_evidence(self) -> float | None:
-        """Rows per frame the ball is climbing: negative is rising."""
-        if len(self._rows) < 3:
-            return None
-        y = np.asarray(self._rows)
-        x = np.arange(len(y), dtype=float)
-        return float(np.polyfit(x, y, 1)[0])
-
-    def _read_zone(self) -> str:
-        rise = self._zone_evidence()
-        if rise is None:
-            return "middle"
-        return "high" if rise < self.zone_rise_boundary else "low"
 
 
 @dataclass

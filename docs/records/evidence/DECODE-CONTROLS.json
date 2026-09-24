@@ -1,0 +1,168 @@
+{
+ "blind": {
+  "reward": 0.6638420357575947,
+  "contact": 0.3,
+  "zone": 0.3333333333333333,
+  "frame": 19,
+  "zone_choice": "high"
+ },
+ "first_motion": {
+  "reward": 0.759021600581104,
+  "contact": 0.4,
+  "zone": 0.3333333333333333,
+  "threshold": 0.5,
+  "delay": 17,
+  "boundary": -1.9,
+  "commit_frames": [
+   1,
+   1,
+   1,
+   2,
+   3,
+   2
+  ]
+ },
+ "circuit_real": {
+  "reward": 0.957082543954531,
+  "contact": 0.4666666666666667,
+  "zone": 0.3333333333333333,
+  "gain": 1000.0,
+  "spikes_to_swing": 2,
+  "delay": 8,
+  "boundary": -1.9,
+  "commit_frames": [
+   9,
+   10,
+   10,
+   11,
+   12,
+   10
+  ]
+ },
+ "circuit_shuffled_0": {
+  "reward": 1.0251611574888957,
+  "contact": 0.5,
+  "zone": 0.3333333333333333,
+  "gain": 2000.0,
+  "spikes_to_swing": 3,
+  "delay": 10,
+  "boundary": -1.9,
+  "commit_frames": [
+   8,
+   9,
+   8,
+   9,
+   10,
+   9
+  ]
+ },
+ "circuit_shuffled_1": {
+  "reward": 0.9378123022008792,
+  "contact": 0.3333333333333333,
+  "zone": 0.3333333333333333,
+  "gain": 13500.0,
+  "spikes_to_swing": 4,
+  "delay": 13,
+  "boundary": -1.9,
+  "commit_frames": [
+   5,
+   4,
+   5,
+   6,
+   6,
+   6
+  ]
+ },
+ "circuit_shuffled_2": {
+  "reward": 1.0904158772878643,
+  "contact": 0.6,
+  "zone": 0.3333333333333333,
+  "gain": 2000.0,
+  "spikes_to_swing": 2,
+  "delay": 10,
+  "boundary": -1.9,
+  "commit_frames": [
+   8,
+   8,
+   8,
+   9,
+   10,
+   10
+  ]
+ },
+ "dnzone_real": {
+  "reward": 1.6269350311124706,
+  "contact": 0.5333333333333333,
+  "zone": 0.5333333333333333,
+  "gain": 5000.0,
+  "spikes_to_swing": 4,
+  "delay": 12,
+  "dn_row_boundary": 16.25
+ },
+ "dnzone_shuffled_0": {
+  "reward": 1.7332618348262263,
+  "contact": 0.7666666666666667,
+  "zone": 0.6666666666666666,
+  "gain": 2000.0,
+  "spikes_to_swing": 3,
+  "delay": 10,
+  "dn_row_boundary": 14.75
+ },
+ "dnzone_shuffled_1": {
+  "reward": 1.18961603477429,
+  "contact": 0.43333333333333335,
+  "zone": 0.43333333333333335,
+  "gain": 5000.0,
+  "spikes_to_swing": 2,
+  "delay": 12,
+  "dn_row_boundary": 13.75
+ },
+ "dnzone_shuffled_2": {
+  "reward": 1.2890266244555262,
+  "contact": 0.4666666666666667,
+  "zone": 0.4666666666666667,
+  "gain": 30000.0,
+  "spikes_to_swing": 1,
+  "delay": 15,
+  "dn_row_boundary": 14.0
+ },
+ "null_distribution": {
+  "real": {
+   "reward": 1.6269350311124706,
+   "contact": 0.5333333333333333,
+   "zone": 0.5333333333333333,
+   "gain": 5000.0,
+   "spikes_to_swing": 4,
+   "delay": 12,
+   "dn_row_boundary": 16.25
+  },
+  "shuffles": [
+   1.0953288965774952,
+   1.370087949160675,
+   1.4016777691675097,
+   1.1633588439861706,
+   1.5111439895528171,
+   1.3202863925221482,
+   1.4016777691675097,
+   1.4016777691675097,
+   1.2007295052705207,
+   1.2852259476367494,
+   1.322371385553811,
+   1.7308869149402466,
+   1.2304783552849472,
+   1.1837608977595162,
+   1.3878500083637506,
+   1.1428473448362284,
+   1.3164881518559743,
+   1.237486360300513,
+   1.5515691035615964,
+   1.6795621318238547
+  ],
+  "shuffle_mean": 1.346724774324477,
+  "shuffle_sd": 0.1711183415415362,
+  "shuffle_max": 1.7308869149402466,
+  "threshold": 1.6821283709796744,
+  "real_percentile": 90.0,
+  "passes": 0.0
+ }
+}
