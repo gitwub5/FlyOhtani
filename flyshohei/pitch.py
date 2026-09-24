@@ -79,25 +79,51 @@ class Pitch:
 STANDARD = Pitch(
     name="standard",
     flight_s=0.052,
-    note="D35. 24.6 ms of swing to contact + 10 ms of decision latency + "
-         "eight eye frames at 480 Hz (17 ms). It is thrown from the rubber, "
-         "which costs speed: 35% of a Froude-scaled Kershaw fastball. At "
-         "that speed over 34.2 mm it is a lofted changeup, not a fastball.",
+    note="D35. Thrown from the rubber, which costs speed: 689 mm/s, 35% of a "
+         "Froude-scaled Kershaw fastball, launch +17.5 deg. D37 later cut "
+         "swing-to-contact to 12.35 ms, so the eye rule now asks 270 Hz of "
+         "this pitch rather than 460.",
 )
-"""The only pitch that exists. Every measurement in docs/records/ was taken
-with this one."""
+"""The pitch every measurement in docs/records/ before 2026-09-24 was taken
+with. D39 adds FAST and SLOW either side of it."""
 
-ARSENAL: dict[str, Pitch] = {p.name: p for p in (STANDARD,)}
-"""구종. 하나뿐인 것이 정직한 상태다 -- 두 번째를 넣으려면:
+FAST = Pitch(
+    name="fast",
+    flight_s=0.040,
+    note="D39. 865 mm/s, launch +8.9 deg -- the FLATTEST pitch this fly can "
+         "be thrown, and it only exists because D37 cut swing-to-contact to "
+         "12.35 ms. Under the old 24.60 a 40 ms flight left 5.4 ms to decide "
+         "in and would have needed a 1,481 Hz eye. The eye rule asks 453 and "
+         "runs at 480.",
+)
 
-- **구속·비행 시간만 다른 공**(체인지업, 슬로볼)은 지금 바로 된다. `Pitch`를
-  하나 더 만들면 끝이다. 대신 **눈 프레임률이 따라 움직인다**
-  (`flyohtani.world.batter.min_eye_rate_hz`), 그리고 느린 공은 더 높이 던져 올려야
-  해서 궤적이 휜다(D32가 측정한 것).
-- **휘는 공**(커브·슬라이더)은 숫자를 하나 더 넣어서 되지 않는다. 지금 공에는
-  항력도 스핀도 없어서(`flyohtani.world.swing.batted_ball`의 포물선이 정확한 이유가
-  그것이다) 마그누스 힘을 먼저 모델에 넣어야 한다. 그 전에는 "커브"라고 이름만
-  붙이는 셈이 된다.
+SLOW = Pitch(
+    name="slow",
+    flight_s=0.060,
+    note="D39. 623 mm/s, launch +23.9 deg. The SLOWEST pitch still inside the "
+         "+25 deg limit -- past it gravity turns the delivery into a lob "
+         "(+32 at 70 ms) and it stops being a pitch. Needs 212 Hz of eye.",
+)
+
+ARSENAL: dict[str, Pitch] = {p.name: p for p in (FAST, STANDARD, SLOW)}
+"""구종 3종 (D39). **비행 시간만 다르고 휘지는 않는다** — 공에 스핀도 항력도
+없으므로 커브라고 이름 붙일 수는 없다(아래 참고).
+
+왜 하나가 아니라 셋인가. 비행 시간이 고정이면 **"첫 움직임을 보고 고정 시간
+기다리기"가 이 과제의 정확한 해답**이고, 실제로 회로가 그렇게 행동했다
+(프레임 3에 발화 + 학습된 대기 29 ms). 즉 루밍 계산이 전혀 필요 없는 과제였다.
+연결 프레임 대역을 재보면 세 구종이 **12~14 / 18~20 / 22~23**으로 서로 겹치지
+않으므로, 어떤 고정 대기도 셋을 다 맞힐 수 없다. 팽창 속도를 읽어야 풀린다 —
+그것이 LC4/LPLC2가 실제로 하는 계산이다.
+
+선택 규칙은 측정 전에 고정했다: 눈 프레임률 요구 ≤ 480 Hz, 발사각 ≤ +25°
+(D32가 +20.8°를 "커브 같다"고 되돌렸다), 연결 대역이 서로 겹치지 않을 것,
+3종 이상. 44 ms도 앞의 둘은 통과하지만 40 ms와 프레임 14에서 겹쳐 빠졌다.
+
+**휘는 공은 아직 안 된다.** 공에 항력도 스핀도 없어서
+(`flyohtani.world.swing.batted_ball`의 포물선이 정확한 이유가 그것이다) 커브·
+슬라이더는 마그누스 힘을 모델에 먼저 넣어야 한다. 그 전에는 "커브"라고 이름만
+붙이는 셈이 된다.
 """
 
 

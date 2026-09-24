@@ -57,7 +57,14 @@ class Action:
 class PitchSpec:
     """The pitch, as the environment throws it."""
 
+    pitch_name: str = "standard"
+    """Which of `flyshohei.pitch.ARSENAL` (D39). The three differ in flight
+    time only, and that is the point: with one flight time "swing a fixed
+    wait after first motion" is an exact solution and the task never asks for
+    looming at all. Their connecting frames are 12-14, 18-20 and 22-23, so no
+    single wait covers them."""
     flight_s: float | None = None
+    """Overrides the named pitch's flight time. For measurements, not play."""
     distance_scale: float | None = None
     timing_ms: float = 0.0
     """Shifts the release, so the fly must swing earlier or later."""
@@ -125,12 +132,13 @@ class BattingEnv:
         # flyshohei.pitch.geometry's docstring -- this was a bug).
         self._release, self._v0, self._flight = P.geometry(
             strike, self.scene.scale, self.pitch.distance_scale, self.pitch.flight_s,
-            release_reference=nominal)
+            release_reference=nominal, pitch=P.get(self.pitch.pitch_name))
         # timing_ms > 0 delays the release, so the ball arrives later.
         self._t_release = self.pitch.timing_ms * 1e-3
         self._frame = 0
         self._done = False
-        self.outcome = Outcome(pitch_zone=self.pitch.zone)
+        self.outcome = Outcome(pitch_zone=self.pitch.zone,
+                               pitch_name=self.pitch.pitch_name)
         self._place_ball(0.0)
         return self._observe()
 

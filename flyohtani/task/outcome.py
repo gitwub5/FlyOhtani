@@ -19,6 +19,7 @@ class Outcome:
     swing_frame: int | None = None
     swing_zone: str | None = None
     pitch_zone: str = "middle"
+    pitch_name: str = "standard"
     exit_speed_mm_s: float | None = None
     launch_angle_deg: float | None = None
     spray_angle_deg: float | None = None

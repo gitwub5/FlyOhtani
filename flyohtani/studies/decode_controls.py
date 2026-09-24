@@ -45,10 +45,12 @@ from flyohtani.world import batter as B
 
 EVIDENCE = Path(__file__).resolve().parent.parent.parent / "docs" / "records" / "evidence"
 
-FRAMES = range(3, 27)
-"""Every frame a decoder could pick. Wider than the connecting band (measured
-at 17-21) on both sides, so a decoder is never scored against a range that
-happens to exclude its answer -- the failure that voided the 2026-09-24 runs."""
+FRAMES = range(3, 32)
+"""Every frame a decoder could pick. Wider on both sides than any connecting
+band -- 12-14 for the fast pitch, 18-20 standard, 22-23 slow, plus the timing
+jitter -- so a decoder is never scored against a range that happens to exclude
+its answer. That failure voided a whole day of runs: the search's motor delay
+was capped at 8 while contact needed 17."""
 
 
 @dataclass
@@ -76,7 +78,7 @@ so it is cached. `runs/` is gitignored -- this is a derived cache, not
 evidence. Delete it to rebuild, and the scene changing is exactly when to."""
 
 
-def load_or_build(reward_name: str = "carry-v1", n_pitches: int = 30,
+def load_or_build(reward_name: str = "carry-v1", n_pitches: int = 36,
                   cache: Path | None = CACHE) -> Table:
     import pickle
     if cache and cache.exists():
@@ -90,7 +92,7 @@ def load_or_build(reward_name: str = "carry-v1", n_pitches: int = 30,
     return tab
 
 
-def build_table(reward_name: str = "carry-v1", n_pitches: int = 30) -> Table:
+def build_table(reward_name: str = "carry-v1", n_pitches: int = 36) -> Table:
     env = BattingEnv()
     pitches = evaluation_pitches(n_pitches)
     reward_fn = rewards.get(reward_name)
